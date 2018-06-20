@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="src/index.js"></script>
+</head>
+<body>
+    <div id="host"></div>
+    <script>
+        var hostDiv = document.getElementById('host');
+        var refresh = render(hostDiv, app, {name: 'World'});
+
+        setTimeout(function() {
+          console.log('Updating');
+          refresh({name: 'New World'})
+        }, 1000);
+    </script>
+</body>
+</html>
