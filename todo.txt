@@ -1,4 +1,3 @@
-- tests for the existing code (make sure that I can really _unti-test_ things in isolation)
 - think of the syntax implications for the code I've got so far (prop vs. attr, one-time vs. binding vs. interpolation etc.)
 - extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation
 -

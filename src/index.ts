@@ -10,7 +10,7 @@ let parentVNode: VNode;
 let nodes: VNode[] = [];
 
 function createVNode(parent: VNode, native) {
-  // TODO(pk): lazy-init bindings array
+  // TODO(pk): lazy-init bindings array => or better yet, have the exact number of bindings handy :-)
   return {parent: parent, native: native, bindings: []};
 }
 
@@ -46,48 +46,38 @@ function text(idx: number, value?: string) {
   }
 }
 
+function checkAndUpdateBinding(bindings: any[], bindIdx: number, newValue: any): boolean {
+  if (bindIdx > bindings.length) {
+   bindings[bindIdx] = newValue;
+   return true;
+  } else {
+    const oldValue = bindings[bindIdx];
+    if (oldValue !== newValue) {
+      bindings[bindIdx] = newValue;
+      return true;
+    }
+  }
+  return false;
+}
+
 function textUpdate(vNodeIdx: number, bindIdx: number, newValue: string) {
   const vNode = nodes[vNodeIdx];
-  // this is the first time we see this binding
-  if (bindIdx > vNode.bindings.length) {
-    vNode.bindings[bindIdx] = newValue;
+  if (checkAndUpdateBinding(vNode.bindings, bindIdx, newValue)) {
     vNode.native.textContent = newValue;
-  } else {
-    const oldValue = vNode.bindings[bindIdx];
-    if (oldValue !== newValue) {
-      vNode.bindings[bindIdx] = newValue;
-      vNode.native.textContent = newValue;
-    }
   }
 }
 
 function elementProperty(vNodeIdx: number, bindIdx: number, propName: string, newValue: any) {
   const vNode = nodes[vNodeIdx];
-  // this is the first time we see this binding
-  if (bindIdx > vNode.bindings.length) {
-    vNode.bindings[bindIdx] = newValue;
+  if (checkAndUpdateBinding(vNode.bindings, bindIdx, newValue)) {
     vNode.native[propName] = newValue;
-  } else {
-    const oldValue = vNode.bindings[bindIdx];
-    if (oldValue !== newValue) {
-      vNode.bindings[bindIdx] = newValue;
-      vNode.native[propName] = newValue;
-    }
   }
 }
 
 function elementAttribute(vNodeIdx: number, bindIdx: number, attrName: string, newValue: string) {
   const vNode = nodes[vNodeIdx];
-  // this is the first time we see this binding
-  if (bindIdx > vNode.bindings.length) {
-    vNode.bindings[bindIdx] = newValue;
+  if (checkAndUpdateBinding(vNode.bindings, bindIdx, newValue)) {
     vNode.native.setAttribute(attrName, newValue);
-  } else {
-    const oldValue = vNode.bindings[bindIdx];
-    if (oldValue !== newValue) {
-      vNode.bindings[bindIdx] = newValue;
-      vNode.native.setAttribute(attrName, newValue);
-    }
   }
 }
 
