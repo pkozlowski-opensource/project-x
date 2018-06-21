@@ -38,8 +38,8 @@ function element(idx: number, tagName: string, attrs?: string[] | null) {
    elementEnd(idx);
 }
 
-function text(idx: number, value: string) {
-  const domEl = document.createTextNode(value);
+function text(idx: number, value?: string) {
+  const domEl = document.createTextNode(value != null ? value : '');
   nodes[idx] = createVNode(parentVNode, domEl);
   if (parentVNode) {
     parentVNode.native.appendChild(domEl);
@@ -91,12 +91,17 @@ function elementAttribute(vNodeIdx: number, bindIdx: number, attrName: string, n
   }
 }
 
-function render(host, tpl, ctx) {
+const enum RenderFlags {
+  Create = 0b01,
+  Update = 0b10
+}
+
+function render(host, tpl, ctx?) {
   const hostVNode = parentVNode = createVNode(null!, host);
-  tpl(true, ctx);
+  tpl(RenderFlags.Create | RenderFlags.Update, ctx);
   return function(ctx) {
     parentVNode = hostVNode;
-    tpl(false, ctx);
+    tpl(RenderFlags.Update, ctx);
   }
 }
 
