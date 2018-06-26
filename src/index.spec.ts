@@ -80,4 +80,41 @@ describe('integration', () => {
 
   });
 
+  describe('listeners', () => {
+
+    it('should add DOM event listeners', () => {
+
+      /**
+       * <button (click)="counter++">
+       *   Increment
+       * </button>
+       * Counter: {{counter}}
+       */
+      function tpl(rf: RenderFlags, ctx: {counter: number}) {
+        if (rf & RenderFlags.Create) {
+          elementStart(0, 'button');
+            listener(0, 'click', function() {
+              ctx.counter++;
+            });
+            text(1, 'Increment');
+          elementEnd(0);
+          text(2);
+        }
+        if (rf & RenderFlags.Update) {
+          textUpdate(2, 0, `Counter: ${ctx.counter}`);
+        }
+      }
+
+      const ctx = {counter: 0};
+      const refreshFn = render(hostDiv, tpl, ctx);
+      expect(hostDiv.innerHTML).toBe('<button>Increment</button>Counter: 0');
+
+      hostDiv.querySelector('button').click();
+      expect(ctx.counter).toBe(1);
+      refreshFn(ctx);
+      expect(hostDiv.innerHTML).toBe('<button>Increment</button>Counter: 1');
+    });
+
+  });
+
 });

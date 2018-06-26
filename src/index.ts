@@ -11,6 +11,7 @@ let nodes: VNode[] = [];
 
 function createVNode(parent: VNode, native) {
   // TODO(pk): lazy-init bindings array => or better yet, have the exact number of bindings handy :-)
+  // TODO(pk): lazy-init views array
   return {parent: parent, native: native, bindings: []};
 }
 
@@ -18,7 +19,7 @@ function elementStart(idx: number, tagName: string, attrs?: string[] | null) {
   const domEl = document.createElement(tagName);
   const vNode = nodes[idx] = createVNode(parentVNode, domEl);
   if (attrs) {
-    for (var i = 0; i<attrs.length; i+= 2) {
+    for (var i = 0; i < attrs.length; i += 2) {
       domEl.setAttribute(attrs[i], attrs[i + 1]);
     }
   }
@@ -34,8 +35,17 @@ function elementEnd(idx: number) {
 }
 
 function element(idx: number, tagName: string, attrs?: string[] | null) {
-   elementStart(idx, tagName, attrs);
-   elementEnd(idx);
+  elementStart(idx, tagName, attrs);
+  elementEnd(idx);
+}
+
+function listener(elIdx: number, eventName: string, handlerFn) {
+  // TODO(pk): I could avoid look-up here by storing "global" reference to a node being processed
+  const vNode = nodes[elIdx];
+  const domEl = vNode.native;
+
+  // TODO(pk): do I need to cleanup?
+  domEl.addEventListener(eventName, handlerFn);
 }
 
 function text(idx: number, value?: string) {
@@ -48,8 +58,8 @@ function text(idx: number, value?: string) {
 
 function checkAndUpdateBinding(bindings: any[], bindIdx: number, newValue: any): boolean {
   if (bindIdx > bindings.length) {
-   bindings[bindIdx] = newValue;
-   return true;
+    bindings[bindIdx] = newValue;
+    return true;
   } else {
     const oldValue = bindings[bindIdx];
     if (oldValue !== newValue) {
@@ -89,21 +99,21 @@ const enum RenderFlags {
 function render(host, tpl, ctx?) {
   const hostVNode = parentVNode = createVNode(null!, host);
   tpl(RenderFlags.Create | RenderFlags.Update, ctx);
-  return function(ctx) {
+  return function (ctx) {
     parentVNode = hostVNode;
     tpl(RenderFlags.Update, ctx);
   }
 }
 
 
-function app(cm: boolean, ctx) {
-  if (cm) {
+function app(rf: RenderFlags, ctx) {
+  if (rf & RenderFlags.Create) {
     elementStart(0, 'div', ['id', 'test']);
-      text(1, `Hello, ${ctx.name}`);
-      element(2, 'span');
+    text(1, `Hello, ${ctx.name}`);
+    element(2, 'span');
     elementEnd(0);
   }
-  if (!cm) {
+  if (rf & RenderFlags.Update) {
     elementProperty(0, 0, 'id', 'new_id');
     textUpdate(1, 0, `Hello, ${ctx.name}`);
   }
