@@ -117,4 +117,33 @@ describe('integration', () => {
 
   });
 
+  describe('containers', () => {
+
+    it('should include result of other functions', () => {
+      function externalTpl(rf: RenderFlags, ctx: {name: string}) {
+        if (rf & RenderFlags.Create) {
+          text(0);
+        }
+        if (rf & RenderFlags.Update) {
+          textUpdate(0, 0, `Hello, ${ctx.name}!`);
+        }
+      }
+
+      const refreshFn = render(hostDiv, (rf: RenderFlags, ctx: {name: string}) => {
+        if (rf & RenderFlags.Create) {
+          include(0);
+        }
+        if (rf & RenderFlags.Update) {
+          includeTpl(0, externalTpl, {name: `New ${ctx.name}`});
+        }
+      }, {name: 'World'});
+
+      expect(hostDiv.innerHTML).toBe('Hello, New World!<!--include 0-->');
+
+      refreshFn({name: 'Context'});
+      expect(hostDiv.innerHTML).toBe('Hello, New Context!<!--include 0-->');
+    });
+
+  });
+
 });
