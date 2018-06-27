@@ -119,29 +119,73 @@ describe('integration', () => {
 
   describe('containers', () => {
 
-    it('should include result of other functions', () => {
-      function externalTpl(rf: RenderFlags, ctx: {name: string}) {
-        if (rf & RenderFlags.Create) {
-          text(0);
-        }
-        if (rf & RenderFlags.Update) {
-          textUpdate(0, 0, `Hello, ${ctx.name}!`);
-        }
-      }
+    // TODO(tests to write):
+    // - something after the container (so we can check that the state is properly restored)
+    // - for / while etc.
+    // - switch
+    // - inserting / deleting views in the "middle" of a container
+    // - sibiling / nested containers
 
-      const refreshFn = render(hostDiv, (rf: RenderFlags, ctx: {name: string}) => {
-        if (rf & RenderFlags.Create) {
-          include(0);
-        }
-        if (rf & RenderFlags.Update) {
-          includeTpl(0, externalTpl, {name: `New ${ctx.name}`});
-        }
-      }, {name: 'World'});
+    describe('function calls', () => {
 
-      expect(hostDiv.innerHTML).toBe('Hello, New World!<!--include 0-->');
+      it('should include result of other functions', () => {
+        function externalTpl(rf: RenderFlags, ctx: { name: string }) {
+          if (rf & RenderFlags.Create) {
+            text(0);
+          }
+          if (rf & RenderFlags.Update) {
+            textUpdate(0, 0, `Hello, ${ctx.name}!`);
+          }
+        }
 
-      refreshFn({name: 'Context'});
-      expect(hostDiv.innerHTML).toBe('Hello, New Context!<!--include 0-->');
+        const refreshFn = render(hostDiv, (rf: RenderFlags, ctx: { name: string }) => {
+          if (rf & RenderFlags.Create) {
+            include(0);
+          }
+          if (rf & RenderFlags.Update) {
+            includeTpl(0, externalTpl, {name: `New ${ctx.name}`});
+          }
+        }, {name: 'World'});
+
+        expect(hostDiv.innerHTML).toBe('Hello, New World!<!--include 0-->');
+
+        refreshFn({name: 'Context'});
+        expect(hostDiv.innerHTML).toBe('Hello, New Context!<!--include 0-->');
+      });
+
+    });
+
+    describe('conditionals', () => {
+
+      it('should support if', () => {
+        const refreshFn = render(hostDiv, (rf: RenderFlags, show: boolean) => {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            if (show) {
+              // THINK(pk): this assumes that a given container _always_ have the same content...
+              // PERF(pk): what is the cost of re-defining functions like this?
+              view(0, 0, function f(rf: RenderFlags) {
+                if (rf & RenderFlags.Create) {
+                  text(0, 'Shown conditionally');
+                }
+              });
+            }
+            containerRefreshEnd(0);
+          }
+        }, false);
+
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
+
+        refreshFn(true);
+        expect(hostDiv.innerHTML).toBe('Shown conditionally<!--container 0-->');
+
+        refreshFn(false);
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
+      });
+
     });
 
   });
