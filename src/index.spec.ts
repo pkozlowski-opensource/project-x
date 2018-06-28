@@ -186,6 +186,36 @@ describe('integration', () => {
         expect(hostDiv.innerHTML).toBe('<!--container 0-->');
       });
 
+      it('should support refreshing conditionally inserted views', () => {
+
+        const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            if (true) {
+              // THINK(pk): this assumes that a given container _always_ have the same content...
+              // PERF(pk): what is the cost of re-defining functions like this?
+              view(0, 0, function f(rf: RenderFlags) {
+                if (rf & RenderFlags.Create) {
+                  text(0);
+                }
+                if (rf & RenderFlags.Update) {
+                  textUpdate(0, 0, `Hello, ${name}!`)
+                }
+              });
+            }
+            containerRefreshEnd(0);
+          }
+        }, 'World');
+
+        expect(hostDiv.innerHTML).toBe('Hello, World!<!--container 0-->');
+
+        refreshFn('New World');
+        expect(hostDiv.innerHTML).toBe('Hello, New World!<!--container 0-->');
+      });
+
     });
 
   });

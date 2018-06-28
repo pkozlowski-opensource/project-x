@@ -134,10 +134,7 @@ function includeTpl(containerIdx: number, tplFn, ctx) {
     containerVNode.parent.native.insertBefore(docFragment, containerVNode.native);
 
   } else {
-    const viewVNode = containerVNode.children[0];
-    parentVNode = viewVNode;
-    nodes = viewVNode.children;
-    tplFn(RenderFlags.Update, ctx);
+    refreshView(containerVNode.children[0], tplFn, ctx);
   }
 
   // TODO(pk): restore state of nodes
@@ -160,10 +157,9 @@ function containerRefreshEnd(containerIdx: number) {
   const containerVNode = nodes[containerIdx];
   const views = containerVNode.children;
 
-  const viewIdx = findViewIndex(containerVNode.children, nextViewIdx);
-  const remainingViewsCount = views.length - viewIdx;
+  const remainingViewsCount = views.length - nextViewIdx;
   if (remainingViewsCount) {
-    const removedViews = views.splice(viewIdx, remainingViewsCount);
+    const removedViews = views.splice(nextViewIdx, remainingViewsCount);
     for (let removedView of removedViews) {
       // for each remove DOM (optionally find a parent)
       removeViewFromDOM(removedView);
@@ -172,32 +168,35 @@ function containerRefreshEnd(containerIdx: number) {
 }
 
 // TODO(pk): introduce start idx
-function findView(views: VNode[], idx: number): VNode|undefined {
-  for (let view of views) {
-    if (view.idx === idx) {
-      return view;
+function findView(views: VNode[], startIdx: number, viewIdx: number): VNode|undefined {
+  for (let i = startIdx; i < views.length; i++) {
+    if (views[i].idx === viewIdx) {
+      return views[i];
     }
   }
 }
 
-function findViewIndex(views: VNode[], idx: number): number|undefined {
-  let foundIdx = 0;
-  for (let view of views) {
-    if (view.idx === idx) {
-      return foundIdx;
-    }
-    foundIdx++;
-  }
+function refreshView(viewVNode: VNode, viewFn, ctx?) {
+  // set global state
+  parentVNode = viewVNode;
+  nodes = viewVNode.children;
+
+  // execute template function
+  viewFn(RenderFlags.Update, ctx);
+
+  // TODO(pk): restore global state
 }
 
-function view(containerIdx: number, viewIdx, viewFn, ctx?) {
+function view(containerIdx: number, viewId, viewFn, ctx?) {
   const containerVNode = nodes[containerIdx];
   const views = containerVNode.children;
 
-  const view = findView(views, viewIdx);
+  const viewVNode = findView(views, nextViewIdx, viewId);
 
-  if (view) {
-    // TODO(pk): update
+  if (viewVNode) {
+
+    refreshView(viewVNode, viewFn, ctx);
+
   } else {
     // create
     const docFragment = document.createDocumentFragment();
@@ -211,6 +210,8 @@ function view(containerIdx: number, viewIdx, viewFn, ctx?) {
     // TODO(pk): I can't assume that parent of a container is an element - it could be another view
     containerVNode.parent.native.insertBefore(docFragment, containerVNode.native);
   }
+
+  nextViewIdx++;
 }
 
 const enum RenderFlags {
