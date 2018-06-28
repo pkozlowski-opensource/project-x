@@ -12,7 +12,7 @@ let parentVNode: VNode;
 let nodes: VNode[] = null!;
 let nextViewIdx = 0;
 
-function createVNode(idx: number, parent: VNode, native) {
+function createVNode(idx: number, parent: VNode, native): VNode {
   return {
     idx: idx,
     parent: parent,
@@ -107,30 +107,26 @@ function elementAttribute(vNodeIdx: number, bindIdx: number, attrName: string, n
   }
 }
 
-function includeTpl(containerIdx: number, tplFn, ctx) {
+function include(containerIdx: number, tplFn, ctx?) {
   const containerVNode = nodes[containerIdx];
 
   if (checkAndUpdateBinding(containerVNode.bindings, 0, tplFn)) {
-    // remove
+    const views = containerVNode.children;
+    const existingViewVNode = views[0];
 
+    // remove if already exists
+    if (existingViewVNode) {
+      views.splice(0, 1);
+      removeViewFromDOM(existingViewVNode);
+    }
     // re-create (unless it is null)
-    const docFragment = document.createDocumentFragment();
-    parentVNode = createVNode(0, containerVNode, docFragment);
-    containerVNode.children.push(parentVNode);
-    nodes = parentVNode.children;
-    tplFn(RenderFlags.Create | RenderFlags.Update, ctx);
-
-    // attatch freshly created DOM nodes to the DOM tree
-    // TODO(pk): check if nested DOM nodes are inserted as well
-    // TODO(pk): I can't assume that parent of a container is an element - it could be another view
-    containerVNode.parent.native.insertBefore(docFragment, containerVNode.native);
+    if (tplFn) {
+      createAndRefreshView(containerVNode, tplFn, ctx);
+    }
 
   } else {
-    refreshView(containerVNode.children[0], tplFn, ctx);
+    refreshView(containerVNode, containerVNode.children[0], tplFn, ctx);
   }
-
-  // TODO(pk): restore state of nodes
-  parentVNode = containerVNode;
 }
 
 function containerRefreshStart(containerIdx: number) {
@@ -167,7 +163,7 @@ function findView(views: VNode[], startIdx: number, viewIdx: number): VNode|unde
   }
 }
 
-function refreshView(viewVNode: VNode, viewFn, ctx?) {
+function refreshView(containerVNode: VNode, viewVNode: VNode, viewFn, ctx?) {
   // set global state
   parentVNode = viewVNode;
   nodes = viewVNode.children;
@@ -175,31 +171,34 @@ function refreshView(viewVNode: VNode, viewFn, ctx?) {
   // execute template function
   viewFn(RenderFlags.Update, ctx);
 
-  // TODO(pk): restore global state
+  parentVNode = containerVNode.parent;
+  nodes = parentVNode.children;
+}
+
+function createAndRefreshView(containerVNode: VNode, viewFn, ctx?) {
+  const docFragment = document.createDocumentFragment();
+  parentVNode = createVNode(0, containerVNode, docFragment);
+  containerVNode.children.push(parentVNode);
+  nodes = parentVNode.children;
+  viewFn(RenderFlags.Create | RenderFlags.Update, ctx);
+
+  // attatch freshly created DOM nodes to the DOM tree
+  // TODO(pk): check if nested DOM nodes are inserted as well
+  // TODO(pk): I can't assume that parent of a container is an element - it could be another view
+  containerVNode.parent.native.insertBefore(docFragment, containerVNode.native);
+
+  parentVNode = containerVNode.parent;
+  nodes = parentVNode.children;
 }
 
 function view(containerIdx: number, viewId, viewFn, ctx?) {
   const containerVNode = nodes[containerIdx];
-  const views = containerVNode.children;
+  const existingVNode = findView(containerVNode.children, nextViewIdx, viewId);
 
-  const viewVNode = findView(views, nextViewIdx, viewId);
-
-  if (viewVNode) {
-
-    refreshView(viewVNode, viewFn, ctx);
-
+  if (existingVNode) {
+    refreshView(containerVNode, existingVNode, viewFn, ctx);
   } else {
-    // create
-    const docFragment = document.createDocumentFragment();
-    parentVNode = createVNode(0, containerVNode, docFragment);
-    containerVNode.children.push(parentVNode);
-    nodes = parentVNode.children;
-    viewFn(RenderFlags.Create | RenderFlags.Update, ctx);
-
-    // attatch freshly created DOM nodes to the DOM tree
-    // TODO(pk): check if nested DOM nodes are inserted as well
-    // TODO(pk): I can't assume that parent of a container is an element - it could be another view
-    containerVNode.parent.native.insertBefore(docFragment, containerVNode.native);
+    createAndRefreshView(containerVNode, viewFn, ctx);
   }
 
   nextViewIdx++;
@@ -214,14 +213,15 @@ function render(host, tpl, ctx?) {
   const hostVNode = createVNode(0, null!, host);
   parentVNode = hostVNode;
   nodes = hostVNode.children;
+  nextViewIdx = 0;
   tpl(RenderFlags.Create | RenderFlags.Update, ctx);
   return function (ctx) {
     parentVNode = hostVNode;
     nodes = parentVNode.children;
+    nextViewIdx = 0;
     tpl(RenderFlags.Update, ctx);
   }
 }
-
 
 function app(rf: RenderFlags, ctx) {
   if (rf & RenderFlags.Create) {
