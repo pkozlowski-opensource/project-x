@@ -356,4 +356,86 @@ describe('integration', () => {
 
   });
 
+  describe('components', () => {
+
+    it('should support components', () => {
+
+      class TestComponent {
+        /**
+         * Hello, Component!
+         */
+        render(rf: RenderFlags, ctx: TestComponent) {
+          if (rf & RenderFlags.Create) {
+              text(0, 'Hello, Component!');
+          }
+        }
+      }
+
+      /**
+       * <TestComponent></TestComponent>
+       * <hr>
+       * <TestComponent></TestComponent>
+       */
+      const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
+        if (rf & RenderFlags.Create) {
+
+          // TODO(pk): element creation could be probably in-lined into component() instruction
+          element(0, 'test-component');
+          component(0, TestComponent);
+          element(1, 'hr');
+          element(2, 'test-component');
+          component(2, TestComponent);
+        }
+        if (rf & RenderFlags.Update) {
+          componentRefresh(0, 0);
+          componentRefresh(2, 0);
+        }
+      });
+
+      expect(hostDiv.innerHTML).toBe('<test-component>Hello, Component!</test-component><hr><test-component>Hello, Component!</test-component>');
+    });
+
+    it('should support components with inputs', () => {
+      const ctx = {name: 'World'};
+
+      class TestComponent {
+        name = 'Anonymous';
+        /**
+         * Hello, {{name}}!
+         */
+        render(rf: RenderFlags, ctx: TestComponent) {
+          if (rf & RenderFlags.Create) {
+            text(0);
+          }
+          if (rf & RenderFlags.Update) {
+            textContent(0, 0, `Hello, ${ctx.name}!`)
+          }
+        }
+      }
+
+      /**
+       * <TestComponent [name]="name"></TestComponent>
+       */
+      const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
+        if (rf & RenderFlags.Create) {
+          // TODO(pk): element creation could be probably in-lined into component() instruction
+          element(0, 'test-component');
+          component(0, TestComponent);
+        }
+        if (rf & RenderFlags.Update) {
+          const componentInstance = load<TestComponent>(0, 0);
+          input(0, 1, ctx.name) && (componentInstance.name = ctx.name);
+          componentRefresh(0, 0);
+        }
+      }, ctx);
+
+      expect(hostDiv.innerHTML).toBe('<test-component>Hello, World!</test-component>');
+
+      ctx.name = 'New World';
+      refreshFn(ctx);
+      expect(hostDiv.innerHTML).toBe('<test-component>Hello, New World!</test-component>');
+    });
+
+  });
+
 });

@@ -3,14 +3,13 @@ interface VNode {
   parent: VNode;
   children: VNode[];
   native: any; // TODO(pk): type it properly
-  bindings: any[] // TODO(pk): storing bindings separatelly for each and every individual node might not be super-performant :-)
+  data: any[] // TODO(pk): storing bindings separatelly for each and every individual node might not be super-performant :-)
 }
 
-// INSANITY WARNING: global variables => think of passing context around
-// those fields here are part of the view-specific context
-let parentVNode: VNode;
-let nodes: VNode[] = null!;
-let nextViewIdx = 0;
+const enum RenderFlags {
+  Create = 0b01,
+  Update = 0b10
+}
 
 function createVNode(idx: number, parent: VNode, native): VNode {
   return {
@@ -18,9 +17,15 @@ function createVNode(idx: number, parent: VNode, native): VNode {
     parent: parent,
     children: [], // TODO(pk): lazy-init children array => or better yet, have the exact number of children handy :-)
     native: native,
-    bindings: []  // TODO(pk): lazy-init bindings array => or better yet, have the exact number of bindings handy :-)
+    data: []  // TODO(pk): lazy-init data array => or better yet, have the exact number of bindings handy :-)
   };
 }
+
+// INSANITY WARNING: global variables => think of passing context around
+// those fields here are part of the view-specific context
+let parentVNode: VNode;
+let nodes: VNode[] = null!;
+let nextViewIdx = 0;
 
 function elementStart(idx: number, tagName: string, attrs?: string[] | null) {
   const domEl = document.createElement(tagName);
@@ -88,21 +93,21 @@ function checkAndUpdateBinding(bindings: any[], bindIdx: number, newValue: any):
 
 function textContent(vNodeIdx: number, bindIdx: number, newValue: string) {
   const vNode = nodes[vNodeIdx];
-  if (checkAndUpdateBinding(vNode.bindings, bindIdx, newValue)) {
+  if (checkAndUpdateBinding(vNode.data, bindIdx, newValue)) {
     vNode.native.textContent = newValue;
   }
 }
 
 function elementProperty(vNodeIdx: number, bindIdx: number, propName: string, newValue: any) {
   const vNode = nodes[vNodeIdx];
-  if (checkAndUpdateBinding(vNode.bindings, bindIdx, newValue)) {
+  if (checkAndUpdateBinding(vNode.data, bindIdx, newValue)) {
     vNode.native[propName] = newValue;
   }
 }
 
 function elementAttribute(vNodeIdx: number, bindIdx: number, attrName: string, newValue: string) {
   const vNode = nodes[vNodeIdx];
-  if (checkAndUpdateBinding(vNode.bindings, bindIdx, newValue)) {
+  if (checkAndUpdateBinding(vNode.data, bindIdx, newValue)) {
     vNode.native.setAttribute(attrName, newValue);
   }
 }
@@ -110,7 +115,7 @@ function elementAttribute(vNodeIdx: number, bindIdx: number, attrName: string, n
 function include(containerIdx: number, tplFn, ctx?) {
   const containerVNode = nodes[containerIdx];
 
-  if (checkAndUpdateBinding(containerVNode.bindings, 0, tplFn)) {
+  if (checkAndUpdateBinding(containerVNode.data, 0, tplFn)) {
     const views = containerVNode.children;
     const existingViewVNode = views[0];
 
@@ -179,6 +184,7 @@ function createAndRefreshView(containerVNode: VNode, viewFn, ctx?) {
   const docFragment = document.createDocumentFragment();
   parentVNode = createVNode(0, containerVNode, docFragment);
   containerVNode.children.push(parentVNode);
+
   nodes = parentVNode.children;
   viewFn(RenderFlags.Create | RenderFlags.Update, ctx);
 
@@ -204,9 +210,42 @@ function view(containerIdx: number, viewId, viewFn, ctx?) {
   nextViewIdx++;
 }
 
-const enum RenderFlags {
-  Create = 0b01,
-  Update = 0b10
+function executeTplWithHost(hostVNode: VNode, tplFn, rf: RenderFlags, ctx?, self = null) {
+  const oldParent = parentVNode;
+
+  parentVNode = hostVNode;
+  nodes = parentVNode.children;
+
+  // TODO(pk): unecessery object creation (array)
+  tplFn.apply(self, [rf, ctx]);
+
+  parentVNode = oldParent;
+  nodes = parentVNode.children;
+}
+
+function component(idx: number, constructorFn) {
+  const hostElVNode = nodes[idx];
+  const cmptInstance = new constructorFn();
+  hostElVNode.data.push(cmptInstance);
+
+  executeTplWithHost(hostElVNode, cmptInstance.render, RenderFlags.Create, cmptInstance, cmptInstance)
+}
+
+function componentRefresh(hostElIdx: number, componentInstanceIdx: number) {
+  const hostElVNode = nodes[hostElIdx];
+  const cmptInstance = hostElVNode.data[componentInstanceIdx];
+
+  executeTplWithHost(hostElVNode, cmptInstance.render, RenderFlags.Update, cmptInstance, cmptInstance)
+}
+
+function load<T>(nodeIdx: number, dataIdx: number): T {
+  const vNode = nodes[nodeIdx];
+  return vNode.data[dataIdx] as T;
+}
+
+function input(hostElIdx: number, bindIdx: number, newValue: any): boolean {
+  const vNode = nodes[hostElIdx];
+  return checkAndUpdateBinding(vNode.data, bindIdx, newValue);
 }
 
 function render(host, tpl, ctx?) {
