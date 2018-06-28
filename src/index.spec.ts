@@ -36,7 +36,7 @@ describe('integration', () => {
           text(0);
         }
         if (rf & RenderFlags.Update) {
-          textUpdate(0, 0, `Hello, ${ctx}`);
+          textContent(0, 0, `Hello, ${ctx}`);
         }
       }, 'World');
 
@@ -101,7 +101,7 @@ describe('integration', () => {
           text(2);
         }
         if (rf & RenderFlags.Update) {
-          textUpdate(2, 0, `Counter: ${ctx.counter}`);
+          textContent(2, 0, `Counter: ${ctx.counter}`);
         }
       }
 
@@ -134,23 +134,23 @@ describe('integration', () => {
             text(0);
           }
           if (rf & RenderFlags.Update) {
-            textUpdate(0, 0, `Hello, ${ctx.name}!`);
+            textContent(0, 0, `Hello, ${ctx.name}!`);
           }
         }
 
         const refreshFn = render(hostDiv, (rf: RenderFlags, ctx: { name: string }) => {
           if (rf & RenderFlags.Create) {
-            include(0);
+            container(0);
           }
           if (rf & RenderFlags.Update) {
             includeTpl(0, externalTpl, {name: `New ${ctx.name}`});
           }
         }, {name: 'World'});
 
-        expect(hostDiv.innerHTML).toBe('Hello, New World!<!--include 0-->');
+        expect(hostDiv.innerHTML).toBe('Hello, New World!<!--container 0-->');
 
         refreshFn({name: 'Context'});
-        expect(hostDiv.innerHTML).toBe('Hello, New Context!<!--include 0-->');
+        expect(hostDiv.innerHTML).toBe('Hello, New Context!<!--container 0-->');
       });
 
     });
@@ -202,7 +202,7 @@ describe('integration', () => {
                   text(0);
                 }
                 if (rf & RenderFlags.Update) {
-                  textUpdate(0, 0, `Hello, ${name}!`)
+                  textContent(0, 0, `Hello, ${name}!`)
                 }
               });
             }

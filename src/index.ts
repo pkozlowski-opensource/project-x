@@ -47,14 +47,6 @@ function element(idx: number, tagName: string, attrs?: string[] | null) {
   elementEnd(idx);
 }
 
-function include(idx: number) {
-  const domEl = document.createComment(`include ${idx}`);
-  const vNode = nodes[idx] = createVNode(idx, parentVNode, domEl);
-  parentVNode.children.push(vNode);
-  parentVNode.native.appendChild(domEl);
-}
-
-// TODO(pk): code duplication with include(...)
 function container(idx: number) {
   const domEl = document.createComment(`container ${idx}`);
   const vNode = nodes[idx] = createVNode(idx, parentVNode, domEl);
@@ -94,7 +86,7 @@ function checkAndUpdateBinding(bindings: any[], bindIdx: number, newValue: any):
   return false;
 }
 
-function textUpdate(vNodeIdx: number, bindIdx: number, newValue: string) {
+function textContent(vNodeIdx: number, bindIdx: number, newValue: string) {
   const vNode = nodes[vNodeIdx];
   if (checkAndUpdateBinding(vNode.bindings, bindIdx, newValue)) {
     vNode.native.textContent = newValue;
@@ -167,7 +159,6 @@ function containerRefreshEnd(containerIdx: number) {
   }
 }
 
-// TODO(pk): introduce start idx
 function findView(views: VNode[], startIdx: number, viewIdx: number): VNode|undefined {
   for (let i = startIdx; i < views.length; i++) {
     if (views[i].idx === viewIdx) {
@@ -241,6 +232,6 @@ function app(rf: RenderFlags, ctx) {
   }
   if (rf & RenderFlags.Update) {
     elementProperty(0, 0, 'id', 'new_id');
-    textUpdate(1, 0, `Hello, ${ctx.name}`);
+    textContent(1, 0, `Hello, ${ctx.name}`);
   }
 }

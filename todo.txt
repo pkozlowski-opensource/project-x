@@ -1,5 +1,4 @@
 - think of the syntax implications for the code I've got so far (prop vs. attr, one-time vs. binding vs. interpolation etc.)
 - extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation
-- containers and groups
 - content projection
 - event handlers with event access
