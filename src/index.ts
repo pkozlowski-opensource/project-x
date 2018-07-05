@@ -53,7 +53,6 @@ let nextViewIdx = 0;
 let currentView: ViewData;
 
 // ========= dom.ts
-
 function setAttributes(domEl, attrs?: string[] | null) {
   if (attrs) {
     for (let i = 0; i < attrs.length; i += 2) {
@@ -61,7 +60,6 @@ function setAttributes(domEl, attrs?: string[] | null) {
     }
   }
 }
-
 // =========
 
 function elementStart(idx: number, tagName: string, attrs?: string[] | null) {
@@ -124,9 +122,9 @@ function checkAndUpdateBinding(bindings: any[], bindIdx: number, newValue: any):
   return false;
 }
 
-function textContent(vNodeIdx: number, bindIdx: number, newValue: string) {
+function textContent(vNodeIdx: number, newValue: string) {
   const vNode = currentView.nodes[vNodeIdx];
-  if (checkAndUpdateBinding(vNode.data, bindIdx, newValue)) {
+  if (checkAndUpdateBinding(vNode.data, 0, newValue)) {
     vNode.native.textContent = newValue;
   }
 }
@@ -400,6 +398,6 @@ function app(rf: RenderFlags, ctx) {
   }
   if (rf & RenderFlags.Update) {
     elementProperty(0, 0, 'id', 'new_id');
-    textContent(1, 0, `Hello, ${ctx.name}`);
+    textContent(1, `Hello, ${ctx.name}`);
   }
 }

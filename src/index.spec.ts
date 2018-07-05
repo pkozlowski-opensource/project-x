@@ -40,7 +40,7 @@ describe('integration', () => {
           text(0);
         }
         if (rf & RenderFlags.Update) {
-          textContent(0, 0, name);
+          textContent(0, name);
         }
       }
 
@@ -66,7 +66,7 @@ describe('integration', () => {
           text(0);
         }
         if (rf & RenderFlags.Update) {
-          textContent(0, 0, `Hello, ${ctx}`);
+          textContent(0, `Hello, ${ctx}`);
         }
       }, 'World');
 
@@ -152,7 +152,7 @@ describe('integration', () => {
           text(2);
         }
         if (rf & RenderFlags.Update) {
-          textContent(2, 0, `Counter: ${ctx.counter}`);
+          textContent(2, `Counter: ${ctx.counter}`);
         }
       }
 
@@ -185,7 +185,7 @@ describe('integration', () => {
             text(0);
           }
           if (rf & RenderFlags.Update) {
-            textContent(0, 0, `Hello, ${ctx.name}!`);
+            textContent(0, `Hello, ${ctx.name}!`);
           }
         }
 
@@ -210,7 +210,7 @@ describe('integration', () => {
             text(0);
           }
           if (rf & RenderFlags.Update) {
-            textContent(0, 0, `Hello, ${ctx.name}!`);
+            textContent(0, `Hello, ${ctx.name}!`);
           }
         }
 
@@ -310,7 +310,6 @@ describe('integration', () => {
 
               view(0, 0, function f(rf: RenderFlags) {
                 if (rf & RenderFlags.Create) {
-                  console.log('showing');
                   text(0, 'shown');
                 }
               });
@@ -318,7 +317,6 @@ describe('integration', () => {
 
               view(0, 1, function f(rf: RenderFlags) {
                 if (rf & RenderFlags.Create) {
-                  console.log('hiding');
                   text(0, 'hidden');
                 }
               });
@@ -352,7 +350,7 @@ describe('integration', () => {
                   text(0);
                 }
                 if (rf & RenderFlags.Update) {
-                  textContent(0, 0, `Hello, ${name}!`)
+                  textContent(0, `Hello, ${name}!`)
                 }
               });
             }
@@ -394,8 +392,8 @@ describe('integration', () => {
                   text(3, '-');
                 }
                 if (rf & RenderFlags.Update) {
-                  textContent(0, 0, `${i}`);
-                  textContent(2, 0, items[i]);
+                  textContent(0, `${i}`);
+                  textContent(2, items[i]);
                 }
               });
             }
@@ -433,7 +431,7 @@ describe('integration', () => {
                   text(1, '-');
                 }
                 if (rf & RenderFlags.Update) {
-                  textContent(0, 0, item);
+                  textContent(0, item);
                 }
               });
             }
@@ -504,7 +502,7 @@ describe('integration', () => {
             text(0);
           }
           if (rf & RenderFlags.Update) {
-            textContent(0, 0, `Hello, ${ctx.name}!`)
+            textContent(0, `Hello, ${ctx.name}!`)
           }
         }
       }
@@ -562,7 +560,7 @@ describe('integration', () => {
           componentEnd(0);
         }
         if (rf & RenderFlags.Update) {
-          textContent(1, 0, name);
+          textContent(1, name);
           componentRefresh(0, 0);
         }
       }, 'World');
