@@ -532,21 +532,21 @@ describe('integration', () => {
       expect(hostDiv.innerHTML).toBe('<test-component>Hello, New World!</test-component>');
     });
 
-    it('should support components with content', () => {
+    it('should support default slot', () => {
       class TestComponent {
         /**
-         * Hello, <ng-content></ng-content>!
+         * Hello, <x-slot></x-slot>!
          */
         render(rf: RenderFlags, ctx: TestComponent, $contentGroup: VNode) {
           if (rf & RenderFlags.Create) {
             text(0, 'Hello, ');
             elementStart(1, 'span');
-              content(2);
+              slot(2);
             elementEnd(1);
             text(3, '!');
           }
           if (rf & RenderFlags.Update) {
-            contentRefresh(2, $contentGroup);
+            slotRefresh(2, $contentGroup);
           }
         }
       }
@@ -569,9 +569,66 @@ describe('integration', () => {
 
       expect(hostDiv.innerHTML).toBe('<test-component>Hello, <span>World<!--content 2--></span>!</test-component>');
 
-      refreshFn('New World')
+      refreshFn('New World');
       expect(hostDiv.innerHTML).toBe('<test-component>Hello, <span>New World<!--content 2--></span>!</test-component>');
     });
+
+    it('should support named slots', () => {
+      class Card {
+        /**
+         * <h1>
+         *   <x-slot name="header"></x-slot>
+         * </h1>
+         * <div>
+         *   <x-slot name="content"></x-slot>
+         * </div>
+         */
+        render(rf: RenderFlags, ctx: Card, $contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            elementStart(0, 'h1');
+              slot(1);
+            elementEnd(0);
+            elementStart(2, 'div');
+              slot(3);
+            elementEnd(2);
+          }
+          if (rf & RenderFlags.Update) {
+            slotRefresh(1, $contentGroup, 'header');
+            slotRefresh(3, $contentGroup, 'content');
+          }
+        }
+      }
+
+      /**
+       * <Card>
+       *   <:header>Title</:header>
+       *   <:content>Title</:content>
+       * </Card>
+       */
+      const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
+        if (rf & RenderFlags.Create) {
+          componentStart(0, 'card', Card);
+            slotableStart(1, 'header');
+              text(2, 'Title');
+            slotableEnd(1);
+            slotableStart(3, 'content');
+              text(4, 'Content');
+            slotableEnd(3);
+          componentEnd(0);
+        }
+        if (rf & RenderFlags.Update) {
+          componentRefresh(0, 0);
+        }
+      });
+
+      expect(hostDiv.innerHTML).toBe('<card><h1>Title<!--content 1--></h1><div>Content<!--content 3--></div></card>');
+    });
+
+    // TODO(pk): mix of named and default slots
+    // TODO(pk): multiple slots with the same name
+    // TODO(pk): conditional slotables
+    // TODO(pk): conditional slots
+    // TODO(pk): re-projection
 
   });
 

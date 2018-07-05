@@ -312,18 +312,51 @@ function input(hostElIdx: number, bindIdx: number, newValue: any): boolean {
   return checkAndUpdateBinding(vNode.data, bindIdx, newValue);
 }
 
-function content(idx: number) {
+function slotableStart(idx: number, name: string) {
+  // TODO(pk): not true for conditionals
+  const componentContent = parentVNode;
+  const docFragment = document.createDocumentFragment();
+  const groupVNode =  currentView.nodes[idx] = createVNode(currentView, componentContent, docFragment);
+  componentContent.children.push(groupVNode);
+
+  // TODO(pk): this is static data, no need to store in bindings...
+  groupVNode.data[0] = name;
+
+  parentVNode = groupVNode;
+}
+
+function slotableEnd(idx: number) {
+  const slotGroupVNode = currentView.nodes[idx];
+  parentVNode = slotGroupVNode.parent;
+}
+
+function slot(idx: number) {
   const domEl = document.createComment(`content ${idx}`);
   const vNode = currentView.nodes[idx] = createVNode(currentView, parentVNode, domEl);
   parentVNode.children.push(vNode);
   parentVNode.native.appendChild(domEl);
 }
 
-function contentRefresh(idx: number, contentGroup: VNode) {
+function slotRefresh(idx: number, contentGroup: VNode, slotName?: string) {
   const contentVNode = currentView.nodes[idx];
   // TODO(pk): we should also have equivalent of removal...
   // TODO(pk): currently can only insert into content that has a parrent node in a given template
-  contentVNode.parent.native.insertBefore(contentGroup.native, contentVNode.native);
+
+  if (slotName) {
+    // find group with a name
+    const groupChildren = contentGroup.children;
+    for (let i = 0; i < groupChildren.length; i++) {
+      const groupChild = groupChildren[i];
+      // TODO(pk): super-hacky... need to introduce node type
+      if (groupChild.data[0] === slotName) {
+        contentVNode.parent.native.insertBefore(groupChild.native, contentVNode.native);
+        // insert it
+        break;
+      }
+    }
+  } else {
+    contentVNode.parent.native.insertBefore(contentGroup.native, contentVNode.native);
+  }
 }
 
 function directive(hostIdx: number, directiveIdx: number, constructorFn) {
