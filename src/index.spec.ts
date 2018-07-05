@@ -113,7 +113,7 @@ describe('integration', () => {
       const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
         if (rf & RenderFlags.Create) {
           elementStart(0, 'div');
-            element(1, 'span');
+          element(1, 'span');
           elementEnd(0);
         }
         if (rf & RenderFlags.Update) {
@@ -171,11 +171,9 @@ describe('integration', () => {
   describe('containers', () => {
 
     // TODO(tests to write):
-    // - something after the container (so we can check that the state is properly restored)
-    // - for / while etc.
+    // - while / do while etc.
     // - switch
     // - inserting / deleting views in the "middle" of a container
-    // - sibiling / nested containers
 
     describe('function calls', () => {
 
@@ -334,6 +332,124 @@ describe('integration', () => {
         expect(hostDiv.innerHTML).toBe('hidden<!--container 0-->');
       });
 
+      it('should support nested ifs', () => {
+        const ctx = {
+          outer: false,
+          inner: false
+        };
+
+        /**
+         * % if (outer) {
+         *  outer shown
+         *  % if (inner) {
+         *    inner shown
+         *  % }
+         * % }
+         */
+        const refreshFn = render(hostDiv, (rf: RenderFlags, ctx: { outer: boolean, inner: boolean }) => {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            if (ctx.outer) {
+              view(0, 0, function f(rf: RenderFlags) {
+                if (rf & RenderFlags.Create) {
+                  text(0, 'outer shown|');
+                  container(1);
+                  text(2, '|')
+                }
+                if (rf & RenderFlags.Update) {
+                  containerRefreshStart(1);
+                  if (ctx.inner) {
+                    view(1, 0, function f(rf: RenderFlags) {
+                      if (rf & RenderFlags.Create) {
+                        text(0, 'inner shown');
+                      }
+                    });
+                  }
+                  containerRefreshEnd(1);
+                }
+              });
+            }
+            containerRefreshEnd(0);
+          }
+        }, ctx);
+
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
+
+        ctx.inner = true;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
+
+        ctx.outer = true;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe('outer shown|inner shown<!--container 1-->|<!--container 0-->');
+
+        ctx.inner = false;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe('outer shown|<!--container 1-->|<!--container 0-->');
+      });
+
+      it('should support sibling ifs', () => {
+        const ctx = {
+          first: false,
+          second: false
+        };
+
+
+        /**
+         * % if (first) {
+         *  first
+         * % }
+         * |
+         * % if (second) {
+         *  second
+         * % }
+         */
+        const refreshFn = render(hostDiv, (rf: RenderFlags, ctx: { first: boolean, second: boolean }) => {
+          if (rf & RenderFlags.Create) {
+            container(0);
+            text(1, '|');
+            container(2);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            if (ctx.first) {
+              view(0, 0, function f(rf: RenderFlags) {
+                if (rf & RenderFlags.Create) {
+                  text(0, 'first');
+                }
+              });
+            }
+            containerRefreshEnd(0);
+            containerRefreshStart(2);
+            if (ctx.second) {
+              view(2, 0, function f(rf: RenderFlags) {
+                if (rf & RenderFlags.Create) {
+                  text(0, 'second');
+                }
+              });
+            }
+            containerRefreshEnd(2);
+          }
+        }, ctx);
+
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->|<!--container 2-->');
+
+        ctx.second = true;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->|second<!--container 2-->');
+
+        ctx.first = true;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe('first<!--container 0-->|second<!--container 2-->');
+
+        ctx.second = false;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe('first<!--container 0-->|<!--container 2-->');
+      });
+
       it('should support refreshing conditionally inserted views', () => {
 
         const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
@@ -460,7 +576,7 @@ describe('integration', () => {
          */
         render(rf: RenderFlags, ctx: TestComponent) {
           if (rf & RenderFlags.Create) {
-              text(0, 'Hello, Component!');
+            text(0, 'Hello, Component!');
           }
         }
       }
@@ -494,6 +610,7 @@ describe('integration', () => {
 
       class TestComponent {
         name = 'Anonymous';
+
         /**
          * Hello, {{name}}!
          */
@@ -539,7 +656,7 @@ describe('integration', () => {
           if (rf & RenderFlags.Create) {
             text(0, 'Hello, ');
             elementStart(1, 'span');
-              slot(2);
+            slot(2);
             elementEnd(1);
             text(3, '!');
           }
@@ -556,7 +673,7 @@ describe('integration', () => {
         if (rf & RenderFlags.Create) {
           // TODO(pk): element creation could be probably in-lined into component() instruction
           componentStart(0, 'test-component', TestComponent);
-            text(1);
+          text(1);
           componentEnd(0);
         }
         if (rf & RenderFlags.Update) {
@@ -584,10 +701,10 @@ describe('integration', () => {
         render(rf: RenderFlags, ctx: Card, $contentGroup: VNode) {
           if (rf & RenderFlags.Create) {
             elementStart(0, 'h1');
-              slot(1);
+            slot(1);
             elementEnd(0);
             elementStart(2, 'div');
-              slot(3);
+            slot(3);
             elementEnd(2);
           }
           if (rf & RenderFlags.Update) {
@@ -606,12 +723,12 @@ describe('integration', () => {
       const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
         if (rf & RenderFlags.Create) {
           componentStart(0, 'card', Card);
-            slotableStart(1, 'header');
-              text(2, 'Title');
-            slotableEnd(1);
-            slotableStart(3, 'content');
-              text(4, 'Content');
-            slotableEnd(3);
+          slotableStart(1, 'header');
+          text(2, 'Title');
+          slotableEnd(1);
+          slotableStart(3, 'content');
+          text(4, 'Content');
+          slotableEnd(3);
           componentEnd(0);
         }
         if (rf & RenderFlags.Update) {
@@ -635,7 +752,8 @@ describe('integration', () => {
     it('should support directives', () => {
 
       class IdDirective {
-        constructor(private _nativeHost) {}
+        constructor(private _nativeHost) {
+        }
 
         refresh() {
           this._nativeHost.id = "id from directive";
@@ -660,7 +778,8 @@ describe('integration', () => {
       class IdDirective {
         name: string;
 
-        constructor(private _nativeHost) {}
+        constructor(private _nativeHost) {
+        }
 
         refresh() {
           this._nativeHost.id = `id from ${this.name}`;
