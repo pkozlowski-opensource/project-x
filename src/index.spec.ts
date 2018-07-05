@@ -500,4 +500,58 @@ describe('integration', () => {
 
   });
 
+  describe('directives', () => {
+
+    it('should support directives', () => {
+
+      class IdDirective {
+        constructor(private _nativeHost) {}
+
+        refresh() {
+          this._nativeHost.id = "id from directive";
+        }
+      }
+
+      render(hostDiv, (rf: RenderFlags, ctx) => {
+        if (rf & RenderFlags.Create) {
+          element(0, 'div');
+          directive(0, 0, IdDirective)
+        }
+        if (rf & RenderFlags.Update) {
+          directiveRefresh(0, 0)
+        }
+      });
+
+      expect(hostDiv.innerHTML).toBe('<div id="id from directive"></div>');
+    });
+
+    it('should support directives with inputs', () => {
+
+      class IdDirective {
+        name: string;
+
+        constructor(private _nativeHost) {}
+
+        refresh() {
+          this._nativeHost.id = `id from ${this.name}`;
+        }
+      }
+
+      render(hostDiv, (rf: RenderFlags, name: string) => {
+        if (rf & RenderFlags.Create) {
+          element(0, 'div');
+          directive(0, 0, IdDirective)
+        }
+        if (rf & RenderFlags.Update) {
+          const directiveInstance = load<IdDirective>(0, 0);
+          input(0, 1, name) && (directiveInstance.name = name);
+          directiveRefresh(0, 0);
+        }
+      }, 'test directive');
+
+      expect(hostDiv.innerHTML).toBe('<div id="id from test directive"></div>');
+    });
+
+  });
+
 });

@@ -319,6 +319,16 @@ function contentRefresh(idx: number, contentGroup: VNode) {
   contentVNode.parent.native.insertBefore(contentGroup.native, contentVNode.native);
 }
 
+function directive(hostIdx: number, directiveIdx: number, constructorFn) {
+   const hostVNode = currentView.nodes[hostIdx];
+   hostVNode.data[directiveIdx]  = new constructorFn(hostVNode.native);
+}
+
+function directiveRefresh(hostIdx: number, directiveIdx: number) {
+  const directiveInstance = currentView.nodes[hostIdx].data[directiveIdx];
+  directiveInstance.refresh();
+}
+
 function render(nativeHost, tpl, ctx?) {
   const viewData: ViewData = {viewId: -1, nodes: []};
   const hostVNode = createVNode(viewData, null!, nativeHost);
