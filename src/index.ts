@@ -1,9 +1,31 @@
+/**
+ * Data structure that holds data associated with a view.
+ */
+interface ViewData {
+  viewId: number;
+  nodes: VNode[];
+}
+
 interface VNode {
-  idx: number;
   parent: VNode;
   children: VNode[];
   native: any; // TODO(pk): type it properly
   data: any[] // TODO(pk): storing bindings separatelly for each and every individual node might not be super-performant :-)
+
+  /**
+   * Each node is part of a group
+   */
+  view: ViewData;
+
+  /**
+   * Nodes having components sitting on top of them have a pointer to a component's view
+   */
+  componentView: VNode;
+
+  /**
+   * Grouping node for component's children
+   */
+  group: VNode;
 }
 
 const enum RenderFlags {
@@ -11,25 +33,28 @@ const enum RenderFlags {
   Update = 0b10
 }
 
-function createVNode(idx: number, parent: VNode, native): VNode {
+function createVNode(view: ViewData, parent: VNode, native): VNode {
   return {
-    idx: idx,
+    view: view,
     parent: parent,
     children: [], // TODO(pk): lazy-init children array => or better yet, have the exact number of children handy :-)
     native: native,
-    data: []  // TODO(pk): lazy-init data array => or better yet, have the exact number of bindings handy :-)
+    data: [],  // TODO(pk): lazy-init data array => or better yet, have the exact number of bindings handy :-)
+    componentView: null,
+    group: null
   };
 }
 
 // INSANITY WARNING: global variables => think of passing context around
 // those fields here are part of the view-specific context
 let parentVNode: VNode;
-let nodes: VNode[] = null!;
 let nextViewIdx = 0;
+
+let currentView: ViewData;
 
 function elementStart(idx: number, tagName: string, attrs?: string[] | null) {
   const domEl = document.createElement(tagName);
-  const vNode = nodes[idx] = createVNode(idx, parentVNode, domEl);
+  const vNode = currentView.nodes[idx] = createVNode(currentView, parentVNode, domEl);
   parentVNode.children.push(vNode);
 
   if (attrs) {
@@ -44,7 +69,7 @@ function elementStart(idx: number, tagName: string, attrs?: string[] | null) {
 
 // TODO(pk): would be possible to get rid of the idx argument here
 function elementEnd(idx: number) {
-  parentVNode = nodes[idx].parent;
+  parentVNode = currentView.nodes[idx].parent;
 }
 
 function element(idx: number, tagName: string, attrs?: string[] | null) {
@@ -54,14 +79,14 @@ function element(idx: number, tagName: string, attrs?: string[] | null) {
 
 function container(idx: number) {
   const domEl = document.createComment(`container ${idx}`);
-  const vNode = nodes[idx] = createVNode(idx, parentVNode, domEl);
+  const vNode = currentView.nodes[idx] = createVNode(currentView, parentVNode, domEl);
   parentVNode.children.push(vNode);
   parentVNode.native.appendChild(domEl);
 }
 
 function listener(elIdx: number, eventName: string, handlerFn) {
   // TODO(pk): I could avoid look-up here by storing "global" reference to a node being processed
-  const vNode = nodes[elIdx];
+  const vNode = currentView.nodes[elIdx];
   const domEl = vNode.native;
 
   // TODO(pk): do I need to cleanup?
@@ -70,7 +95,7 @@ function listener(elIdx: number, eventName: string, handlerFn) {
 
 function text(idx: number, value?: string) {
   const domEl = document.createTextNode(value != null ? value : '');
-  const vNode = nodes[idx] = createVNode(idx, parentVNode, domEl);
+  const vNode = currentView.nodes[idx] = createVNode(currentView, parentVNode, domEl);
   parentVNode.children.push(vNode);
   if (parentVNode) {
     parentVNode.native.appendChild(domEl);
@@ -92,28 +117,28 @@ function checkAndUpdateBinding(bindings: any[], bindIdx: number, newValue: any):
 }
 
 function textContent(vNodeIdx: number, bindIdx: number, newValue: string) {
-  const vNode = nodes[vNodeIdx];
+  const vNode = currentView.nodes[vNodeIdx];
   if (checkAndUpdateBinding(vNode.data, bindIdx, newValue)) {
     vNode.native.textContent = newValue;
   }
 }
 
 function elementProperty(vNodeIdx: number, bindIdx: number, propName: string, newValue: any) {
-  const vNode = nodes[vNodeIdx];
+  const vNode = currentView.nodes[vNodeIdx];
   if (checkAndUpdateBinding(vNode.data, bindIdx, newValue)) {
     vNode.native[propName] = newValue;
   }
 }
 
 function elementAttribute(vNodeIdx: number, bindIdx: number, attrName: string, newValue: string) {
-  const vNode = nodes[vNodeIdx];
+  const vNode = currentView.nodes[vNodeIdx];
   if (checkAndUpdateBinding(vNode.data, bindIdx, newValue)) {
     vNode.native.setAttribute(attrName, newValue);
   }
 }
 
 function include(containerIdx: number, tplFn, ctx?) {
-  const containerVNode = nodes[containerIdx];
+  const containerVNode = currentView.nodes[containerIdx];
 
   if (checkAndUpdateBinding(containerVNode.data, 0, tplFn)) {
     const views = containerVNode.children;
@@ -126,7 +151,7 @@ function include(containerIdx: number, tplFn, ctx?) {
     }
     // re-create (unless it is null)
     if (tplFn) {
-      createAndRefreshView(containerVNode, tplFn, ctx);
+      createAndRefreshView(containerVNode, -1, tplFn, ctx);
     }
 
   } else {
@@ -147,7 +172,7 @@ function removeViewFromDOM(view: VNode) {
 }
 
 function containerRefreshEnd(containerIdx: number) {
-  const containerVNode = nodes[containerIdx];
+  const containerVNode = currentView.nodes[containerIdx];
   const views = containerVNode.children;
 
   const remainingViewsCount = views.length - nextViewIdx;
@@ -162,30 +187,32 @@ function containerRefreshEnd(containerIdx: number) {
 
 function findView(views: VNode[], startIdx: number, viewIdx: number): VNode|undefined {
   for (let i = startIdx; i < views.length; i++) {
-    if (views[i].idx === viewIdx) {
+    if (views[i].view.viewId === viewIdx) {
       return views[i];
     }
   }
 }
 
 function refreshView(containerVNode: VNode, viewVNode: VNode, viewFn, ctx?) {
-  // set global state
-  parentVNode = viewVNode;
-  nodes = viewVNode.children;
-
   // execute template function
+  const oldView = currentView;
+
+  parentVNode = viewVNode;
+  currentView = viewVNode.view;
   viewFn(RenderFlags.Update, ctx);
 
   parentVNode = containerVNode.parent;
-  nodes = parentVNode.children;
+  currentView = oldView;
 }
 
-function createAndRefreshView(containerVNode: VNode, viewFn, ctx?) {
+function createAndRefreshView(containerVNode: VNode, viewId: number, viewFn, ctx?) {
   const docFragment = document.createDocumentFragment();
-  parentVNode = createVNode(0, containerVNode, docFragment);
+  const oldView = currentView;
+  const viewData = {viewId: viewId, nodes: []};
+  parentVNode = createVNode(viewData, containerVNode, docFragment);
   containerVNode.children.push(parentVNode);
 
-  nodes = parentVNode.children;
+  currentView = viewData;
   viewFn(RenderFlags.Create | RenderFlags.Update, ctx);
 
   // attatch freshly created DOM nodes to the DOM tree
@@ -194,71 +221,116 @@ function createAndRefreshView(containerVNode: VNode, viewFn, ctx?) {
   containerVNode.parent.native.insertBefore(docFragment, containerVNode.native);
 
   parentVNode = containerVNode.parent;
-  nodes = parentVNode.children;
+  currentView = oldView;
 }
 
-function view(containerIdx: number, viewId, viewFn, ctx?) {
-  const containerVNode = nodes[containerIdx];
+function view(containerIdx: number, viewId: number, viewFn, ctx?) {
+  const containerVNode = currentView.nodes[containerIdx];
   const existingVNode = findView(containerVNode.children, nextViewIdx, viewId);
 
   if (existingVNode) {
     refreshView(containerVNode, existingVNode, viewFn, ctx);
   } else {
-    createAndRefreshView(containerVNode, viewFn, ctx);
+    createAndRefreshView(containerVNode, viewId, viewFn, ctx);
   }
 
   nextViewIdx++;
 }
 
-function executeTplWithHost(hostVNode: VNode, tplFn, rf: RenderFlags, ctx?, self = null) {
-  const oldParent = parentVNode;
+function componentStart(idx: number, tagName: string, constructorFn, attrs?: string[] | null) {
+  const domEl = document.createElement(tagName);
+  const hostElVNode = currentView.nodes[idx] = createVNode(currentView, parentVNode, domEl);
+  parentVNode.children.push(hostElVNode);
+  hostElVNode.data[0] = new constructorFn();
 
-  parentVNode = hostVNode;
-  nodes = parentVNode.children;
+  // TODO(pk): extract to a shared utility
+  if (attrs) {
+    for (var i = 0; i < attrs.length; i += 2) {
+      domEl.setAttribute(attrs[i], attrs[i + 1]);
+    }
+  }
 
-  // TODO(pk): unecessery object creation (array)
-  tplFn.apply(self, [rf, ctx]);
+  parentVNode.native.appendChild(domEl);
+  // TODO(pk): create doc fragment for children (in reality we will have multiple doc fragments, one per name)
 
-  parentVNode = oldParent;
-  nodes = parentVNode.children;
+  const docFragment = document.createDocumentFragment();
+  const groupVNode = createVNode(currentView, hostElVNode, docFragment);
+  hostElVNode.group = groupVNode;
+
+  parentVNode = groupVNode;
 }
 
-function component(idx: number, constructorFn) {
-  const hostElVNode = nodes[idx];
-  const cmptInstance = new constructorFn();
-  hostElVNode.data.push(cmptInstance);
+function componentEnd(idx: number) {
+  const hostElVNode = currentView.nodes[idx];
+  const cmptInstance = hostElVNode.data[0];
 
-  executeTplWithHost(hostElVNode, cmptInstance.render, RenderFlags.Create, cmptInstance, cmptInstance)
+  const docFragment = document.createDocumentFragment();
+  const componentViewData = {viewId: -1, nodes: []};
+  const componentView = createVNode(componentViewData, hostElVNode, docFragment);
+  const oldView = currentView;
+
+  parentVNode = componentView;
+  currentView = componentViewData;
+
+  cmptInstance.render(RenderFlags.Create, cmptInstance);
+  hostElVNode.native.appendChild(docFragment);
+  hostElVNode.componentView = componentView;
+
+  currentView = oldView;
+  parentVNode = hostElVNode.parent;
 }
 
 function componentRefresh(hostElIdx: number, componentInstanceIdx: number) {
-  const hostElVNode = nodes[hostElIdx];
+  const hostElVNode = currentView.nodes[hostElIdx];
   const cmptInstance = hostElVNode.data[componentInstanceIdx];
+  const componentView = hostElVNode.componentView;
 
-  executeTplWithHost(hostElVNode, cmptInstance.render, RenderFlags.Update, cmptInstance, cmptInstance)
+  const oldView = currentView;
+  parentVNode = componentView;
+  currentView = componentView.view;
+
+  cmptInstance.render(RenderFlags.Update, cmptInstance, hostElVNode.group);
+
+  currentView = oldView;
+  parentVNode = hostElVNode.parent;
 }
 
 function load<T>(nodeIdx: number, dataIdx: number): T {
-  const vNode = nodes[nodeIdx];
+  const vNode = currentView.nodes[nodeIdx];
   return vNode.data[dataIdx] as T;
 }
 
 function input(hostElIdx: number, bindIdx: number, newValue: any): boolean {
-  const vNode = nodes[hostElIdx];
+  const vNode = currentView.nodes[hostElIdx];
   return checkAndUpdateBinding(vNode.data, bindIdx, newValue);
 }
 
-function render(host, tpl, ctx?) {
-  const hostVNode = createVNode(0, null!, host);
+function content(idx: number) {
+  const domEl = document.createComment(`content ${idx}`);
+  const vNode = currentView.nodes[idx] = createVNode(currentView, parentVNode, domEl);
+  parentVNode.children.push(vNode);
+  parentVNode.native.appendChild(domEl);
+}
+
+function contentRefresh(idx: number, contentGroup: VNode) {
+  const contentVNode = currentView.nodes[idx];
+  // TODO(pk): we should also have equivalent of removal...
+  // TODO(pk): currently can only insert into content that has a parrent node in a given template
+  contentVNode.parent.native.insertBefore(contentGroup.native, contentVNode.native);
+}
+
+function render(nativeHost, tpl, ctx?) {
+  const viewData: ViewData = {viewId: -1, nodes: []};
+  const hostVNode = createVNode(viewData, null!, nativeHost);
   parentVNode = hostVNode;
-  nodes = hostVNode.children;
-  nextViewIdx = 0;
+  currentView = viewData;
   tpl(RenderFlags.Create | RenderFlags.Update, ctx);
+  // TODO(pk): restore state
   return function (ctx) {
+    currentView = viewData;
     parentVNode = hostVNode;
-    nodes = parentVNode.children;
-    nextViewIdx = 0;
     tpl(RenderFlags.Update, ctx);
+    // TODO(pk): restore state
   }
 }
 

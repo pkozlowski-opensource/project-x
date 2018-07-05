@@ -78,6 +78,27 @@ describe('integration', () => {
       expect(hostDiv.innerHTML).toBe('<div aria-label="changed"></div>');
     });
 
+    it('should properly support binding on nested elements', () => {
+
+      const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
+        if (rf & RenderFlags.Create) {
+          elementStart(0, 'div');
+            element(1, 'span');
+          elementEnd(0);
+        }
+        if (rf & RenderFlags.Update) {
+          elementProperty(0, 0, 'id', ctx + '_for_div');
+          elementProperty(1, 0, 'id', ctx + '_for_span');
+        }
+      }, 'initial');
+
+      expect(hostDiv.innerHTML).toBe('<div id="initial_for_div"><span id="initial_for_span"></span></div>');
+
+      refreshFn('changed');
+      expect(hostDiv.innerHTML).toBe('<div id="changed_for_div"><span id="changed_for_span"></span></div>');
+
+    });
+
   });
 
   describe('listeners', () => {
@@ -380,11 +401,11 @@ describe('integration', () => {
         if (rf & RenderFlags.Create) {
 
           // TODO(pk): element creation could be probably in-lined into component() instruction
-          element(0, 'test-component');
-          component(0, TestComponent);
+          componentStart(0, 'test-component', TestComponent);
+          componentEnd(0);
           element(1, 'hr');
-          element(2, 'test-component');
-          component(2, TestComponent);
+          componentStart(2, 'test-component', TestComponent);
+          componentEnd(2);
         }
         if (rf & RenderFlags.Update) {
           componentRefresh(0, 0);
@@ -419,8 +440,8 @@ describe('integration', () => {
       const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
         if (rf & RenderFlags.Create) {
           // TODO(pk): element creation could be probably in-lined into component() instruction
-          element(0, 'test-component');
-          component(0, TestComponent);
+          componentStart(0, 'test-component', TestComponent);
+          componentEnd(0);
         }
         if (rf & RenderFlags.Update) {
           const componentInstance = load<TestComponent>(0, 0);
@@ -434,6 +455,47 @@ describe('integration', () => {
       ctx.name = 'New World';
       refreshFn(ctx);
       expect(hostDiv.innerHTML).toBe('<test-component>Hello, New World!</test-component>');
+    });
+
+    it('should support components with content', () => {
+      class TestComponent {
+        /**
+         * Hello, <ng-content></ng-content>!
+         */
+        render(rf: RenderFlags, ctx: TestComponent, $contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            text(0, 'Hello, ');
+            elementStart(1, 'span');
+              content(2);
+            elementEnd(1);
+            text(3, '!');
+          }
+          if (rf & RenderFlags.Update) {
+            contentRefresh(2, $contentGroup);
+          }
+        }
+      }
+
+      /**
+       * <TestComponent>{{name}}</TestComponent>
+       */
+      const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
+        if (rf & RenderFlags.Create) {
+          // TODO(pk): element creation could be probably in-lined into component() instruction
+          componentStart(0, 'test-component', TestComponent);
+            text(1);
+          componentEnd(0);
+        }
+        if (rf & RenderFlags.Update) {
+          textContent(1, 0, name);
+          componentRefresh(0, 0);
+        }
+      }, 'World');
+
+      expect(hostDiv.innerHTML).toBe('<test-component>Hello, <span>World<!--content 2--></span>!</test-component>');
+
+      refreshFn('New World')
+      expect(hostDiv.innerHTML).toBe('<test-component>Hello, <span>New World<!--content 2--></span>!</test-component>');
     });
 
   });
