@@ -1,7 +1,7 @@
 describe('integration', () => {
-  var hostDiv;
+  let hostDiv: HTMLDivElement;
   beforeEach(() => {
-    hostDiv = document.getElementById('host');
+    hostDiv = document.getElementById('host') as HTMLDivElement;
   });
 
   afterEach(() => {
@@ -10,7 +10,7 @@ describe('integration', () => {
 
   describe('static html', () => {
 
-    it('should render satic HTML', () => {
+    it('should render static HTML', () => {
       render(hostDiv, (rf: RenderFlags, ctx) => {
         if (rf & RenderFlags.Create) {
           element(0, 'div', ['id', 'test_id']);
@@ -24,6 +24,36 @@ describe('integration', () => {
         }
       });
       expect(hostDiv.innerHTML).toBe('<div id="test_id"></div>some text<span><i>double-nested</i>nested</span>');
+    });
+
+    it('should support multiple applications in parallel', () => {
+
+      const app1Host = document.createElement('div');
+      const app2Host = document.createElement('div');
+
+      hostDiv.appendChild(app1Host);
+      hostDiv.appendChild(document.createElement('hr'));
+      hostDiv.appendChild(app2Host);
+
+      function app(rf: RenderFlags, name: string) {
+        if (rf & RenderFlags.Create) {
+          text(0);
+        }
+        if (rf & RenderFlags.Update) {
+          textContent(0, 0, name);
+        }
+      }
+
+      let app1Refresh = render(app1Host, app, '1');
+      let app2Refresh = render(app2Host, app, '2');
+
+      expect(hostDiv.innerHTML).toBe('<div>1</div><hr><div>2</div>');
+
+      app1Refresh('1 updated');
+      expect(hostDiv.innerHTML).toBe('<div>1 updated</div><hr><div>2</div>');
+
+      app2Refresh('2 updated');
+      expect(hostDiv.innerHTML).toBe('<div>1 updated</div><hr><div>2 updated</div>');
     });
 
   });

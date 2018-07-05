@@ -332,15 +332,22 @@ function directiveRefresh(hostIdx: number, directiveIdx: number) {
 function render(nativeHost, tpl, ctx?) {
   const viewData: ViewData = {viewId: -1, nodes: []};
   const hostVNode = createVNode(viewData, null!, nativeHost);
+
   parentVNode = hostVNode;
   currentView = viewData;
   tpl(RenderFlags.Create | RenderFlags.Update, ctx);
-  // TODO(pk): restore state
+
+  currentView = null;
+  parentVNode = hostVNode.parent;
+
   return function (ctx) {
     currentView = viewData;
     parentVNode = hostVNode;
+
     tpl(RenderFlags.Update, ctx);
-    // TODO(pk): restore state
+
+    currentView = null;
+    parentVNode = hostVNode.parent;
   }
 }
 
