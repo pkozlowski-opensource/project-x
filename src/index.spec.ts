@@ -291,6 +291,51 @@ describe('integration', () => {
         expect(hostDiv.innerHTML).toBe('<!--container 0-->');
       });
 
+      it('should support if / else', () => {
+
+        /**
+         * % if (show) {
+         *  shown
+         * % } else {
+         *  hidden
+         * % }
+         */
+        const refreshFn = render(hostDiv, (rf: RenderFlags, show: boolean) => {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            if (show) {
+
+              view(0, 0, function f(rf: RenderFlags) {
+                if (rf & RenderFlags.Create) {
+                  console.log('showing');
+                  text(0, 'shown');
+                }
+              });
+            } else {
+
+              view(0, 1, function f(rf: RenderFlags) {
+                if (rf & RenderFlags.Create) {
+                  console.log('hiding');
+                  text(0, 'hidden');
+                }
+              });
+            }
+            containerRefreshEnd(0);
+          }
+        }, false);
+
+        expect(hostDiv.innerHTML).toBe('hidden<!--container 0-->');
+
+        refreshFn(true);
+        expect(hostDiv.innerHTML).toBe('shown<!--container 0-->');
+
+        refreshFn(false);
+        expect(hostDiv.innerHTML).toBe('hidden<!--container 0-->');
+      });
+
       it('should support refreshing conditionally inserted views', () => {
 
         const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {

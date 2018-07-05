@@ -52,18 +52,26 @@ let nextViewIdx = 0;
 
 let currentView: ViewData;
 
+// ========= dom.ts
+
+function setAttributes(domEl, attrs?: string[] | null) {
+  if (attrs) {
+    for (let i = 0; i < attrs.length; i += 2) {
+      domEl.setAttribute(attrs[i], attrs[i + 1]);
+    }
+  }
+}
+
+// =========
+
 function elementStart(idx: number, tagName: string, attrs?: string[] | null) {
   const domEl = document.createElement(tagName);
   const vNode = currentView.nodes[idx] = createVNode(currentView, parentVNode, domEl);
   parentVNode.children.push(vNode);
 
-  if (attrs) {
-    for (var i = 0; i < attrs.length; i += 2) {
-      domEl.setAttribute(attrs[i], attrs[i + 1]);
-    }
-  }
-
+  setAttributes(domEl, attrs);
   parentVNode.native.appendChild(domEl);
+
   parentVNode = vNode;
 }
 
@@ -151,7 +159,7 @@ function include(containerIdx: number, tplFn, ctx?) {
     }
     // re-create (unless it is null)
     if (tplFn) {
-      createAndRefreshView(containerVNode, -1, tplFn, ctx);
+      createAndRefreshView(containerVNode, 0, -1, tplFn, ctx);
     }
 
   } else {
@@ -185,11 +193,17 @@ function containerRefreshEnd(containerIdx: number) {
   }
 }
 
-function findView(views: VNode[], startIdx: number, viewIdx: number): VNode|undefined {
-  for (let i = startIdx; i < views.length; i++) {
-    if (views[i].view.viewId === viewIdx) {
-      return views[i];
+function findView(views: VNode[], startIdx: number, viewIdx: number): VNode | undefined {
+  let i = startIdx;
+  while (i < views.length) {
+    let viewVNode = views[i];
+    if (viewVNode.view.viewId === viewIdx) {
+      return viewVNode;
+    } else if (viewVNode.view.viewId < viewIdx) {
+      views.splice(i, 1);
+      removeViewFromDOM(viewVNode);
     }
+    i++;
   }
 }
 
@@ -205,12 +219,12 @@ function refreshView(containerVNode: VNode, viewVNode: VNode, viewFn, ctx?) {
   currentView = oldView;
 }
 
-function createAndRefreshView(containerVNode: VNode, viewId: number, viewFn, ctx?) {
+function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: number, viewFn, ctx?) {
   const docFragment = document.createDocumentFragment();
   const oldView = currentView;
   const viewData = {viewId: viewId, nodes: []};
   parentVNode = createVNode(viewData, containerVNode, docFragment);
-  containerVNode.children.push(parentVNode);
+  containerVNode.children.splice(viewIdx, 0, parentVNode);
 
   currentView = viewData;
   viewFn(RenderFlags.Create | RenderFlags.Update, ctx);
@@ -231,7 +245,7 @@ function view(containerIdx: number, viewId: number, viewFn, ctx?) {
   if (existingVNode) {
     refreshView(containerVNode, existingVNode, viewFn, ctx);
   } else {
-    createAndRefreshView(containerVNode, viewId, viewFn, ctx);
+    createAndRefreshView(containerVNode, nextViewIdx, viewId, viewFn, ctx);
   }
 
   nextViewIdx++;
@@ -243,15 +257,8 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
   parentVNode.children.push(hostElVNode);
   hostElVNode.data[0] = new constructorFn();
 
-  // TODO(pk): extract to a shared utility
-  if (attrs) {
-    for (var i = 0; i < attrs.length; i += 2) {
-      domEl.setAttribute(attrs[i], attrs[i + 1]);
-    }
-  }
-
+  setAttributes(domEl, attrs);
   parentVNode.native.appendChild(domEl);
-  // TODO(pk): create doc fragment for children (in reality we will have multiple doc fragments, one per name)
 
   const docFragment = document.createDocumentFragment();
   const groupVNode = createVNode(currentView, hostElVNode, docFragment);
