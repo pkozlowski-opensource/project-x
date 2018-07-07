@@ -1,3 +1,21 @@
 - think of the syntax implications for the code I've got so far (prop vs. attr, one-time vs. binding vs. interpolation etc.)
+- basic template syntax
+    - one-time binding
+    - 2-way data binding
+    - loops and trackBy
+    - class toggle
+    - one vs. multiple text nodes
+    - comments
+    - event handlers with event access
+- component model
+    - content projection
+        - mix of named and default slottables
+        - multiple slotables with the same name
+        - conditional slots
+        - conditional slottables
+        - containers at the root of a slot (can't immediatelly insert)
+        - reprojection
+    - host bindings
+    - listeners / outputs
+    - referencing nodes in a given view
 - extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation
-- event handlers with event access

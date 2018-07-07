@@ -44,9 +44,9 @@ function createVNode(type: VNodeType, view: ViewData, parent: VNode, native): VN
     type: type,
     view: view,
     parent: parent,
-    children: [], // TODO(pk): lazy-init children array => or better yet, have the exact number of children handy :-)
+    children: [], // PERF(pk): lazy-init children array => or better yet, have the exact number of children handy :-)
     native: native,
-    data: [], // TODO(pk): lazy-init data array => or better yet, have the exact number of bindings handy :-)
+    data: [], // PERF(pk): lazy-init data array => or better yet, have the exact number of bindings handy :-)
     componentView: null
   };
 }
@@ -81,7 +81,7 @@ function elementStart(idx: number, tagName: string, attrs?: string[] | null) {
   parentVNode = vNode;
 }
 
-// TODO(pk): would be possible to get rid of the idx argument here
+// PERF(pk): would be possible to get rid of the idx argument here
 function elementEnd(idx: number) {
   parentVNode = currentView.nodes[idx].parent;
 }
@@ -99,7 +99,7 @@ function container(idx: number) {
 }
 
 function listener(elIdx: number, eventName: string, handlerFn) {
-  // TODO(pk): I could avoid look-up here by storing "global" reference to a node being processed
+  // PERF(pk): I could avoid look-up here by storing "global" reference to a node being processed
   const vNode = currentView.nodes[elIdx];
   const domEl = vNode.native;
 
@@ -181,7 +181,7 @@ function removeViewFromDOM(view: VNode) {
         removeViewFromDOM(viewInAContainer);
       }
     }
-    // TODO(pk): do I need a parent ? Would the removal be faster with a parent?
+    // PERF(pk): do I need a parent ? Would the removal be faster with a parent?
     node.native.remove();
   }
 }
@@ -308,6 +308,11 @@ function componentEnd(idx: number) {
   parentVNode = hostElVNode.parent;
 }
 
+function component(idx: number, tagName: string, constructorFn, attrs?: string[] | null) {
+  componentStart(idx, tagName, constructorFn, attrs);
+  componentEnd(idx);
+}
+
 function componentRefresh(hostElIdx: number, componentInstanceIdx: number) {
   const hostElVNode = currentView.nodes[hostElIdx];
   const cmptInstance = hostElVNode.data[componentInstanceIdx];
@@ -345,7 +350,7 @@ function slotableStart(idx: number, name: string) {
   ));
   componentContent.children.push(groupVNode);
 
-  // TODO(pk): this is static data, no need to store in bindings...
+  // PERF(pk): this is static data, no need to store in bindings...
   groupVNode.data[0] = name;
 
   parentVNode = groupVNode;

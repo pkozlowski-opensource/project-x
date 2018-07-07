@@ -645,6 +645,58 @@ describe("integration", () => {
       );
     });
 
+    it("should support components at the root of a view", () => {
+      class Test {
+        render(rf: RenderFlags) {
+          if (rf & RenderFlags.Create) {
+            text(0, "test");
+          }
+        }
+      }
+
+      /**
+       * % if (show) {
+       *  <Test></Test>
+       * }
+       */
+      const refreshFn = render(
+        hostDiv,
+        function(rf: RenderFlags, show: boolean) {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            {
+              if (show) {
+                view(0, 0, function(rf: RenderFlags) {
+                  if (rf & RenderFlags.Create) {
+                    component(0, "test", Test);
+                  }
+                  if (rf & RenderFlags.Update) {
+                    componentRefresh(0, 0);
+                  }
+                });
+              }
+            }
+            containerRefreshEnd(0);
+          }
+        },
+        false
+      );
+
+      expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test>test</test><!--container 0-->");
+
+      refreshFn(false);
+      expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test>test</test><!--container 0-->");
+    });
+
     it("should support components with inputs", () => {
       const ctx = { name: "World" };
 
@@ -786,12 +838,6 @@ describe("integration", () => {
 
       expect(hostDiv.innerHTML).toBe("<card><h1>Title<!--content 1--></h1><div>Content<!--content 3--></div></card>");
     });
-
-    // TODO(pk): mix of named and default slots
-    // TODO(pk): multiple slots with the same name
-    // TODO(pk): conditional slotables
-    // TODO(pk): conditional slots
-    // TODO(pk): re-projection
   });
 
   describe("directives", () => {
