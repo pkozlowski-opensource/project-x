@@ -9,12 +9,13 @@
     - event handlers with event access
 - component model
     - content projection
-        - mix of named and default slottables
         - multiple slotables with the same name
         - conditional slots
         - conditional slottables
         - containers at the root of a slot (can't immediatelly insert)
-        - reprojection
+        - re-projection
+        - nested (ex.: tabs)
+        - imperative (ex.: wrapping in a loop)
     - host bindings
     - listeners / outputs
     - referencing nodes in a given view

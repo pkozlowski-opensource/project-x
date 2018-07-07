@@ -341,12 +341,11 @@ function input(hostElIdx: number, bindIdx: number, newValue: any): boolean {
 function slotableStart(idx: number, name: string) {
   // TODO(pk): not true for conditionals
   const componentContent = parentVNode;
-  const docFragment = document.createDocumentFragment();
   const groupVNode = (currentView.nodes[idx] = createVNode(
     VNodeType.Group,
     currentView,
     componentContent,
-    docFragment
+    document.createDocumentFragment()
   ));
   componentContent.children.push(groupVNode);
 
@@ -378,14 +377,13 @@ function slotRefresh(idx: number, contentGroup: VNode, slotName?: string) {
     const groupChildren = contentGroup.children;
     for (let i = 0; i < groupChildren.length; i++) {
       const groupChild = groupChildren[i];
-      // TODO(pk): super-hacky... need to introduce node type
-      if (groupChild.data[0] === slotName) {
+      if (groupChild.type === VNodeType.Group && groupChild.data[0] === slotName) {
         contentVNode.parent.native.insertBefore(groupChild.native, contentVNode.native);
-        // insert it
         break;
       }
     }
   } else {
+    // PERF(pk): I could split it into 2 functions so it is better for tree-shaking
     contentVNode.parent.native.insertBefore(contentGroup.native, contentVNode.native);
   }
 }

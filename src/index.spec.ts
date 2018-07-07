@@ -817,7 +817,7 @@ describe("integration", () => {
       /**
        * <Card>
        *   <:header>Title</:header>
-       *   <:content>Title</:content>
+       *   <:content>Content</:content>
        * </Card>
        */
       const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
@@ -837,6 +837,80 @@ describe("integration", () => {
       });
 
       expect(hostDiv.innerHTML).toBe("<card><h1>Title<!--content 1--></h1><div>Content<!--content 3--></div></card>");
+    });
+
+    it("should support mix of named and default slots", () => {
+      class Card {
+        /**
+         * <h1>
+         *   <x-slot name="header"></x-slot>
+         * </h1>
+         * <div>
+         *   <x-slot></x-slot>
+         * </div>
+         * <footer>
+         *   <x-slot name="footer"></x-slot>
+         * </footer>
+         */
+        render(rf: RenderFlags, ctx: Card, $contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            elementStart(0, "h1");
+            {
+              slot(1);
+            }
+            elementEnd(0);
+            elementStart(2, "div");
+            {
+              slot(3);
+            }
+            elementEnd(2);
+            elementStart(4, "footer");
+            {
+              slot(5);
+            }
+            elementEnd(4);
+          }
+          if (rf & RenderFlags.Update) {
+            slotRefresh(1, $contentGroup, "header");
+            slotRefresh(3, $contentGroup);
+            slotRefresh(5, $contentGroup, "footer");
+          }
+        }
+      }
+
+      /**
+       * <Card>
+       *   <:header>Title</:header>
+       *   Content
+       *   <:footer>Bottom</:footer>
+       * </Card>
+       */
+      const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
+        if (rf & RenderFlags.Create) {
+          componentStart(0, "card", Card);
+          {
+            slotableStart(1, "header");
+            {
+              text(2, "Title");
+            }
+            slotableEnd(1);
+            text(3, "Content");
+            slotableStart(4, "footer");
+            {
+              text(5, "Bottom");
+            }
+            slotableEnd(4);
+          }
+          componentEnd(0);
+        }
+        if (rf & RenderFlags.Update) {
+          componentRefresh(0, 0);
+        }
+
+        expect(hostDiv.innerHTML).toBe(
+          "<card><h1>Title<!--content 1--></h1><div>Content<!--content 3--></div><footer>Bottom<!--content 5--></footer></card>"
+        );
+      });
     });
   });
 
