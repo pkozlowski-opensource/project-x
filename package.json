@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc -w --sourceMap src/index.ts src/index.spec.ts"
+    "build": "tsc -w --sourceMap src/index.ts src/index.spec.ts",
+    "format": "prettier --print-width 120 --write src/index.ts src/index.spec.ts"
   },
   "repository": {
     "type": "git",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@types/jasmine": "^2.8.8",
     "jasmine-core": "^3.1.0",
+    "prettier": "1.13.7",
     "typescript": "^2.9.2"
   }
 }
