@@ -382,13 +382,23 @@ describe('integration', () => {
         refreshFn(ctx);
         expect(hostDiv.innerHTML).toBe('<!--container 0-->');
 
+
         ctx.outer = true;
         refreshFn(ctx);
         expect(hostDiv.innerHTML).toBe('outer shown|inner shown<!--container 1-->|<!--container 0-->');
 
+
         ctx.inner = false;
         refreshFn(ctx);
         expect(hostDiv.innerHTML).toBe('outer shown|<!--container 1-->|<!--container 0-->');
+
+        ctx.inner = true;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe('outer shown|inner shown<!--container 1-->|<!--container 0-->');
+
+        ctx.outer = false;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
       });
 
       it('should support sibling ifs', () => {
