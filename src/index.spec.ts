@@ -912,6 +912,56 @@ describe("integration", () => {
         );
       });
     });
+
+    it("should support multiple slottables with the same name (static)", () => {
+      `
+      <x-slot name="item"></x-slot>
+      `;
+      class Menu {
+        render(rf: RenderFlags, ctx: Menu, $contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            elementStart(0, "span");
+            {
+              slot(1);
+            }
+            elementEnd(0);
+          }
+          if (rf & RenderFlags.Update) {
+            slotRefresh(1, $contentGroup, "item");
+          }
+        }
+      }
+
+      `
+      <Menu>
+        <:item>one</:item>
+        <:item>two</:item>
+      </Menu>
+      `;
+      const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
+        if (rf & RenderFlags.Create) {
+          componentStart(0, "menu", Menu);
+          {
+            slotableStart(1, "item");
+            {
+              text(2, "one");
+            }
+            slotableEnd(1);
+            slotableStart(3, "item");
+            {
+              text(4, "two");
+            }
+            slotableEnd(3);
+          }
+          componentEnd(0);
+        }
+        if (rf & RenderFlags.Update) {
+          componentRefresh(0, 0);
+        }
+      });
+
+      expect(hostDiv.innerHTML).toBe("<menu><span>onetwo<!--content 1--></span></menu>");
+    });
   });
 
   describe("directives", () => {

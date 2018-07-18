@@ -1,4 +1,15 @@
+- fundamental questions
+    - raison d'etre
+    - web only or web abstracted
+    - framework vs. library
+    - supported languages (TS / ES6 / ES5)
+    - relation to web components
 - think of the syntax implications for the code I've got so far (prop vs. attr, one-time vs. binding vs. interpolation etc.)
+    - general file structure
+    - template function markers    
+    - expression vs. statement
+    - comments
+    - component definition
 - basic template syntax
     - one-time binding
     - 2-way data binding
@@ -7,16 +18,23 @@
     - one vs. multiple text nodes
     - comments
     - event handlers with event access
+    - sanitization
 - component model
     - content projection
-        - multiple slotables with the same name
-        - conditional slots
-        - conditional slottables
+        + multiple slotables with the same name        
+        - conditional slots        
+        - conditional slottables (slottables in a container)
+        - dynamic slottables (loop)
         - containers at the root of a slot (can't immediatelly insert)
         - re-projection
-        - nested (ex.: tabs)
+        - nested slottables (ex.: tabs)
         - imperative (ex.: wrapping in a loop)
+        - perf: when are content nodes (VNode and DOM) destroyed?
     - host bindings
     - listeners / outputs
     - referencing nodes in a given view
+- change detection
+    - manual refresh
+    - automatic refresh in an event handlers
+    - OnPush equivalent
 - extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation

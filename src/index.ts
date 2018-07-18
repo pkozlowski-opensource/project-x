@@ -379,7 +379,6 @@ function slotRefresh(idx: number, contentGroup: VNode, slotName?: string) {
       const groupChild = groupChildren[i];
       if (groupChild.type === VNodeType.Group && groupChild.data[0] === slotName) {
         contentVNode.parent.native.insertBefore(groupChild.native, contentVNode.native);
-        break;
       }
     }
   } else {
