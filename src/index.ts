@@ -176,13 +176,19 @@ function containerRefreshStart(containerIdx: number) {
 
 function removeNodesFromDOM(nodeOrGroup: VNode) {
   for (let node of nodeOrGroup.children) {
-    if (node.type === VNodeType.Container || node.type === VNodeType.Slot) {
-      for (let nodeInAGroup of node.children) {
-        removeNodesFromDOM(nodeInAGroup);
-      }
+    if (
+      node.type === VNodeType.Container ||
+      node.type === VNodeType.Slot ||
+      node.type === VNodeType.Group ||
+      node.type === VNodeType.View
+    ) {
+      removeNodesFromDOM(node);
     }
-    // PERF(pk): do I need a parent ? Would the removal be faster with a parent?
-    node.native.remove();
+    if (node.type !== VNodeType.View && node.type !== VNodeType.Group) {
+      node.native.remove();
+    } else {
+      node.native = null;
+    }
   }
 }
 
@@ -191,7 +197,7 @@ function containerRefreshEnd(containerIdx: number) {
   const views = containerVNode.children;
 
   const remainingViewsCount = views.length - nextViewIdx;
-  if (remainingViewsCount) {
+  if (remainingViewsCount > 0) {
     const removedViews = views.splice(nextViewIdx, remainingViewsCount);
     for (let removedView of removedViews) {
       // for each remove DOM (optionally find a parent)
@@ -253,10 +259,14 @@ function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: nu
 
   viewFn(RenderFlags.CreateAndUpdate, ctx);
 
-  // attatch freshly created DOM nodes to the DOM tree
-  const renderParent = findRenderParent(containerVNode);
-  renderParent.native.insertBefore(viewVNode.native, containerVNode.native);
-  viewVNode.native = null; // can't re-use document fragment
+  // Attatch freshly created DOM nodes to the DOM tree but do so only if a container is not at the root of a projection group.
+  // We can't attatch views to the root of projection groups as we don't know if a  given container be projected at all!
+  const containerParent = containerVNode.parent;
+  if (containerParent.type !== VNodeType.Group) {
+    const renderParent = findRenderParent(containerVNode);
+    renderParent.native.insertBefore(viewVNode.native, containerVNode.native);
+    viewVNode.native = null; // can't re-use document fragment
+  }
 
   parentVNode = containerVNode.parent;
   currentView = oldView;
@@ -371,23 +381,43 @@ function slot(idx: number) {
   parentVNode.native.appendChild(domEl);
 }
 
+function findGroupInContainer(containerVNode: VNode, slotName: string): VNode | null {
+  for (let viewVNode of containerVNode.children) {
+    for (let vNode of viewVNode.children) {
+      if (vNode.type === VNodeType.Group && vNode.data[0] === slotName) {
+        // TODO(pk): this container could have many groups with the same name
+        return vNode;
+      }
+      // TODO(pk): this could have another container :-)
+    }
+  }
+  return null;
+}
+
 function slotRefresh(idx: number, contentGroup: VNode, slotName?: string) {
-  const contentVNode = currentView.nodes[idx];
+  const slotVNode = currentView.nodes[idx];
   if (slotName) {
     // find group with a name
     const groupChildren = contentGroup.children;
-    const renderParent = findRenderParent(contentVNode);
+    const renderParent = findRenderParent(slotVNode);
     for (let i = 0; i < groupChildren.length; i++) {
       const groupChild = groupChildren[i];
       if (groupChild.type === VNodeType.Group && groupChild.data[0] === slotName) {
-        // TODO(pk): we should also have equivalent of removal...
-        contentVNode.children.push(groupChild);
-        renderParent.native.insertBefore(groupChild.native, contentVNode.native);
+        slotVNode.children.push(groupChild);
+        renderParent.native.insertBefore(groupChild.native, slotVNode.native);
+      } else if (groupChild.type === VNodeType.Container) {
+        const foundGroup = findGroupInContainer(groupChild, slotName);
+        if (foundGroup) {
+          slotVNode.children.push(foundGroup);
+          renderParent.native.insertBefore(foundGroup.native, slotVNode.native);
+        }
       }
     }
   } else {
     // PERF(pk): I could split it into 2 functions so it is better for tree-shaking
-    contentVNode.parent.native.insertBefore(contentGroup.native, contentVNode.native);
+    // TODO(pk): need to add as a child of a slot
+    // TODO(pk): write a test for render parent
+    slotVNode.parent.native.insertBefore(contentGroup.native, slotVNode.native);
   }
 }
 

@@ -12,7 +12,12 @@
     - expression vs. statement
     - comments
     - component definition
+    - event handlers
 - basic template syntax
+    + static elements
+    + interpolation in text nodes
+    + properties
+    - attributes    
     - one-time binding
     - 2-way data binding
     - loops and trackBy
@@ -20,23 +25,31 @@
     - one vs. multiple text nodes
     - comments
     - event handlers with event access
-    - sanitization
+    - referencing nodes in a given view
+    - sanitization    
 - component model
     - content projection
         + containers at the root of a slot (can't immediatelly insert)
         + multiple slotables with the same name        
         + conditional slots        
-        - conditional slottables (slottables in a container)
+        + conditional slottables (one slottable in a container)
+        - conditional slottables (multiple slottables in a container)
+        - conditional slottables (slottables in different containers)
+        - mix of named and default nodes in a container
         - dynamic slottables (loop)
         - re-projection
+        - properties on slottables
         - nested slottables (ex.: tabs)
         - imperative (ex.: wrapping in a loop)
         - perf: when are content nodes (VNode and DOM) destroyed?
     - host bindings
     - listeners / outputs
-    - referencing nodes in a given view
+    - lifecycle and lifecycle hooks
+- directive model
 - change detection
     - manual refresh
     - automatic refresh in an event handlers
     - OnPush equivalent
+- dynamic insertion of UI fragments (ex. tooltip)
+- dynamic compilation
 - extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation

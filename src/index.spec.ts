@@ -1059,6 +1059,72 @@ describe("integration", () => {
       refreshFn(false);
       expect(hostDiv.innerHTML).toBe("<test><!--container 0--></test>");
     });
+
+    it("should support conditional named slottables", () => {
+      `<x-slot name="foo"></x-slot>`;
+      class Test {
+        includeContent = false;
+
+        render(rf: RenderFlags, includeContent: boolean, $contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            slot(0);
+          }
+          if (rf & RenderFlags.Update) {
+            slotRefresh(0, $contentGroup, "foo");
+          }
+        }
+      }
+
+      `
+      <Test>
+        {% if(includeContent) { %}
+          <:foo>foo</:foo>
+        {% } %}
+      </Test>
+      `;
+      const refreshFn = render(
+        hostDiv,
+        (rf: RenderFlags, includeContent: boolean) => {
+          if (rf & RenderFlags.Create) {
+            componentStart(0, "test", Test);
+            {
+              container(1);
+            }
+            componentEnd(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(1);
+            {
+              if (includeContent) {
+                view(1, 0, (rf: RenderFlags) => {
+                  if (rf & RenderFlags.Create) {
+                    slotableStart(0, "foo");
+                    {
+                      text(1, "foo");
+                    }
+                    slotableEnd(0);
+                  }
+                });
+              }
+            }
+            containerRefreshEnd(1);
+            componentRefresh(0, 0);
+          }
+        },
+        false
+      );
+
+      expect(hostDiv.innerHTML).toBe("<test><!--content 0--></test>");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test>foo<!--content 0--></test>");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test>foo<!--content 0--></test>");
+
+      refreshFn(false);
+      expect(hostDiv.innerHTML).toBe("<test><!--content 0--></test>");
+    });
   });
 
   describe("directives", () => {
