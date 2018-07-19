@@ -996,6 +996,69 @@ describe("integration", () => {
 
       expect(hostDiv.innerHTML).toBe("<menu><span>onetwo<!--content 1--></span></menu>");
     });
+
+    it("should support conditional named slots", () => {
+      `
+      {% if (show) { %}
+        <x-slot name="foo"></x-slot>
+      {% } %} `;
+      class Test {
+        show = false;
+        render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            {
+              if (ctx.show) {
+                view(0, 0, (rf: RenderFlags) => {
+                  if (rf & RenderFlags.Create) {
+                    slot(0);
+                  }
+                  if (rf & RenderFlags.Update) {
+                    slotRefresh(0, $contentGroup, "foo");
+                  }
+                });
+              }
+            }
+            containerRefreshEnd(0);
+          }
+        }
+      }
+
+      `<Test><:foo>foo<:/foo></Test>`;
+      const refreshFn = render(
+        hostDiv,
+        (rf: RenderFlags, show: boolean) => {
+          if (rf & RenderFlags.Create) {
+            componentStart(0, "test", Test);
+            {
+              slotableStart(1, "foo");
+              {
+                text(2, "foo");
+              }
+              slotableEnd(1);
+            }
+            componentEnd(0);
+          }
+          if (rf & RenderFlags.Update) {
+            const componentInstance = load<Test>(0, 0);
+            input(0, 1, show) && (componentInstance.show = show);
+            componentRefresh(0, 0);
+          }
+        },
+        false
+      );
+
+      expect(hostDiv.innerHTML).toBe("<test><!--container 0--></test>");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test>foo<!--content 0--><!--container 0--></test>");
+
+      refreshFn(false);
+      expect(hostDiv.innerHTML).toBe("<test><!--container 0--></test>");
+    });
   });
 
   describe("directives", () => {

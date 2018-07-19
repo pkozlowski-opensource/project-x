@@ -3,7 +3,9 @@
     - web only or web abstracted
     - framework vs. library
     - supported languages (TS / ES6 / ES5)
+    - required build toolchain (try hard to literal tag to act as a "compiler")
     - relation to web components
+    - dynamic compilation
 - think of the syntax implications for the code I've got so far (prop vs. attr, one-time vs. binding vs. interpolation etc.)
     - general file structure
     - template function markers    
@@ -21,11 +23,11 @@
     - sanitization
 - component model
     - content projection
+        + containers at the root of a slot (can't immediatelly insert)
         + multiple slotables with the same name        
-        - conditional slots        
+        + conditional slots        
         - conditional slottables (slottables in a container)
         - dynamic slottables (loop)
-        - containers at the root of a slot (can't immediatelly insert)
         - re-projection
         - nested slottables (ex.: tabs)
         - imperative (ex.: wrapping in a loop)

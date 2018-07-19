@@ -20,7 +20,7 @@ interface VNode {
   parent: VNode;
   children: VNode[];
   native: any; // TODO(pk): type it properly
-  data: any[]; // TODO(pk): storing bindings separatelly for each and every individual node might not be super-performant :-)
+  data: any[]; // PERF(pk): storing bindings separatelly for each and every individual node might not be super-performant :-)
 
   /**
    * Each node is part of a view
@@ -159,7 +159,7 @@ function include(containerIdx: number, tplFn, ctx?) {
     // remove if already exists
     if (existingViewVNode) {
       views.splice(0, 1);
-      removeViewFromDOM(existingViewVNode);
+      removeNodesFromDOM(existingViewVNode);
     }
     // re-create (unless it is null)
     if (tplFn) {
@@ -174,11 +174,11 @@ function containerRefreshStart(containerIdx: number) {
   nextViewIdx = 0;
 }
 
-function removeViewFromDOM(view: VNode) {
-  for (let node of view.children) {
-    if (node.type === VNodeType.Container) {
-      for (let viewInAContainer of node.children) {
-        removeViewFromDOM(viewInAContainer);
+function removeNodesFromDOM(nodeOrGroup: VNode) {
+  for (let node of nodeOrGroup.children) {
+    if (node.type === VNodeType.Container || node.type === VNodeType.Slot) {
+      for (let nodeInAGroup of node.children) {
+        removeNodesFromDOM(nodeInAGroup);
       }
     }
     // PERF(pk): do I need a parent ? Would the removal be faster with a parent?
@@ -195,7 +195,7 @@ function containerRefreshEnd(containerIdx: number) {
     const removedViews = views.splice(nextViewIdx, remainingViewsCount);
     for (let removedView of removedViews) {
       // for each remove DOM (optionally find a parent)
-      removeViewFromDOM(removedView);
+      removeNodesFromDOM(removedView);
     }
   }
 }
@@ -208,7 +208,7 @@ function findView(views: VNode[], startIdx: number, viewIdx: number): VNode | un
       return viewVNode;
     } else if (viewVNode.view.viewId < viewIdx) {
       views.splice(i, 1);
-      removeViewFromDOM(viewVNode);
+      removeNodesFromDOM(viewVNode);
     }
     i++;
   }
@@ -381,6 +381,7 @@ function slotRefresh(idx: number, contentGroup: VNode, slotName?: string) {
       const groupChild = groupChildren[i];
       if (groupChild.type === VNodeType.Group && groupChild.data[0] === slotName) {
         // TODO(pk): we should also have equivalent of removal...
+        contentVNode.children.push(groupChild);
         renderParent.native.insertBefore(groupChild.native, contentVNode.native);
       }
     }
