@@ -839,6 +839,40 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe("<card><h1>Title<!--content 1--></h1><div>Content<!--content 3--></div></card>");
     });
 
+    it("should support named slots at the component view root", () => {
+      `<Test><:foo>foo<:/foo></Test>`;
+      class Test {
+        render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            slot(0);
+          }
+          if (rf & RenderFlags.Update) {
+            slotRefresh(0, $contentGroup, "foo");
+          }
+        }
+      }
+
+      `<x-slot name="foo"></x-slot>`;
+      const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
+        if (rf & RenderFlags.Create) {
+          componentStart(0, "test", Test);
+          {
+            slotableStart(1, "foo");
+            {
+              text(2, "foo");
+            }
+            slotableEnd(1);
+          }
+          componentEnd(0);
+        }
+        if (rf & RenderFlags.Update) {
+          componentRefresh(0, 0);
+        }
+      });
+
+      expect(hostDiv.innerHTML).toBe("<test>foo<!--content 0--></test>");
+    });
+
     it("should support mix of named and default slots", () => {
       class Card {
         /**

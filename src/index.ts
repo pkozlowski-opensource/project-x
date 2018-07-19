@@ -301,7 +301,11 @@ function componentEnd(idx: number) {
   currentView = componentViewNode.view;
 
   cmptInstance.render(RenderFlags.Create, cmptInstance);
+
+  // append all nodes collected for component view
   hostElVNode.native.appendChild(componentViewNode.native);
+  // I can't re-use doc fragments - mark it as null so we know that we need to traverse up while looking for render parents
+  componentViewNode.native = null;
   hostElVNode.componentView = componentViewNode;
 
   currentView = oldView;
@@ -369,16 +373,15 @@ function slot(idx: number) {
 
 function slotRefresh(idx: number, contentGroup: VNode, slotName?: string) {
   const contentVNode = currentView.nodes[idx];
-  // TODO(pk): we should also have equivalent of removal...
-  // TODO(pk): currently can only insert into content that has a parent node in a given template
-
   if (slotName) {
     // find group with a name
     const groupChildren = contentGroup.children;
+    const renderParent = findRenderParent(contentVNode);
     for (let i = 0; i < groupChildren.length; i++) {
       const groupChild = groupChildren[i];
       if (groupChild.type === VNodeType.Group && groupChild.data[0] === slotName) {
-        contentVNode.parent.native.insertBefore(groupChild.native, contentVNode.native);
+        // TODO(pk): we should also have equivalent of removal...
+        renderParent.native.insertBefore(groupChild.native, contentVNode.native);
       }
     }
   } else {
