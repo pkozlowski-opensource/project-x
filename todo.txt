@@ -35,10 +35,10 @@
         + conditional slottables (one slottable in a container)
         + conditional slottables (multiple slottables in a container)
         + conditional slottables (slottables in different containers)
-        - conditional slottables (slottables in nested containers)
+        + conditional slottables (slottables in nested containers)
         - mix of named and default nodes in a container
-        - dynamic slottables (loop)
         - re-projection
+        - dynamic slottables (loop + track-by)
         - properties binding on slottables
         - imperative (ex.: wrapping in a loop)
         - nested slottables (ex.: tabs)

@@ -379,16 +379,13 @@ function slot(idx: number) {
   parentVNode.native.appendChild(domEl);
 }
 
-// REFACTOR(pk): code duplication with slotRefresh
-function findGroupsInContainer(containerVNode: VNode, slotName: string): VNode[] {
-  let result: VNode[] = [];
-  for (let viewVNode of containerVNode.children) {
-    for (let vNode of viewVNode.children) {
-      if (vNode.type === VNodeType.Group && vNode.data[0] === slotName) {
-        result.push(vNode);
-      } else if (vNode.type === VNodeType.Container) {
-        result = result.concat(findGroupsInContainer(vNode, slotName));
-      }
+function findGroups(containerVNode: VNode, slotName: string, result: VNode[]): VNode[] {
+  for (let vNode of containerVNode.children) {
+    if (vNode.type === VNodeType.Group && vNode.data[0] === slotName) {
+      result.push(vNode);
+    } else if (vNode.type === VNodeType.Container || vNode.type === VNodeType.View) {
+      // PERF(pk): I could avoid recurrsion here
+      findGroups(vNode, slotName, result);
     }
   }
   return result;
@@ -397,20 +394,12 @@ function findGroupsInContainer(containerVNode: VNode, slotName: string): VNode[]
 function slotRefresh(idx: number, contentGroup: VNode, slotName?: string) {
   const slotVNode = currentView.nodes[idx];
   if (slotName) {
-    // find group with a name
-    const groupChildren = contentGroup.children;
-    const renderParent = findRenderParent(slotVNode);
-    for (let i = 0; i < groupChildren.length; i++) {
-      const groupChild = groupChildren[i];
-      if (groupChild.type === VNodeType.Group && groupChild.data[0] === slotName) {
-        slotVNode.children.push(groupChild);
-        renderParent.native.insertBefore(groupChild.native, slotVNode.native);
-      } else if (groupChild.type === VNodeType.Container) {
-        const foundGroups = findGroupsInContainer(groupChild, slotName);
-        for (const foundGroup of foundGroups) {
-          slotVNode.children.push(foundGroup);
-          renderParent.native.insertBefore(foundGroup.native, slotVNode.native);
-        }
+    const result = findGroups(contentGroup, slotName, []);
+    if (result.length > 0) {
+      const renderParent = findRenderParent(slotVNode);
+      for (const foundGroup of result) {
+        slotVNode.children.push(foundGroup);
+        renderParent.native.insertBefore(foundGroup.native, slotVNode.native);
       }
     }
   } else {

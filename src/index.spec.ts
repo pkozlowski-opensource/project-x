@@ -1282,6 +1282,84 @@ describe("integration", () => {
       refreshFn(false);
       expect(hostDiv.innerHTML).toBe("<test><!--content 0--></test>");
     });
+
+    it("should support multiple conditional named slottables in nested containers", () => {
+      `<x-slot name="item"></x-slot>`;
+      class Test {
+        render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            slot(0);
+          }
+          if (rf & RenderFlags.Update) {
+            slotRefresh(0, $contentGroup, "item");
+          }
+        }
+      }
+
+      `
+      <Test>
+        {% 
+        if(includeContent) {
+          if(includeContent) { %}
+            <:item>foo</:item>
+        {%} 
+        } %}
+      </Test>
+      `;
+      const refreshFn = render(
+        hostDiv,
+        (rf: RenderFlags, includeContent: boolean) => {
+          if (rf & RenderFlags.Create) {
+            componentStart(0, "test", Test);
+            {
+              container(1);
+            }
+            componentEnd(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(1);
+            {
+              if (includeContent) {
+                view(1, 0, (rf: RenderFlags) => {
+                  if (rf & RenderFlags.Create) {
+                    container(0);
+                  }
+                  if (rf & RenderFlags.Update) {
+                    containerRefreshStart(0);
+                    if (includeContent) {
+                      view(0, 0, (rf: RenderFlags) => {
+                        if (rf & RenderFlags.Create) {
+                          slotableStart(0, "item");
+                          {
+                            text(1, "foo");
+                          }
+                          slotableEnd(0);
+                        }
+                      });
+                    }
+                    containerRefreshEnd(0);
+                  }
+                });
+              }
+            }
+            containerRefreshEnd(1);
+            componentRefresh(0);
+          }
+        },
+        false
+      );
+
+      expect(hostDiv.innerHTML).toBe("<test><!--content 0--></test>");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test>foo<!--content 0--></test>");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test>foo<!--content 0--></test>");
+
+      refreshFn(false);
+      expect(hostDiv.innerHTML).toBe("<test><!--content 0--></test>");
+    });
   });
 
   describe("directives", () => {
