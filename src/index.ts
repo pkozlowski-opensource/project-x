@@ -327,9 +327,9 @@ function component(idx: number, tagName: string, constructorFn, attrs?: string[]
   componentEnd(idx);
 }
 
-function componentRefresh(hostElIdx: number, componentInstanceIdx: number) {
+function componentRefresh(hostElIdx: number) {
   const hostElVNode = currentView.nodes[hostElIdx];
-  const cmptInstance = hostElVNode.data[componentInstanceIdx];
+  const cmptInstance = hostElVNode.data[0];
   const componentView = hostElVNode.componentView;
 
   const oldView = currentView;

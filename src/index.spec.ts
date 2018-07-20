@@ -635,8 +635,8 @@ describe("integration", () => {
           componentEnd(2);
         }
         if (rf & RenderFlags.Update) {
-          componentRefresh(0, 0);
-          componentRefresh(2, 0);
+          componentRefresh(0);
+          componentRefresh(2);
         }
       });
 
@@ -674,7 +674,7 @@ describe("integration", () => {
                     component(0, "test", Test);
                   }
                   if (rf & RenderFlags.Update) {
-                    componentRefresh(0, 0);
+                    componentRefresh(0);
                   }
                 });
               }
@@ -730,7 +730,7 @@ describe("integration", () => {
           if (rf & RenderFlags.Update) {
             const componentInstance = load<TestComponent>(0, 0);
             input(0, 1, ctx.name) && (componentInstance.name = ctx.name);
-            componentRefresh(0, 0);
+            componentRefresh(0);
           }
         },
         ctx
@@ -776,7 +776,7 @@ describe("integration", () => {
           }
           if (rf & RenderFlags.Update) {
             textContent(1, name);
-            componentRefresh(0, 0);
+            componentRefresh(0);
           }
         },
         "World"
@@ -832,7 +832,7 @@ describe("integration", () => {
           componentEnd(0);
         }
         if (rf & RenderFlags.Update) {
-          componentRefresh(0, 0);
+          componentRefresh(0);
         }
       });
 
@@ -866,7 +866,7 @@ describe("integration", () => {
           componentEnd(0);
         }
         if (rf & RenderFlags.Update) {
-          componentRefresh(0, 0);
+          componentRefresh(0);
         }
       });
 
@@ -938,7 +938,7 @@ describe("integration", () => {
           componentEnd(0);
         }
         if (rf & RenderFlags.Update) {
-          componentRefresh(0, 0);
+          componentRefresh(0);
         }
 
         expect(hostDiv.innerHTML).toBe(
@@ -990,7 +990,7 @@ describe("integration", () => {
           componentEnd(0);
         }
         if (rf & RenderFlags.Update) {
-          componentRefresh(0, 0);
+          componentRefresh(0);
         }
       });
 
@@ -1045,7 +1045,7 @@ describe("integration", () => {
           if (rf & RenderFlags.Update) {
             const componentInstance = load<Test>(0, 0);
             input(0, 1, show) && (componentInstance.show = show);
-            componentRefresh(0, 0);
+            componentRefresh(0);
           }
         },
         false
@@ -1108,7 +1108,7 @@ describe("integration", () => {
               }
             }
             containerRefreshEnd(1);
-            componentRefresh(0, 0);
+            componentRefresh(0);
           }
         },
         false

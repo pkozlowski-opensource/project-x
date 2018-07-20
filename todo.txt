@@ -39,8 +39,8 @@
         - dynamic slottables (loop)
         - re-projection
         - properties on slottables
-        - nested slottables (ex.: tabs)
         - imperative (ex.: wrapping in a loop)
+        - nested slottables (ex.: tabs)
         - perf: when are content nodes (VNode and DOM) destroyed?
     - host bindings
     - listeners / outputs
