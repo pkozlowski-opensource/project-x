@@ -1069,9 +1069,7 @@ describe("integration", () => {
     it("should support conditional named slottables", () => {
       `<x-slot name="foo"></x-slot>`;
       class Test {
-        includeContent = false;
-
-        render(rf: RenderFlags, includeContent: boolean, $contentGroup: VNode) {
+        render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
           if (rf & RenderFlags.Create) {
             slot(0);
           }
@@ -1127,6 +1125,76 @@ describe("integration", () => {
 
       refreshFn(true);
       expect(hostDiv.innerHTML).toBe("<test>foo<!--content 0--></test>");
+
+      refreshFn(false);
+      expect(hostDiv.innerHTML).toBe("<test><!--content 0--></test>");
+    });
+
+    it("should support multiple conditional named slottables", () => {
+      `<x-slot name="item"></x-slot>`;
+      class Test {
+        render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            slot(0);
+          }
+          if (rf & RenderFlags.Update) {
+            slotRefresh(0, $contentGroup, "item");
+          }
+        }
+      }
+
+      `
+      <Test>
+        {% if(includeContent) { %}
+          <:item>foo</:item>
+          <:item>bar</:item>
+        {% } %}
+      </Test>
+      `;
+      const refreshFn = render(
+        hostDiv,
+        (rf: RenderFlags, includeContent: boolean) => {
+          if (rf & RenderFlags.Create) {
+            componentStart(0, "test", Test);
+            {
+              container(1);
+            }
+            componentEnd(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(1);
+            {
+              if (includeContent) {
+                view(1, 0, (rf: RenderFlags) => {
+                  if (rf & RenderFlags.Create) {
+                    slotableStart(0, "item");
+                    {
+                      text(1, "foo");
+                    }
+                    slotableEnd(0);
+                    slotableStart(2, "item");
+                    {
+                      text(3, "bar");
+                    }
+                    slotableEnd(2);
+                  }
+                });
+              }
+            }
+            containerRefreshEnd(1);
+            componentRefresh(0);
+          }
+        },
+        false
+      );
+
+      expect(hostDiv.innerHTML).toBe("<test><!--content 0--></test>");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test>foobar<!--content 0--></test>");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test>foobar<!--content 0--></test>");
 
       refreshFn(false);
       expect(hostDiv.innerHTML).toBe("<test><!--content 0--></test>");

@@ -381,17 +381,17 @@ function slot(idx: number) {
   parentVNode.native.appendChild(domEl);
 }
 
-function findGroupInContainer(containerVNode: VNode, slotName: string): VNode | null {
+function findGroupsInContainer(containerVNode: VNode, slotName: string): VNode[] {
+  const result: VNode[] = [];
   for (let viewVNode of containerVNode.children) {
     for (let vNode of viewVNode.children) {
       if (vNode.type === VNodeType.Group && vNode.data[0] === slotName) {
-        // TODO(pk): this container could have many groups with the same name
-        return vNode;
+        result.push(vNode);
       }
       // TODO(pk): this could have another container :-)
     }
   }
-  return null;
+  return result;
 }
 
 function slotRefresh(idx: number, contentGroup: VNode, slotName?: string) {
@@ -406,8 +406,8 @@ function slotRefresh(idx: number, contentGroup: VNode, slotName?: string) {
         slotVNode.children.push(groupChild);
         renderParent.native.insertBefore(groupChild.native, slotVNode.native);
       } else if (groupChild.type === VNodeType.Container) {
-        const foundGroup = findGroupInContainer(groupChild, slotName);
-        if (foundGroup) {
+        const foundGroups = findGroupsInContainer(groupChild, slotName);
+        for (const foundGroup of foundGroups) {
           slotVNode.children.push(foundGroup);
           renderParent.native.insertBefore(foundGroup.native, slotVNode.native);
         }
