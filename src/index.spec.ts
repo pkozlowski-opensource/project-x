@@ -627,12 +627,9 @@ describe("integration", () => {
        */
       const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
         if (rf & RenderFlags.Create) {
-          // TODO(pk): element creation could be probably in-lined into component() instruction
-          componentStart(0, "test-component", TestComponent);
-          componentEnd(0);
+          component(0, "test-component", TestComponent);
           element(1, "hr");
-          componentStart(2, "test-component", TestComponent);
-          componentEnd(2);
+          component(2, "test-component", TestComponent);
         }
         if (rf & RenderFlags.Update) {
           componentRefresh(0);
@@ -724,8 +721,7 @@ describe("integration", () => {
         (rf: RenderFlags, ctx) => {
           if (rf & RenderFlags.Create) {
             // TODO(pk): element creation could be probably in-lined into component() instruction
-            componentStart(0, "test-component", TestComponent);
-            componentEnd(0);
+            component(0, "test-component", TestComponent);
           }
           if (rf & RenderFlags.Update) {
             const componentInstance = load<TestComponent>(0, 0);
@@ -801,10 +797,14 @@ describe("integration", () => {
         render(rf: RenderFlags, ctx: Card, $contentGroup: VNode) {
           if (rf & RenderFlags.Create) {
             elementStart(0, "h1");
-            slot(1);
+            {
+              slot(1);
+            }
             elementEnd(0);
             elementStart(2, "div");
-            slot(3);
+            {
+              slot(3);
+            }
             elementEnd(2);
           }
           if (rf & RenderFlags.Update) {
@@ -823,12 +823,18 @@ describe("integration", () => {
       const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
         if (rf & RenderFlags.Create) {
           componentStart(0, "card", Card);
-          slotableStart(1, "header");
-          text(2, "Title");
-          slotableEnd(1);
-          slotableStart(3, "content");
-          text(4, "Content");
-          slotableEnd(3);
+          {
+            slotableStart(1, "header");
+            {
+              text(2, "Title");
+            }
+            slotableEnd(1);
+            slotableStart(3, "content");
+            {
+              text(4, "Content");
+            }
+            slotableEnd(3);
+          }
           componentEnd(0);
         }
         if (rf & RenderFlags.Update) {
