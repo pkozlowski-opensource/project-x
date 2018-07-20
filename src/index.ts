@@ -353,15 +353,13 @@ function input(hostElIdx: number, bindIdx: number, newValue: any): boolean {
 }
 
 function slotableStart(idx: number, name: string) {
-  // TODO(pk): not true for conditionals
-  const componentContent = parentVNode;
   const groupVNode = (currentView.nodes[idx] = createVNode(
     VNodeType.Group,
     currentView,
-    componentContent,
+    parentVNode,
     document.createDocumentFragment()
   ));
-  componentContent.children.push(groupVNode);
+  parentVNode.children.push(groupVNode);
 
   // PERF(pk): this is static data, no need to store in bindings...
   groupVNode.data[0] = name;
@@ -381,14 +379,16 @@ function slot(idx: number) {
   parentVNode.native.appendChild(domEl);
 }
 
+// REFACTOR(pk): code duplication with slotRefresh
 function findGroupsInContainer(containerVNode: VNode, slotName: string): VNode[] {
-  const result: VNode[] = [];
+  let result: VNode[] = [];
   for (let viewVNode of containerVNode.children) {
     for (let vNode of viewVNode.children) {
       if (vNode.type === VNodeType.Group && vNode.data[0] === slotName) {
         result.push(vNode);
+      } else if (vNode.type === VNodeType.Container) {
+        result = result.concat(findGroupsInContainer(vNode, slotName));
       }
-      // TODO(pk): this could have another container :-)
     }
   }
   return result;

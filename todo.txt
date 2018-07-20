@@ -33,12 +33,13 @@
         + multiple slotables with the same name        
         + conditional slots        
         + conditional slottables (one slottable in a container)
-        - conditional slottables (multiple slottables in a container)
-        - conditional slottables (slottables in different containers)
+        + conditional slottables (multiple slottables in a container)
+        + conditional slottables (slottables in different containers)
+        - conditional slottables (slottables in nested containers)
         - mix of named and default nodes in a container
         - dynamic slottables (loop)
         - re-projection
-        - properties on slottables
+        - properties binding on slottables
         - imperative (ex.: wrapping in a loop)
         - nested slottables (ex.: tabs)
         - perf: when are content nodes (VNode and DOM) destroyed?
