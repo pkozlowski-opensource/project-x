@@ -311,7 +311,6 @@ describe("integration", () => {
             if (rf & RenderFlags.Update) {
               containerRefreshStart(0);
               if (show) {
-                // THINK(pk): this assumes that a given container _always_ have the same content...
                 // PERF(pk): what is the cost of re-defining functions like this?
                 view(0, 0, function f(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {

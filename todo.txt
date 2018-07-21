@@ -1,18 +1,24 @@
 - fundamental questions
     - raison d'etre
     - web only or web abstracted
-    - framework vs. library
+    - scope / framework vs. library
     - supported languages (TS / ES6 / ES5)
-    - required build toolchain (try hard to literal tag to act as a "compiler")
+    - required build / toolchain 
+        - try hard to literal tag to act as a "compiler"
+        - ES2015+
+    - server-side rendering?
     - relation to web components
     - dynamic compilation
-- think of the syntax implications for the code I've got so far (prop vs. attr, one-time vs. binding vs. interpolation etc.)
+    - name / logo / domain
+- compiler / syntax
     - general file structure
     - template function markers    
     - expression vs. statement
     - comments
     - component definition
     - event handlers
+    - component / directive referencing
+    - local references
 - basic template syntax
     + static elements
     + interpolation in text nodes
@@ -23,7 +29,6 @@
     - loops and trackBy
     + class toggle
     - one vs. multiple text nodes
-    - comments
     - event handlers with event access
     - referencing nodes in a given view
     - sanitization    
@@ -43,11 +48,15 @@
         - imperative (ex.: wrapping in a loop)
         - nested slottables (ex.: tabs)
         - perf: when are content nodes (VNode and DOM) destroyed?
-    - host bindings
-    - listeners / outputs
-    - lifecycle and lifecycle hooks
+    - host by default? host-less components?
+    - dynamic creation
+        - basic
+        - with inputs / outputs
+        - with content
 - directives
-    - host bindings
+    - host 
+        - bindings
+        - other directives
     - listeners / outputs
     - lifecycle and lifecycle hooks
 - change detection
@@ -55,5 +64,5 @@
     - automatic refresh in an event handlers
     - OnPush equivalent
 - dynamic insertion of UI fragments (ex. tooltip)
-- dynamic compilation
+- dynamic compilation (give a string, get a function, a la AngularJS $compile)
 - extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation
