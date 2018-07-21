@@ -13,12 +13,28 @@
 - compiler / syntax
     - general file structure
     - template function markers    
-    - expression vs. statement
-    - comments
-    - component definition
+    - expression vs. statement: {=expression} vs. {% statement %}  
+    - bindings: 
+        - attributes: attr="{=expression1} {=expression2}"
+        - properties: [prop]="{=expression}" / [prop]="{=expression1} {=expression2}"
+        - class: [class.foo]="{=boolExpression}"
+        - directive inputs:
+            - default: <div [@tooltip]="Great tip!">
+            - named: <div [@tooltip.title]="Great tip!" [@tooltip.delay]="500">
+    - interpolations: {=expression1} {=expression2}
+    - comments: {* *}
+    - component definition:
     - event handlers
+        - (click)="handler(args)"
+        - (click.$event)="handler($event, args)"  
     - component / directive referencing
+        - component: <MyComponent></MyComponent>
+        - directive: <div @tooltip="Great tip!">
     - local references
+        - <dif #foo>
+        - <div #foo[]>
+        - <MyComponent #el #cmpt="@MyComponent"></MyComponent>
+        - <div @tooltip="Great tip!" #t="@tooltip">
 - basic template syntax
     + static elements
     + interpolation in text nodes
