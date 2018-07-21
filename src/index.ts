@@ -149,6 +149,13 @@ function elementAttribute(vNodeIdx: number, bindIdx: number, attrName: string, n
   }
 }
 
+function elementClass(vNodeIdx: number, bindIdx: number, className: string, toogleState: boolean) {
+  const vNode = currentView.nodes[vNodeIdx];
+  if (checkAndUpdateBinding(vNode.data, bindIdx, toogleState)) {
+    vNode.native.classList.toggle(className, toogleState);
+  }
+}
+
 function include(containerIdx: number, tplFn, ctx?) {
   const containerVNode = currentView.nodes[containerIdx];
 

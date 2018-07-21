@@ -120,6 +120,30 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe('<div aria-label="changed"></div>');
     });
 
+    it("should toggle CSS class", () => {
+      `<div [class.show]="shouldShow">`;
+      const refreshFn = render(
+        hostDiv,
+        (rf: RenderFlags, shouldShow: boolean) => {
+          if (rf & RenderFlags.Create) {
+            element(0, "div");
+          }
+          if (rf & RenderFlags.Update) {
+            elementClass(0, 0, "show", shouldShow);
+          }
+        },
+        false
+      );
+
+      expect(hostDiv.innerHTML).toBe("<div></div>");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe('<div class="show"></div>');
+
+      refreshFn(false);
+      expect(hostDiv.innerHTML).toBe('<div class=""></div>');
+    });
+
     it("should properly support binding on nested elements", () => {
       const refreshFn = render(
         hostDiv,

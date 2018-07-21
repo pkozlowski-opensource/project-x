@@ -17,17 +17,17 @@
     + static elements
     + interpolation in text nodes
     + properties
-    - attributes    
+    + attributes    
     - one-time binding
     - 2-way data binding
     - loops and trackBy
-    - class toggle
+    + class toggle
     - one vs. multiple text nodes
     - comments
     - event handlers with event access
     - referencing nodes in a given view
     - sanitization    
-- component model
+- components
     - content projection
         + containers at the root of a slot (can't immediatelly insert)
         + multiple slotables with the same name        
@@ -46,7 +46,10 @@
     - host bindings
     - listeners / outputs
     - lifecycle and lifecycle hooks
-- directive model
+- directives
+    - host bindings
+    - listeners / outputs
+    - lifecycle and lifecycle hooks
 - change detection
     - manual refresh
     - automatic refresh in an event handlers
