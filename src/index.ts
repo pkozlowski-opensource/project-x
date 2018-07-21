@@ -11,8 +11,8 @@ const enum VNodeType {
   Element = 1,
   Container = 2,
   View = 3,
-  Group = 4,
-  Slot = 5
+  Slot = 4,
+  Slotable = 5
 }
 
 interface VNode {
@@ -186,12 +186,12 @@ function removeNodesFromDOM(nodeOrGroup: VNode) {
     if (
       node.type === VNodeType.Container ||
       node.type === VNodeType.Slot ||
-      node.type === VNodeType.Group ||
+      node.type === VNodeType.Slotable ||
       node.type === VNodeType.View
     ) {
       removeNodesFromDOM(node);
     }
-    if (node.type !== VNodeType.View && node.type !== VNodeType.Group) {
+    if (node.type !== VNodeType.View && node.type !== VNodeType.Slotable) {
       node.native.remove();
     } else {
       node.native = null;
@@ -269,7 +269,7 @@ function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: nu
   // Attatch freshly created DOM nodes to the DOM tree but do so only if a container is not at the root of a projection group.
   // We can't attatch views to the root of projection groups as we don't know if a  given container be projected at all!
   const containerParent = containerVNode.parent;
-  if (containerParent.type !== VNodeType.Group) {
+  if (containerParent.type !== VNodeType.Slotable) {
     const renderParent = findRenderParent(containerVNode);
     renderParent.native.insertBefore(viewVNode.native, containerVNode.native);
     viewVNode.native = null; // can't re-use document fragment
@@ -302,7 +302,7 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
   parentVNode.native.appendChild(domEl);
 
   const docFragment = document.createDocumentFragment();
-  const groupVNode = createVNode(VNodeType.Group, currentView, hostElVNode, docFragment);
+  const groupVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, docFragment);
 
   hostElVNode.children[0] = groupVNode;
   parentVNode = groupVNode;
@@ -361,7 +361,7 @@ function input(hostElIdx: number, bindIdx: number, newValue: any): boolean {
 
 function slotableStart(idx: number, name: string) {
   const groupVNode = (currentView.nodes[idx] = createVNode(
-    VNodeType.Group,
+    VNodeType.Slotable,
     currentView,
     parentVNode,
     document.createDocumentFragment()
@@ -386,34 +386,34 @@ function slot(idx: number) {
   parentVNode.native.appendChild(domEl);
 }
 
-function findGroups(containerVNode: VNode, slotName: string, result: VNode[]): VNode[] {
+function findSlotables(containerVNode: VNode, slotName: string, result: VNode[]): VNode[] {
   for (let vNode of containerVNode.children) {
-    if (vNode.type === VNodeType.Group && vNode.data[0] === slotName) {
+    if (vNode.type === VNodeType.Slotable && vNode.data[0] === slotName) {
       result.push(vNode);
     } else if (vNode.type === VNodeType.Container || vNode.type === VNodeType.View) {
       // PERF(pk): I could avoid recurrsion here
-      findGroups(vNode, slotName, result);
+      findSlotables(vNode, slotName, result);
     }
   }
   return result;
 }
 
-function slotRefresh(idx: number, contentGroup: VNode, slotName?: string) {
+function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
   const slotVNode = currentView.nodes[idx];
   if (slotName) {
-    const result = findGroups(contentGroup, slotName, []);
-    if (result.length > 0) {
+    const slotablesFound = findSlotables(defaultSlotable, slotName, []);
+    if (slotablesFound.length > 0) {
       const renderParent = findRenderParent(slotVNode);
-      for (const foundGroup of result) {
-        slotVNode.children.push(foundGroup);
-        renderParent.native.insertBefore(foundGroup.native, slotVNode.native);
+      for (const slotable of slotablesFound) {
+        slotVNode.children.push(slotable);
+        renderParent.native.insertBefore(slotable.native, slotVNode.native);
       }
     }
   } else {
     // PERF(pk): I could split it into 2 functions so it is better for tree-shaking
     // TODO(pk): need to add as a child of a slot
     // TODO(pk): write a test for render parent
-    slotVNode.parent.native.insertBefore(contentGroup.native, slotVNode.native);
+    slotVNode.parent.native.insertBefore(defaultSlotable.native, slotVNode.native);
   }
 }
 
