@@ -39,7 +39,7 @@
     - component definition:
     - event handlers
         - (click)="handler(args)"
-        - (click.$event)="handler($event, args)"  
+        - (click.$e)="handler($e, args)"  ?
     - component / directive referencing
         - component: <MyComponent></MyComponent>
         - directive: <div @tooltip="Great tip!">
@@ -77,11 +77,12 @@
             - named slotables
             - named and default slotables at the root of other slotables
             - named and default slotables at the root of a container
-        - mix of named and default nodes in a container
+        - mix of named slotables and default nodes in a container
         - dynamic slottables (loop + track-by)
         - properties binding on slottables
         - imperative (ex.: wrapping in a loop)
         - nested slottables (ex.: tabs)
+        - "lazy" slottables (ex. delayed tabs / panels) 
         - perf: when are content nodes (VNode and DOM) destroyed?
         - corner cases:
             - multiple usages of <x-slot> (and imperative equivalent)
