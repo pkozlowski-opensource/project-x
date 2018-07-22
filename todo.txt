@@ -1,26 +1,39 @@
 - fundamental questions
     - raison d'etre
-    - web only or web abstracted
-    - scope / framework vs. library
+    - web only or web abstracted (is "ReactNative" possible)
+    - framework vs. library => library
+        - no router / http
+        - forms (to be considered)
     - supported languages (TS / ES6 / ES5)
     - required build / toolchain 
         - try hard to literal tag to act as a "compiler"
         - ES2015+
-    - server-side rendering?
-    - relation to web components
-    - dynamic compilation
+    - scope
+        - dependency injection?
+        - server-side rendering?
+        - relation to web components
+        - dynamic compilation
+    - testing story
+        - unit
+        - e2e
     - name / logo / domain
 - compiler / syntax
-    - general file structure
-    - template function markers    
+    - render(...) function signature
+        - standalone function vs. render in a component
+        - this.foo vs. ctx.foo vs. foo in a component's rendere function 
+    - template function markers: 
+        import {x} from 'x';
+        x`hi!`    
     - expression vs. statement: {=expression} vs. {% statement %}  
     - bindings: 
+        - text nodes: Hello, {=name}!
         - attributes: attr="{=expression1} {=expression2}"
         - properties: [prop]="{=expression}" / [prop]="{=expression1} {=expression2}"
         - class: [class.foo]="{=boolExpression}"
         - directive inputs:
             - default: <div [@tooltip]="Great tip!">
             - named: <div [@tooltip.title]="Great tip!" [@tooltip.delay]="500">
+    - one-time bindings: Hello, {::=name}!
     - interpolations: {=expression1} {=expression2}
     - comments: {* *}
     - component definition:
@@ -45,7 +58,9 @@
     - loops and trackBy
     + class toggle
     - one vs. multiple text nodes
-    - event handlers with event access
+    - event handlers
+        +  event access => $event
+        - local vars / refs access (listeners are registered in creation mode!)
     - referencing nodes in a given view
     - sanitization    
 - components
@@ -77,8 +92,10 @@
     - lifecycle and lifecycle hooks
 - change detection
     - manual refresh
-    - automatic refresh in an event handlers
-    - OnPush equivalent
+        - from root
+        - from a given component
+    - automatic / implicit refresh in an event handlers?
+    - OnPush / should component update equivalent
 - dynamic insertion of UI fragments (ex. tooltip)
 - dynamic compilation (give a string, get a function, a la AngularJS $compile)
 - extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation

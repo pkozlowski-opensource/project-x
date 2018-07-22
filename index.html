@@ -1,20 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
     <script src="src/index.js"></script>
 </head>
-<body>
-    <div id="host"></div>
-    <script>
-        var hostDiv = document.getElementById('host');
-        var refresh = render(hostDiv, app, {name: 'World'});
 
-        setTimeout(function() {
-          console.log('Updating');
-          refresh({name: 'New World'})
+<body>
+    <div id="helloWorldApp"></div>
+    <script>
+        var refreshHelloWorld;
+
+        `
+        Hello, {=ctx.name}!
+        <input [value]="{=ctx.name}" (input)="ctx.name = $event.target.value">
+        <button (click)="ctx.name = 'World'">Reset name</button>
+        `;
+        function helloWorldApp(rf, ctx) {
+            if (rf & 0b01 /* RenderFlags.Create */) {
+                elementStart(0, "h1");
+                text(1, `Hello, ${ctx.name}!`);
+                elementEnd(0);
+                element(2, "input");
+                listener(2, "input", ($event) => {
+                    // extracted from a template - start
+                    ctx.name = $event.target.value;
+                    // extracted from a template - end
+                    // TODO(pk): super-hacky, needs a proper solution here
+                    refreshHelloWorld(ctx);
+                });
+                elementStart(3, "button");
+                    listener(3, "click", () => {
+                        ctx.name = 'World';     
+                        refreshHelloWorld(ctx);   
+                    });
+                    text(4, "Reset name");
+                elementEnd(3);
+            }
+            if (rf & 0b10 /* RenderFlags.Update */) {
+                textContent(1, `Hello, ${ctx.name}`);
+                elementProperty(2, 0, "value", ctx.name);
+            }
+        }
+
+        refreshHelloWorld = render(document.getElementById('helloWorldApp'), helloWorldApp, { name: 'World' });
+    </script>
+    <hr>
+    <div id="clockApp"></div>
+    <script>
+
+        `<h1>{=date.getHours()}:{=date.getMinutes()}:{=date.getSeconds()}</h1>`
+        function clockApp(rf, date) {
+            if (rf & 0b01 /* RenderFlags.Create */) {
+                elementStart(0, "h1");
+                    text(1);
+                elementEnd(0);
+            }
+            if (rf & 0b10 /* RenderFlags.Update */) {
+                textContent(1, `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`);
+            }
+        }
+
+        var date =  new Date();
+        var refreshClock = render(document.getElementById('clockApp'), clockApp, date);
+        setInterval(() => {
+            refreshClock(date);
         }, 1000);
     </script>
 </body>
+
 </html>

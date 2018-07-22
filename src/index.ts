@@ -438,20 +438,7 @@ function render(nativeHost, tpl, ctx?) {
   currentView = null;
   parentVNode = hostVNode.parent;
 
-  return function(ctx) {
+  return function refreshFromRoot(ctx) {
     refreshView(hostVNode, tpl, ctx);
   };
-}
-
-function app(rf: RenderFlags, ctx) {
-  if (rf & RenderFlags.Create) {
-    elementStart(0, "div", ["id", "test"]);
-    text(1, `Hello, ${ctx.name}`);
-    element(2, "span");
-    elementEnd(0);
-  }
-  if (rf & RenderFlags.Update) {
-    elementProperty(0, 0, "id", "new_id");
-    textContent(1, `Hello, ${ctx.name}`);
-  }
 }
