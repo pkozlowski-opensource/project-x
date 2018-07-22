@@ -1383,6 +1383,82 @@ describe("integration", () => {
       refreshFn(false);
       expect(hostDiv.innerHTML).toBe("<test><!--content 0--></test>");
     });
+
+    fit("should support re-projection of default content", () => {
+      `
+      <div class="header">
+        <x-slot name="header"></x-slot>
+      </div>
+      <div class="body">
+        <x-slot name="body"></x-slot>
+      </div>
+      `;
+      class Card {
+        render(rf: RenderFlags, ctx: Card, contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            elementStart(0, "div", ["class", "header"]);
+            slot(1);
+            elementEnd(0);
+            elementStart(2, "div", ["class", "body"]);
+            slot(3);
+            elementEnd(2);
+          }
+          if (rf & RenderFlags.Update) {
+            slotRefresh(1, contentGroup, "header");
+            slotRefresh(3, contentGroup, "body");
+          }
+        }
+      }
+
+      `<Card>
+        <:header>{=ctx.title}</:header>
+        <:body>
+          <x-slot></x-slot>
+        </:body>
+      </Card>`;
+      class SimpleCard {
+        title: string;
+        render(rf: RenderFlags, ctx: SimpleCard, contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            componentStart(0, "card", Card);
+            slotableStart(1, "header");
+            text(2);
+            slotableEnd(1);
+            slotableStart(3, "body");
+            slot(4);
+            slotableEnd(3);
+            componentEnd(0);
+          }
+          if (rf & RenderFlags.Update) {
+            textContent(2, ctx.title);
+            slotRefresh(4, contentGroup);
+            componentRefresh(0);
+          }
+        }
+      }
+
+      `<SimpleCard [title]="{=titleExp}">Content</SimpleCard>`;
+      function app(rf: RenderFlags, titleExp: string) {
+        if (rf & RenderFlags.Create) {
+          componentStart(0, "simple-card", SimpleCard);
+          text(1, "Content");
+          componentEnd(0);
+        }
+        if (rf & RenderFlags.Update) {
+          const cmptInstance = load<SimpleCard>(0, 0);
+          input(0, 1, titleExp) && (cmptInstance.title = titleExp);
+          componentRefresh(0);
+        }
+      }
+
+      const refreshFn = render(hostDiv, app, "Title");
+      expect(hostDiv.innerHTML).toBe(
+        `<simple-card><card><div class="header">Title<!--content 1--></div><div class="body">Content<!--content 4--><!--content 3--></div></card></simple-card>`
+      );
+
+      refreshFn("New Title");
+      // expect(hostDiv.innerHTML).toBe(`<simple-card><card><div class="header">New Title<!--content 1--></div><div class="body">Content<!--content 4--><!--content 3--></div></card></simple-card>`);
+    });
   });
 
   describe("directives", () => {

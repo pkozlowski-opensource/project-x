@@ -57,7 +57,7 @@
     - 2-way data binding
     - loops and trackBy
     + class toggle
-    - one vs. multiple text nodes
+    + one vs. multiple text nodes => one, use `before ${toEmptyStr(exp1)} after`
     - event handlers
         +  event access => $event
         - local vars / refs access (listeners are registered in creation mode!)
@@ -72,18 +72,23 @@
         + conditional slottables (multiple slottables in a container)
         + conditional slottables (slottables in different containers)
         + conditional slottables (slottables in nested containers)
-        - mix of named and default nodes in a container
         - re-projection
+            - default slotables
+            - named slotables
+        - mix of named and default nodes in a container
         - dynamic slottables (loop + track-by)
         - properties binding on slottables
         - imperative (ex.: wrapping in a loop)
         - nested slottables (ex.: tabs)
         - perf: when are content nodes (VNode and DOM) destroyed?
+        - corner cases:
+            - multiple usages of <x-slot> (and imperative equivalent)
+            - multiple usages of <x-slot name=""> (and imperative equivalent)
     - host by default? host-less components?
     - dynamic creation
         - basic
         - with inputs / outputs
-        - with content
+        - with content (named, multiple named, default)
 - directives
     - host 
         - bindings

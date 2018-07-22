@@ -400,10 +400,10 @@ function findSlotables(containerVNode: VNode, slotName: string, result: VNode[])
 
 function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
   const slotVNode = currentView.nodes[idx];
+  const renderParent = findRenderParent(slotVNode);
   if (slotName) {
     const slotablesFound = findSlotables(defaultSlotable, slotName, []);
     if (slotablesFound.length > 0) {
-      const renderParent = findRenderParent(slotVNode);
       for (const slotable of slotablesFound) {
         slotVNode.children.push(slotable);
         renderParent.native.insertBefore(slotable.native, slotVNode.native);
@@ -411,9 +411,8 @@ function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
     }
   } else {
     // PERF(pk): I could split it into 2 functions so it is better for tree-shaking
-    // TODO(pk): need to add as a child of a slot
-    // TODO(pk): write a test for render parent
-    slotVNode.parent.native.insertBefore(defaultSlotable.native, slotVNode.native);
+    slotVNode.children.push(defaultSlotable);
+    renderParent.native.insertBefore(defaultSlotable.native, slotVNode.native);
   }
 }
 
