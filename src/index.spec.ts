@@ -1384,7 +1384,7 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe("<test><!--content 0--></test>");
     });
 
-    fit("should support re-projection of default content", () => {
+    it("should support re-projection of default content", () => {
       `
       <div class="header">
         <x-slot name="header"></x-slot>
@@ -1413,7 +1413,9 @@ describe("integration", () => {
       `<Card>
         <:header>{=ctx.title}</:header>
         <:body>
-          <x-slot></x-slot>
+          <div>
+            <x-slot></x-slot>
+          </div>
         </:body>
       </Card>`;
       class SimpleCard {
@@ -1421,17 +1423,27 @@ describe("integration", () => {
         render(rf: RenderFlags, ctx: SimpleCard, contentGroup: VNode) {
           if (rf & RenderFlags.Create) {
             componentStart(0, "card", Card);
-            slotableStart(1, "header");
-            text(2);
-            slotableEnd(1);
-            slotableStart(3, "body");
-            slot(4);
-            slotableEnd(3);
+            {
+              slotableStart(1, "header");
+              {
+                text(2);
+              }
+              slotableEnd(1);
+              slotableStart(3, "body");
+              {
+                elementStart(4, "div");
+                {
+                  slot(5);
+                }
+                elementEnd(4);
+              }
+              slotableEnd(3);
+            }
             componentEnd(0);
           }
           if (rf & RenderFlags.Update) {
             textContent(2, ctx.title);
-            slotRefresh(4, contentGroup);
+            slotRefresh(5, contentGroup);
             componentRefresh(0);
           }
         }
@@ -1453,11 +1465,10 @@ describe("integration", () => {
 
       const refreshFn = render(hostDiv, app, "Title");
       expect(hostDiv.innerHTML).toBe(
-        `<simple-card><card><div class="header">Title<!--content 1--></div><div class="body">Content<!--content 4--><!--content 3--></div></card></simple-card>`
-      );
+        `<simple-card><card><div class="header">Title<!--content 1--></div><div class="body"><div>Content<!--content 5--></div><!--content 3--></div></card></simple-card>`);
 
       refreshFn("New Title");
-      // expect(hostDiv.innerHTML).toBe(`<simple-card><card><div class="header">New Title<!--content 1--></div><div class="body">Content<!--content 4--><!--content 3--></div></card></simple-card>`);
+      expect(hostDiv.innerHTML).toBe(`<simple-card><card><div class="header">New Title<!--content 1--></div><div class="body"><div>Content<!--content 5--></div><!--content 3--></div></card></simple-card>`);
     });
   });
 

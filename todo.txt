@@ -73,8 +73,10 @@
         + conditional slottables (slottables in different containers)
         + conditional slottables (slottables in nested containers)
         - re-projection
-            - default slotables
+            + default slotables
             - named slotables
+            - named and default slotables at the root of other slotables
+            - named and default slotables at the root of a container
         - mix of named and default nodes in a container
         - dynamic slottables (loop + track-by)
         - properties binding on slottables
