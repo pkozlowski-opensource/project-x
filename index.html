@@ -19,28 +19,32 @@
         `;
         function helloWorldApp(rf, ctx) {
             if (rf & 0b01 /* RenderFlags.Create */) {
-                elementStart(0, "h1");
-                text(1, `Hello, ${ctx.name}!`);
+                elementStart(0, "h1"); {
+                    text(1);
+                }
                 elementEnd(0);
                 element(2, "input");
-                listener(2, "input", ($event) => {
+                listener(2, 0, "input");
+                elementStart(3, "button"); {
+                    listener(3, 0, "click", );
+                    text(4, "Reset name");
+                }
+                elementEnd(3);
+            }
+            if (rf & 0b10 /* RenderFlags.Update */) {
+                textContent(1, `Hello, ${ctx.name}`);
+                listenerRefresh(2, 0, ($event) => {
                     // extracted from a template - start
                     ctx.name = $event.target.value;
                     // extracted from a template - end
                     // TODO(pk): super-hacky, needs a proper solution here
                     refreshHelloWorld(ctx);
                 });
-                elementStart(3, "button");
-                    listener(3, "click", () => {
-                        ctx.name = 'World';     
-                        refreshHelloWorld(ctx);   
-                    });
-                    text(4, "Reset name");
-                elementEnd(3);
-            }
-            if (rf & 0b10 /* RenderFlags.Update */) {
-                textContent(1, `Hello, ${ctx.name}`);
-                elementProperty(2, 0, "value", ctx.name);
+                elementProperty(2, 1, "value", ctx.name);
+                listenerRefresh(3, 0, () => {
+                    ctx.name = 'World';
+                    refreshHelloWorld(ctx);
+                });
             }
         }
 
@@ -54,7 +58,7 @@
         function clockApp(rf, date) {
             if (rf & 0b01 /* RenderFlags.Create */) {
                 elementStart(0, "h1");
-                    text(1);
+                text(1);
                 elementEnd(0);
             }
             if (rf & 0b10 /* RenderFlags.Update */) {
@@ -62,10 +66,9 @@
             }
         }
 
-        var date =  new Date();
-        var refreshClock = render(document.getElementById('clockApp'), clockApp, date);
+        var refreshClock = render(document.getElementById('clockApp'), clockApp, new Date());
         setInterval(() => {
-            refreshClock(date);
+            refreshClock(new Date());
         }, 1000);
     </script>
 </body>
