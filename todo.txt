@@ -2,9 +2,9 @@
     - raison d'etre
     - web only or web abstracted (is "ReactNative" possible)
     - framework vs. library => library
-        - no router 
-        - no http
-        - forms (to be considered)
+        - no http => use fetch
+        - forms / validation (to be considered)
+        - no router (community project, at least initially)
     - supported languages (TS / ES6 / ES5)
         - ES2015+?
     - required build / toolchain 
@@ -24,6 +24,7 @@
     - name / logo / domain
 - compiler / syntax
     - render(...) function signature
+        - single vs. multiple arguments for context
         - standalone function vs. render in a component
         - this.foo vs. ctx.foo vs. foo in a component's rendere function 
     - template markers in regular JS functions: 
@@ -83,6 +84,7 @@
         - reference multiple elements in a given view
         - sanitization    
     - components
+        - host by default? host-less components?
         - content projection
             + containers at the root of a slot (can't immediatelly insert)
             + multiple slotables with the same name        
@@ -106,7 +108,6 @@
             - corner cases:
                 - multiple usages of <x-slot> (and imperative equivalent)
                 - multiple usages of <x-slot name=""> (and imperative equivalent)
-        - host by default? host-less components?
         - dynamic creation
             - basic
             - with inputs / outputs

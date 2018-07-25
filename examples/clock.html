@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="../src/index.js"></script>
+    <title>Clock example</title>
+</head>
+<body>
+    <div id="clockApp"></div>
+    <script>
+
+        `<h1>{=date.getHours()}:{=date.getMinutes()}:{=date.getSeconds()}</h1>`
+        function clockApp(rf, date) {
+            if (rf & 0b01 /* RenderFlags.Create */) {
+                elementStart(0, "h1");
+                text(1);
+                elementEnd(0);
+            }
+            if (rf & 0b10 /* RenderFlags.Update */) {
+                textContent(1, `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`);
+            }
+        }
+
+        var refreshClock = render(document.getElementById('clockApp'), clockApp, new Date());
+        setInterval(() => {
+            refreshClock(new Date());
+        }, 1000);
+    </script>
+</body>
+</html>
