@@ -35,15 +35,13 @@
             }
             if (rf & 0b10 /* RenderFlags.Update */) {
                 textContent(1, `Hello, ${ctx.name}`);
-                listenerRefresh(2, 0, ($event) => {
-                    // extracted from a template - start
+                listenerRefresh(2, 0, function el2_input($event) {
                     ctx.name = $event.target.value;
-                    // extracted from a template - end
                     // TODO(pk): super-hacky, needs a proper solution here
                     refreshHelloWorld(ctx);
                 });
                 elementProperty(2, 1, "value", ctx.name);
-                listenerRefresh(3, 0, () => {
+                listenerRefresh(3, 0, function el3_click($event) {
                     ctx.name = 'World';
                     refreshHelloWorld(ctx);
                 });
