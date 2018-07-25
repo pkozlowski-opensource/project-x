@@ -1556,4 +1556,29 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe('<div id="id from test directive"></div>');
     });
   });
+
+  describe("refs", () => {
+    it("should support single reference to an element", () => {
+      `
+      <input #i value="World">
+      Hello, {=i.value}!
+      `;
+      function tpl(rf: RenderFlags) {
+        if (rf & RenderFlags.Create) {
+          element(0, "input", ["value", "World"]);
+          text(1);
+        }
+        if (rf & RenderFlags.Update) {
+          let i = loadElementRef(0);
+          textContent(1, `Hello, ${i.value}!`);
+        }
+      }
+
+      const refreshFn = render(hostDiv, tpl);
+      expect(hostDiv.innerHTML).toBe('<input value="World">Hello, World!');
+
+      refreshFn();
+      expect(hostDiv.innerHTML).toBe('<input value="World">Hello, World!');
+    });
+  });
 });

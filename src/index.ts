@@ -363,6 +363,11 @@ function load<T>(nodeIdx: number, dataIdx: number): T {
   return vNode.data[dataIdx] as T;
 }
 
+function loadElementRef(nodeIdx: number) {
+  const vNode = currentView.nodes[nodeIdx];
+  return vNode.native;
+}
+
 function input(hostElIdx: number, bindIdx: number, newValue: any): boolean {
   const vNode = currentView.nodes[hostElIdx];
   return checkAndUpdateBinding(vNode.data, bindIdx, newValue);
@@ -446,7 +451,7 @@ function render(nativeHost, tpl, ctx?) {
   currentView = null;
   parentVNode = hostVNode.parent;
 
-  return function refreshFromRoot(ctx) {
+  return function refreshFromRoot(ctx?) {
     refreshView(hostVNode, tpl, ctx);
   };
 }
