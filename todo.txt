@@ -2,17 +2,22 @@
     - raison d'etre
     - web only or web abstracted (is "ReactNative" possible)
     - framework vs. library => library
-        - no router / http
+        - no router 
+        - no http
         - forms (to be considered)
     - supported languages (TS / ES6 / ES5)
+        - ES2015+?
     - required build / toolchain 
-        - try hard to literal tag to act as a "compiler"
-        - ES2015+
+        - drop-a-compiler script would be totally great...
+        - editor(s) support
     - scope
+        - animations?
         - dependency injection?
         - server-side rendering?
-        - relation to web components
-        - dynamic compilation
+        - relation to web components (custom elements, shadow dom)
+        - dynamic compilation (AngularJS $compile)
+        - i18n?
+        - web-worker?
     - testing story
         - unit
         - e2e
@@ -21,8 +26,9 @@
     - render(...) function signature
         - standalone function vs. render in a component
         - this.foo vs. ctx.foo vs. foo in a component's rendere function 
-    - template function markers: 
+    - template markers in regular JS functions: 
         import {x} from 'x';
+        ...
         x`hi!`    
     - expression vs. statement: {=expression} vs. {% statement %}  
     - bindings: 
@@ -37,13 +43,19 @@
     - interpolations: {=expression1} {=expression2}
     - comments: {* *}
     - component definition:
+        import {MyComponent} from './my-component';
+
+        x`<MyComponent></MyComponent>`; // this would have to be based on the naming convention...
+        x`<@MyComponent></@MyComponent>`;
+        x`<div:@MyComponent></div:@MyComponent>`; // to specify a host???
     - event handlers
+        - (click)="handler($event)"
         - (click)="handler(args)"
         - (click.$e)="handler($e, args)"  ?
     - component / directive referencing
         - component: <MyComponent></MyComponent>
         - directive: <div @tooltip="Great tip!">
-    - local references
+    - local references:
         - <dif #foo>
         - <div #foo[]>
         - <MyComponent #el #cmpt="@MyComponent"></MyComponent>
