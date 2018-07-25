@@ -79,7 +79,8 @@
         + event handlers
             + event access => $event
             + local vars / refs access (listeners are registered in creation mode!)
-        - referencing nodes in a given view
+        + reference single element in a given view
+        - reference multiple elements in a given view
         - sanitization    
     - components
         - content projection
@@ -110,12 +111,18 @@
             - basic
             - with inputs / outputs
             - with content (named, multiple named, default)
+        - refs
+            - single
+            - multiple
     - directives
         - host 
             - bindings
             - other directives
         - listeners / outputs
         - lifecycle and lifecycle hooks
+        - refs
+            + single
+            - multiple
     - change detection
         - manual refresh
             - from root

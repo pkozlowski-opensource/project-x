@@ -1569,7 +1569,7 @@ describe("integration", () => {
           text(1);
         }
         if (rf & RenderFlags.Update) {
-          let i = loadElementRef(0);
+          const i = loadElementRef(0);
           textContent(1, `Hello, ${i.value}!`);
         }
       }
@@ -1579,6 +1579,47 @@ describe("integration", () => {
 
       refreshFn();
       expect(hostDiv.innerHTML).toBe('<input value="World">Hello, World!');
+    });
+
+    it("should support single reference to a directive", () => {
+      class Lorem {
+        constructor(private _element) {}
+
+        generate() {
+          this._element.textContent = "Lorem ipsum";
+        }
+
+        // THINK(pk): this could be optional - although checking this at compile time would be pain if I want to support inheritance...
+        refresh() {}
+      }
+
+      `
+      <div @Lorem #l="@Lorem"></div>
+      <button (click)="l.generate()"></button>
+      `;
+      function tpl(rf: RenderFlags) {
+        if (rf & RenderFlags.Create) {
+          element(0, "div");
+          directive(0, 0, Lorem);
+
+          element(1, "button");
+          listener(1, 0, "click");
+        }
+        if (rf & RenderFlags.Update) {
+          const l = load<Lorem>(0, 0);
+          directiveRefresh(0, 0);
+          listenerRefresh(1, 0, function($event) {
+            l.generate();
+          });
+        }
+      }
+
+      const refreshFn = render(hostDiv, tpl);
+      expect(hostDiv.innerHTML).toBe("<div></div><button></button>");
+
+      hostDiv.querySelector("button").click();
+      refreshFn();
+      expect(hostDiv.innerHTML).toBe("<div>Lorem ipsum</div><button></button>");
     });
   });
 });
