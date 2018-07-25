@@ -71,7 +71,7 @@
             - properties
             - inputs
             - text nodes (interpolation)
-        - one-time binding and mixed interpolation (ex.: <span>{::=exp1})|{=exp2}</span>)
+            - mixed interpolation (ex.: <span>{::=exp1})|{=exp2}</span>)
         - 2-way data binding
         - loops and trackBy
         + class toggle
