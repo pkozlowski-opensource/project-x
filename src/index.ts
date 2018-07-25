@@ -98,13 +98,22 @@ function container(idx: number) {
   parentVNode.native.appendChild(domEl);
 }
 
-function listener(elIdx: number, eventName: string, handlerFn) {
+function listener(elIdx: number, bindIdx: number, eventName: string) {
   // PERF(pk): I could avoid look-up here by storing "global" reference to a node being processed
   const vNode = currentView.nodes[elIdx];
   const domEl = vNode.native;
 
-  // TODO(pk): do I need to cleanup?
-  domEl.addEventListener(eventName, handlerFn);
+  // TODO(pk): cleanup on view destroy
+  domEl.addEventListener(eventName, function($event) {
+    // TODO(pk): assert on presence
+    vNode.data[bindIdx]($event);
+  });
+}
+
+// PERF(pk): this instruction means re-creating closure for a handler function on each change detection :-/
+function listenerRefresh(elIdx: number, bindIdx: number, handlerFn) {
+  const vNode = currentView.nodes[elIdx];
+  vNode.data[bindIdx] = handlerFn;
 }
 
 function text(idx: number, value?: string) {

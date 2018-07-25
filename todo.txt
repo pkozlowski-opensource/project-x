@@ -60,62 +60,68 @@
         - <div #foo[]>
         - <MyComponent #el #cmpt="@MyComponent"></MyComponent>
         - <div @tooltip="Great tip!" #t="@tooltip">
-- basic template syntax
-    + static elements
-    + interpolation in text nodes
-    + properties
-    + attributes    
-    - one-time binding
-    - 2-way data binding
-    - loops and trackBy
-    + class toggle
-    + one vs. multiple text nodes => one, use `before ${toEmptyStr(exp1)} after`
-    - event handlers
-        +  event access => $event
-        - local vars / refs access (listeners are registered in creation mode!)
-    - referencing nodes in a given view
-    - sanitization    
-- components
-    - content projection
-        + containers at the root of a slot (can't immediatelly insert)
-        + multiple slotables with the same name        
-        + conditional slots        
-        + conditional slottables (one slottable in a container)
-        + conditional slottables (multiple slottables in a container)
-        + conditional slottables (slottables in different containers)
-        + conditional slottables (slottables in nested containers)
-        - re-projection
-            + default slotables
-            - named slotables
-            - named and default slotables at the root of other slotables
-            - named and default slotables at the root of a container
-        - mix of named slotables and default nodes in a container
-        - dynamic slottables (loop + track-by)
-        - properties binding on slottables
-        - imperative (ex.: wrapping in a loop)
-        - nested slottables (ex.: tabs)
-        - "lazy" slottables (ex. delayed tabs / panels) 
-        - perf: when are content nodes (VNode and DOM) destroyed?
-        - corner cases:
-            - multiple usages of <x-slot> (and imperative equivalent)
-            - multiple usages of <x-slot name=""> (and imperative equivalent)
-    - host by default? host-less components?
-    - dynamic creation
-        - basic
-        - with inputs / outputs
-        - with content (named, multiple named, default)
-- directives
-    - host 
-        - bindings
-        - other directives
-    - listeners / outputs
-    - lifecycle and lifecycle hooks
-- change detection
-    - manual refresh
-        - from root
-        - from a given component
-    - automatic / implicit refresh in an event handlers?
-    - OnPush / should component update equivalent
-- dynamic insertion of UI fragments (ex. tooltip)
-- dynamic compilation (give a string, get a function, a la AngularJS $compile)
-- extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation
+- runtime impl
+    - basic template syntax
+        + static elements
+        + interpolation in text nodes
+        + properties
+        + attributes    
+        - one-time binding
+            - attributes
+            - properties
+            - inputs
+            - text nodes (interpolation)
+        - one-time binding and mixed interpolation (ex.: <span>{::=exp1})|{=exp2}</span>)
+        - 2-way data binding
+        - loops and trackBy
+        + class toggle
+        + one vs. multiple text nodes => one, use `before ${toEmptyStr(exp1)} after`
+        + event handlers
+            + event access => $event
+            + local vars / refs access (listeners are registered in creation mode!)
+        - referencing nodes in a given view
+        - sanitization    
+    - components
+        - content projection
+            + containers at the root of a slot (can't immediatelly insert)
+            + multiple slotables with the same name        
+            + conditional slots        
+            + conditional slottables (one slottable in a container)
+            + conditional slottables (multiple slottables in a container)
+            + conditional slottables (slottables in different containers)
+            + conditional slottables (slottables in nested containers)
+            - re-projection
+                + default slotables
+                - named slotables
+                - named and default slotables at the root of other slotables
+                - named and default slotables at the root of a container
+            - mix of named slotables and default nodes in a container
+            - dynamic slottables (loop + track-by)
+            - properties binding on slottables
+            - imperative (ex.: wrapping in a loop)
+            - nested slottables (ex.: tabs)
+            - "lazy" slottables (ex. delayed tabs / panels) 
+            - perf: when are content nodes (VNode and DOM) destroyed?
+            - corner cases:
+                - multiple usages of <x-slot> (and imperative equivalent)
+                - multiple usages of <x-slot name=""> (and imperative equivalent)
+        - host by default? host-less components?
+        - dynamic creation
+            - basic
+            - with inputs / outputs
+            - with content (named, multiple named, default)
+    - directives
+        - host 
+            - bindings
+            - other directives
+        - listeners / outputs
+        - lifecycle and lifecycle hooks
+    - change detection
+        - manual refresh
+            - from root
+            - from a given component
+        - automatic / implicit refresh in an event handlers?
+        - OnPush / should component update equivalent
+    - dynamic insertion of UI fragments (ex. tooltip)
+    - dynamic compilation (give a string, get a function, a la AngularJS $compile)
+    - extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation

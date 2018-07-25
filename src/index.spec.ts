@@ -180,15 +180,16 @@ describe("integration", () => {
         if (rf & RenderFlags.Create) {
           elementStart(0, "button");
           {
-            listener(0, "click", function() {
-              ctx.counter++;
-            });
+            listener(0, 0, "click");
             text(1, "Increment");
           }
           elementEnd(0);
           text(2);
         }
         if (rf & RenderFlags.Update) {
+          listenerRefresh(0, 0, function() {
+            ctx.counter++;
+          });
           textContent(2, `Counter: ${ctx.counter}`);
         }
       }
@@ -201,6 +202,33 @@ describe("integration", () => {
       expect(ctx.counter).toBe(1);
       refreshFn(ctx);
       expect(hostDiv.innerHTML).toBe("<button>Increment</button>Counter: 1");
+    });
+
+    it("should be able to access closure data and event in the event handler", () => {
+      let moduleCtx: string;
+
+      `
+        {% let foo = 'bar'; %}
+        <button (click)="moduleCtx = foo"></button>
+      `;
+      function tpl(rf: RenderFlags) {
+        if (rf & RenderFlags.Create) {
+          element(0, "button");
+          listener(0, 0, "click");
+        }
+        if (rf & RenderFlags.Update) {
+          let foo = "bar";
+          listenerRefresh(0, 0, function($event) {
+            moduleCtx = foo;
+            expect($event.target).toBeDefined();
+          });
+        }
+      }
+
+      const refreshFn = render(hostDiv, tpl);
+
+      hostDiv.querySelector("button").click();
+      expect(moduleCtx).toBe("bar");
     });
   });
 
@@ -1465,10 +1493,13 @@ describe("integration", () => {
 
       const refreshFn = render(hostDiv, app, "Title");
       expect(hostDiv.innerHTML).toBe(
-        `<simple-card><card><div class="header">Title<!--content 1--></div><div class="body"><div>Content<!--content 5--></div><!--content 3--></div></card></simple-card>`);
+        `<simple-card><card><div class="header">Title<!--content 1--></div><div class="body"><div>Content<!--content 5--></div><!--content 3--></div></card></simple-card>`
+      );
 
       refreshFn("New Title");
-      expect(hostDiv.innerHTML).toBe(`<simple-card><card><div class="header">New Title<!--content 1--></div><div class="body"><div>Content<!--content 5--></div><!--content 3--></div></card></simple-card>`);
+      expect(hostDiv.innerHTML).toBe(
+        `<simple-card><card><div class="header">New Title<!--content 1--></div><div class="body"><div>Content<!--content 5--></div><!--content 3--></div></card></simple-card>`
+      );
     });
   });
 
