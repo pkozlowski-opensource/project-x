@@ -54,7 +54,7 @@ function createVNode(type: VNodeType, view: ViewData, parent: VNode, native): VN
 // INSANITY WARNING: global variables => think of passing context around
 // those fields here are part of the view-specific context
 let parentVNode: VNode;
-let nextViewIdx = 0;
+let nextViewIdx = 0; // TODO(pk): this can't be global as it won't work for nested containers
 
 let currentView: ViewData;
 

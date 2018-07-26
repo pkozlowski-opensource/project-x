@@ -111,7 +111,7 @@
             - corner cases:
                 - multiple usages of <x-slot> (and imperative equivalent)
                 - multiple usages of <x-slot name=""> (and imperative equivalent)
-        - dynamic creation
+        - dynamic creation (create content given component type)
             - basic
             - with inputs / outputs
             - with content (named, multiple named, default)
