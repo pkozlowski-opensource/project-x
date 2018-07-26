@@ -235,7 +235,6 @@ describe("integration", () => {
   describe("containers", () => {
     // TODO(tests to write):
     // - while / do while etc.
-    // - switch
     // - inserting / deleting views in the "middle" of a container
 
     describe("function calls", () => {
@@ -654,6 +653,67 @@ describe("integration", () => {
         ctx.splice(1, 1);
         refreshFn(ctx);
         expect(hostDiv.innerHTML).toBe("one-three-<!--container 0-->");
+      });
+    });
+
+    describe("switch", () => {
+      it("should support switch", () => {
+        `
+        {% switch(fruit) {
+          case 'apple': { %}
+            Ripe apple!
+          {%
+            break;
+          }
+          case 'banana': { %}
+            Yellow banana
+          {%
+            break;
+          }
+        } %}
+        `;
+        const refreshFn = render(
+          hostDiv,
+          (rf: RenderFlags, fruit: string) => {
+            if (rf & RenderFlags.Create) {
+              container(0);
+            }
+            if (rf & RenderFlags.Update) {
+              containerRefreshStart(0);
+              switch (fruit) {
+                case "apple": {
+                  view(0, 0, function(rf: RenderFlags) {
+                    if (rf & RenderFlags.Create) {
+                      text(0, "Ripe apple");
+                    }
+                  });
+                  break;
+                }
+                case "banana": {
+                  view(0, 1, function(rf: RenderFlags) {
+                    if (rf & RenderFlags.Create) {
+                      text(0, "Yellow banana");
+                    }
+                  });
+                  break;
+                }
+              }
+              containerRefreshEnd(0);
+            }
+          },
+          "apple"
+        );
+
+        expect(hostDiv.innerHTML).toBe("Ripe apple<!--container 0-->");
+
+        refreshFn("banana");
+        expect(hostDiv.innerHTML).toBe("Yellow banana<!--container 0-->");
+
+        refreshFn("exotic");
+        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+
+        refreshFn("banana");
+        expect(hostDiv.innerHTML).toBe("Yellow banana<!--container 0-->");
       });
     });
   });
