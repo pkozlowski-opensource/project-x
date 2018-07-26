@@ -70,10 +70,13 @@
         - one-time binding
             - attributes
             - properties
+            - class toggle
             - inputs
             - text nodes (interpolation)
             - mixed interpolation (ex.: <span>{::=exp1})|{=exp2}</span>)
         - 2-way data binding
+            + manual / the "hard way"
+            - sugar
         - loops and trackBy
         + class toggle
         + one vs. multiple text nodes => one, use `before ${toEmptyStr(exp1)} after`

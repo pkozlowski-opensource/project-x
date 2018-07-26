@@ -111,6 +111,7 @@ function listener(elIdx: number, bindIdx: number, eventName: string) {
 }
 
 // PERF(pk): this instruction means re-creating closure for a handler function on each change detection :-/
+// it "costs" 64 bytes per listener (Chrome, OSX)
 function listenerRefresh(elIdx: number, bindIdx: number, handlerFn) {
   const vNode = currentView.nodes[elIdx];
   vNode.data[bindIdx] = handlerFn;

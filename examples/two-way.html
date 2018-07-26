@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="../src/index.js"></script>
+    <title>2-way binding example</title>
+</head>
+
+<body>
+    <div id="twoWayApp"></div>
+
+    <script>
+        const hostEl = document.getElementById('twoWayApp');
+        const ctx = {name: 'World'};
+        var refresh;
+        `
+        <h1>Hello, {=ctx.name}!</h1>
+        <input [value]="ctx.name" (input)="ctx.name = $event.target.value">
+        <button (click)="ctx.name = ''">Reset</button>
+        `
+        function twoWayApp(rf, ctx) {
+            if (rf & 0b01 /* RenderFlags.Create */) {
+                elementStart(0, "h1"); {
+                    text(1);
+                } 
+                elementEnd(0);
+                element(2, "input");
+                listener(2, 0, "input");
+                elementStart(3, "button"); {
+                    listener(3, 0, "click");
+                    text(4, "Reset");
+                }
+                elementEnd(3);
+            }
+            if (rf & 0b10 /* RenderFlags.Update */) {
+                textContent(1, `Hello, ${ctx.name}!`);
+                listenerRefresh(2, 0, function($event) {
+                    ctx.name = $event.target.value;
+                    refresh(ctx);
+                });
+                listenerRefresh(3, 0, function($event) {
+                    ctx.name = "";
+                    refresh(ctx);
+                });
+            }
+        }
+
+        refresh = render(hostEl, twoWayApp, ctx);
+
+        setInterval(() => {
+            refresh(ctx);
+        }, 1000);
+    </script>
+</body>
+
+</html>
