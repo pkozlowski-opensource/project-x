@@ -233,9 +233,6 @@ describe("integration", () => {
   });
 
   describe("containers", () => {
-    // TODO(tests to write):
-    // - while / do while etc.
-    // - inserting / deleting views in the "middle" of a container
 
     describe("function calls", () => {
       it("should include result of other functions", () => {
@@ -338,7 +335,6 @@ describe("integration", () => {
             if (rf & RenderFlags.Update) {
               containerRefreshStart(0);
               if (show) {
-                // PERF(pk): what is the cost of re-defining functions like this?
                 view(0, 0, function f(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {
                     text(0, "Shown conditionally");
@@ -653,6 +649,52 @@ describe("integration", () => {
         ctx.splice(1, 1);
         refreshFn(ctx);
         expect(hostDiv.innerHTML).toBe("one-three-<!--container 0-->");
+      });
+
+      it("should support while loops", () => {
+        const fruits = ["apple", "banana", "orange"];
+
+        `
+        {%
+          let i = 0;
+          while (i < fruits.length) {
+          %} {=fruits[i]}- {%  
+            i++;
+          }
+        %}
+        `;
+        const refreshFn = render(
+          hostDiv,
+          (rf: RenderFlags, fruits: string[]) => {
+            if (rf & RenderFlags.Create) {
+              container(0);
+            }
+            if (rf & RenderFlags.Update) {
+              containerRefreshStart(0);
+              let i = 0;
+              while (i < fruits.length) {
+                view(0, 0, function f(rf: RenderFlags) {
+                  if (rf & RenderFlags.Create) {
+                    text(0);
+                    text(1, "-");
+                  }
+                  if (rf & RenderFlags.Update) {
+                    textContent(0, fruits[i]);
+                  }
+                });
+                i++;
+              }
+              containerRefreshEnd(0);
+            }
+          },
+          fruits
+        );
+
+        expect(hostDiv.innerHTML).toBe("apple-banana-orange-<!--container 0-->");
+
+        fruits.splice(1, 1);
+        refreshFn(fruits);
+        expect(hostDiv.innerHTML).toBe("apple-orange-<!--container 0-->");
       });
     });
 

@@ -277,7 +277,7 @@ function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: nu
   viewFn(RenderFlags.CreateAndUpdate, ctx);
 
   // Attatch freshly created DOM nodes to the DOM tree but do so only if a container is not at the root of a projection group.
-  // We can't attatch views to the root of projection groups as we don't know if a  given container be projected at all!
+  // We can't attatch views to the root of projection groups as we don't know if a given container will be projected at all!
   const containerParent = containerVNode.parent;
   if (containerParent.type !== VNodeType.Slotable) {
     const renderParent = findRenderParent(containerVNode);
@@ -289,6 +289,7 @@ function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: nu
   currentView = oldView;
 }
 
+// PERF(pk): this instruction will re-create a closure in each and every change detection cycle
 function view(containerIdx: number, viewId: number, viewFn, ctx?) {
   const containerVNode = currentView.nodes[containerIdx];
   const existingVNode = findView(containerVNode.children, nextViewIdx, viewId);
