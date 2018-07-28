@@ -126,6 +126,7 @@
     - directives
         - host 
             - bindings
+            - listeners
             - other directives
         + listeners / outputs
         - lifecycle and lifecycle hooks

@@ -1958,8 +1958,6 @@ describe("integration", () => {
         counter = 0;
         out: ($event: any) => void;
 
-        refresh() {}
-
         tick() {
           if (this.out) {
             this.out(++this.counter);
@@ -2041,9 +2039,6 @@ describe("integration", () => {
         generate() {
           this._element.textContent = "Lorem ipsum";
         }
-
-        // THINK(pk): this could be optional - although checking this at compile time would be pain if I want to support inheritance...
-        refresh() {}
       }
 
       `

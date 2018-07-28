@@ -479,7 +479,9 @@ function directive(hostIdx: number, directiveIdx: number, constructorFn) {
 
 function directiveRefresh(hostIdx: number, directiveIdx: number) {
   const directiveInstance = currentView.nodes[hostIdx].data[directiveIdx];
-  directiveInstance.refresh();
+  if (directiveInstance.refresh) {
+    directiveInstance.refresh();
+  }
 }
 
 function render(nativeHost, tpl, ctx?) {
