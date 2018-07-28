@@ -39,13 +39,13 @@ const enum RenderFlags {
   CreateAndUpdate = 0b11
 }
 
-function createVNode(type: VNodeType, view: ViewData, parent: VNode, native): VNode {
+function createVNode(type: VNodeType, view: ViewData, parent: VNode, nativeOrRenderParent): VNode {
   return {
     type: type,
     view: view,
     parent: parent,
     children: [], // PERF(pk): lazy-init children array => or better yet, have the exact number of children handy :-)
-    native: native,
+    native: nativeOrRenderParent,
     data: [], // PERF(pk): lazy-init data array => or better yet, have the exact number of bindings handy :-)
     componentView: null
   };
@@ -67,6 +67,27 @@ function setAttributes(domEl, attrs?: string[] | null) {
   }
 }
 
+function appendNativeNode(parent: VNode, node: VNode) {
+  // possible values: Element, View, Slotable
+  if (parent.type === VNodeType.Element) {
+    parent.native.appendChild(node.native);
+  } else if (parent.type === VNodeType.View) {
+    // If view has already its render parent determined (as it is a child of an element
+    // or another view that was already inserted) we can append DOM node.
+    // Otherwise insertion is delayed till a view is added to the DOM.
+    if (parent.native) {
+      const viewParent = parent.parent;
+      if (viewParent.type === VNodeType.Container) {
+        // embedded view
+        parent.native.insertBefore(node.native, viewParent.native);
+      } else {
+        // component view
+        parent.native.appendChild(node.native);
+      }
+    }
+  }
+}
+
 // =========
 
 function elementStart(idx: number, tagName: string, attrs?: string[] | null) {
@@ -76,7 +97,7 @@ function elementStart(idx: number, tagName: string, attrs?: string[] | null) {
   parentVNode.children.push(vNode);
 
   setAttributes(domEl, attrs);
-  parentVNode.native.appendChild(domEl);
+  appendNativeNode(parentVNode, vNode);
 
   parentVNode = vNode;
 }
@@ -94,8 +115,9 @@ function element(idx: number, tagName: string, attrs?: string[] | null) {
 function container(idx: number) {
   const domEl = document.createComment(`container ${idx}`);
   const vNode = (currentView.nodes[idx] = createVNode(VNodeType.Container, currentView, parentVNode, domEl));
+
   parentVNode.children.push(vNode);
-  parentVNode.native.appendChild(domEl);
+  appendNativeNode(parentVNode, vNode);
 }
 
 function listener(elIdx: number, bindIdx: number, eventName: string) {
@@ -120,8 +142,9 @@ function listenerRefresh(elIdx: number, bindIdx: number, handlerFn) {
 function text(idx: number, value?: string) {
   const domEl = document.createTextNode(value != null ? value : "");
   const vNode = (currentView.nodes[idx] = createVNode(VNodeType.Text, currentView, parentVNode, domEl));
+
   parentVNode.children.push(vNode);
-  parentVNode.native.appendChild(domEl);
+  appendNativeNode(parentVNode, vNode);
 }
 
 function checkAndUpdateBinding(bindings: any[], bindIdx: number, newValue: any): boolean {
@@ -191,6 +214,39 @@ function containerRefreshStart(containerIdx: number) {
   nextViewIdx = 0;
 }
 
+function insertViewIntoDOM(renderParent: any, container: VNode, view: VNode) {
+  view.native = renderParent;
+  for (const vNode of view.children) {
+    renderParent.insertBefore(vNode.native, container.native);
+    if (vNode.type === VNodeType.Container) {
+      for (const viewVnode of vNode.children) {
+        insertViewIntoDOM(renderParent, vNode, viewVnode);
+      }
+    }
+    if (vNode.type === VNodeType.Slot) {
+      for (const slotable of vNode.children) {
+        insertSlotableIntoDOM(renderParent, vNode, slotable);
+      }
+    }
+  }
+}
+
+// TODO(pk): code duplication with the function above
+function insertSlotableIntoDOM(renderParent: any, slot: VNode, slotable: VNode) {
+  slotable.native = renderParent;
+  for (const vNode of slotable.children) {
+    // skip slotables in slotables
+    if (vNode.type !== VNodeType.Slotable) {
+      renderParent.insertBefore(vNode.native, slot.native);
+    }
+    if (vNode.type === VNodeType.Container) {
+      for (const viewVnode of vNode.children) {
+        insertViewIntoDOM(renderParent, vNode, viewVnode);
+      }
+    }
+  }
+}
+
 function removeNodesFromDOM(nodeOrGroup: VNode) {
   for (let node of nodeOrGroup.children) {
     if (
@@ -237,11 +293,9 @@ function findView(views: VNode[], startIdx: number, viewIdx: number): VNode | un
   }
 }
 
-function createViewVNode(viewId: number, parent: VNode) {
-  const docFragment = document.createDocumentFragment();
+function createViewVNode(viewId: number, parent: VNode, renderParent = null) {
   const viewData = { viewId: viewId, nodes: [] };
-
-  return createVNode(VNodeType.View, viewData, parent, docFragment);
+  return createVNode(VNodeType.View, viewData, parent, renderParent);
 }
 
 function refreshView(viewVNode: VNode, viewFn, ctx?) {
@@ -255,20 +309,22 @@ function refreshView(viewVNode: VNode, viewFn, ctx?) {
   currentView = oldView;
 }
 
-function findRenderParent(vNode: VNode): VNode {
+function findRenderParent(vNode: VNode): VNode | null {
   while ((vNode = vNode.parent)) {
     if (vNode.type === VNodeType.Element) {
-      // container is a child of a regular element
-      return vNode;
-    } else if (vNode.type === VNodeType.View && vNode.native !== null) {
-      // container is a child of a view that was not yet inserted into the DOM
-      return vNode;
+      // child of a regular element
+      return vNode.native;
+    } else if (vNode.type === VNodeType.View || vNode.type === VNodeType.Slotable) {
+      // a child of a view that was not yet inserted into the DOM
+      return vNode.native;
     }
   }
+  throw `Unexpected node of type ${vNode.type}`;
 }
 
 function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: number, viewFn, ctx?) {
-  const viewVNode = (parentVNode = createViewVNode(viewId, containerVNode));
+  const renderParent = findRenderParent(containerVNode);
+  const viewVNode = (parentVNode = createViewVNode(viewId, containerVNode, renderParent));
   containerVNode.children.splice(viewIdx, 0, viewVNode);
 
   const oldView = currentView;
@@ -276,13 +332,8 @@ function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: nu
 
   viewFn(RenderFlags.CreateAndUpdate, ctx);
 
-  // Attatch freshly created DOM nodes to the DOM tree but do so only if a container is not at the root of a projection group.
-  // We can't attatch views to the root of projection groups as we don't know if a given container will be projected at all!
-  const containerParent = containerVNode.parent;
-  if (containerParent.type !== VNodeType.Slotable) {
-    const renderParent = findRenderParent(containerVNode);
-    renderParent.native.insertBefore(viewVNode.native, containerVNode.native);
-    viewVNode.native = null; // can't re-use document fragment
+  if (renderParent) {
+    insertViewIntoDOM(renderParent, containerVNode, viewVNode);
   }
 
   parentVNode = containerVNode.parent;
@@ -310,10 +361,9 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
   hostElVNode.data[0] = new constructorFn();
 
   setAttributes(domEl, attrs);
-  parentVNode.native.appendChild(domEl);
+  appendNativeNode(parentVNode, hostElVNode);
 
-  const docFragment = document.createDocumentFragment();
-  const groupVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, docFragment);
+  const groupVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, null);
 
   hostElVNode.children[0] = groupVNode;
   parentVNode = groupVNode;
@@ -322,18 +372,13 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
 function componentEnd(idx: number) {
   const hostElVNode = currentView.nodes[idx];
   const cmptInstance = hostElVNode.data[0];
-  const componentViewNode = createViewVNode(-1, hostElVNode);
+  const componentViewNode = createViewVNode(-1, hostElVNode, hostElVNode.native);
   const oldView = currentView;
 
   parentVNode = componentViewNode;
   currentView = componentViewNode.view;
 
   cmptInstance.render(RenderFlags.Create, cmptInstance);
-
-  // append all nodes collected for component view
-  hostElVNode.native.appendChild(componentViewNode.native);
-  // I can't re-use doc fragments - mark it as null so we know that we need to traverse up while looking for render parents
-  componentViewNode.native = null;
   hostElVNode.componentView = componentViewNode;
 
   currentView = oldView;
@@ -376,12 +421,7 @@ function input(hostElIdx: number, bindIdx: number, newValue: any): boolean {
 }
 
 function slotableStart(idx: number, name: string) {
-  const groupVNode = (currentView.nodes[idx] = createVNode(
-    VNodeType.Slotable,
-    currentView,
-    parentVNode,
-    document.createDocumentFragment()
-  ));
+  const groupVNode = (currentView.nodes[idx] = createVNode(VNodeType.Slotable, currentView, parentVNode, null));
   parentVNode.children.push(groupVNode);
 
   // PERF(pk): this is static data, no need to store in bindings...
@@ -396,10 +436,11 @@ function slotableEnd(idx: number) {
 }
 
 function slot(idx: number) {
-  const domEl = document.createComment(`content ${idx}`);
+  const domEl = document.createComment(`slot ${idx}`);
   const vNode = (currentView.nodes[idx] = createVNode(VNodeType.Slot, currentView, parentVNode, domEl));
+
   parentVNode.children.push(vNode);
-  parentVNode.native.appendChild(domEl);
+  appendNativeNode(parentVNode, vNode);
 }
 
 function findSlotables(containerVNode: VNode, slotName: string, result: VNode[]): VNode[] {
@@ -414,21 +455,29 @@ function findSlotables(containerVNode: VNode, slotName: string, result: VNode[])
   return result;
 }
 
+function appendSlotable(renderParent: any, slot: VNode, slotable: VNode) {
+  // slotables can be only inserted into already inserted slots
+  if (!slotable.native) {
+    slot.children.push(slotable);
+    if (renderParent) {
+      insertSlotableIntoDOM(renderParent, slot, slotable);
+    }
+  }
+}
+
 function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
   const slotVNode = currentView.nodes[idx];
   const renderParent = findRenderParent(slotVNode);
+
   if (slotName) {
     const slotablesFound = findSlotables(defaultSlotable, slotName, []);
     if (slotablesFound.length > 0) {
       for (const slotable of slotablesFound) {
-        slotVNode.children.push(slotable);
-        renderParent.native.insertBefore(slotable.native, slotVNode.native);
+        appendSlotable(renderParent, slotVNode, slotable);
       }
     }
   } else {
-    // PERF(pk): I could split it into 2 functions so it is better for tree-shaking
-    slotVNode.children.push(defaultSlotable);
-    renderParent.native.insertBefore(defaultSlotable.native, slotVNode.native);
+    appendSlotable(renderParent, slotVNode, defaultSlotable);
   }
 }
 
