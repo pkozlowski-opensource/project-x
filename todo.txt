@@ -5,6 +5,8 @@
         - performant
             - small size
             - extreme tree shaking 
+        - hackable (< 1000 LOC of TS code, architecture and thinking docs)
+        - independent / community driven
     - web only or web abstracted (is "ReactNative" possible?)
     - framework vs. library => library
         - no http => use fetch
@@ -68,9 +70,13 @@
 - runtime impl
     - basic template syntax
         + static elements
-        + interpolation in text nodes
-        + properties
-        + attributes    
+        - namespaced elements / attributes (SVG)
+        + bindings
+            + attributes 
+            + properties
+            + class toggle
+            + interpolation in text nodes
+            + one vs. multiple text nodes => one, use `before ${toEmptyStr(exp1)} after`
         - one-time binding
             - attributes
             - properties
@@ -82,8 +88,6 @@
             + manual / the "hard way"
             - sugar
         - loops and trackBy
-        + class toggle
-        + one vs. multiple text nodes => one, use `before ${toEmptyStr(exp1)} after`
         + event handlers
             + event access => $event
             + local vars / refs access (listeners are registered in creation mode!)
@@ -141,3 +145,12 @@
     - dynamic insertion of UI fragments (ex. tooltip)
     - dynamic compilation (give a string, get a function, a la AngularJS $compile)
     - extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation
+- perf
+    - setup benchmarks
+        - green table
+        - large table / tree + benchpress
+    - open questions / points of worry
+        - closures for handlers (don't see how to remove)
+        - closures for views (could be removed)
+- chore / project organization
+    - split into multiple files (src and tests)
