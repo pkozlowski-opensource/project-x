@@ -1755,8 +1755,10 @@ describe("integration", () => {
       </SimpleCard>`;
       function app(rf: RenderFlags, titleExp: string) {
         if (rf & RenderFlags.Create) {
-          componentStart(0, "simple-card", SimpleCard); {
-            slotableStart(1, "body"); {
+          componentStart(0, "simple-card", SimpleCard);
+          {
+            slotableStart(1, "body");
+            {
               text(2, "Content");
             }
             slotableEnd(1);
@@ -1778,6 +1780,122 @@ describe("integration", () => {
       refreshFn("New Title");
       expect(hostDiv.innerHTML).toBe(
         `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
+      );
+    });
+
+    it("should support re-projection of named content at the root of a container in slotable", () => {
+      `
+      <div class="header">
+        <x-slot name="header"></x-slot>
+      </div>
+      <div class="body">
+        <x-slot name="body"></x-slot>
+      </div>
+      `;
+      class Card {
+        render(rf: RenderFlags, ctx: Card, contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            elementStart(0, "div", ["class", "header"]);
+            slot(1);
+            elementEnd(0);
+            elementStart(2, "div", ["class", "body"]);
+            slot(3);
+            elementEnd(2);
+          }
+          if (rf & RenderFlags.Update) {
+            slotRefresh(1, contentGroup, "header");
+            slotRefresh(3, contentGroup, "body");
+          }
+        }
+      }
+
+      `<Card>
+        <:header>{=ctx.title}</:header>
+        <:body>
+          {% if (showBody) { %}
+            <x-slot name="body"></x-slot>
+          {% } %} 
+        </:body>
+      </Card>`;
+      class SimpleCard {
+        showBody = false;
+        title: string;
+        render(rf: RenderFlags, ctx: SimpleCard, contentGroup: VNode) {
+          if (rf & RenderFlags.Create) {
+            componentStart(0, "card", Card);
+            {
+              slotableStart(1, "header");
+              {
+                text(2);
+              }
+              slotableEnd(1);
+              slotableStart(3, "body");
+              {
+                container(4);
+              }
+              slotableEnd(3);
+            }
+            componentEnd(0);
+          }
+          if (rf & RenderFlags.Update) {
+            textContent(2, ctx.title);
+            containerRefreshStart(4);
+            {
+              if (this.showBody) {
+                view(4, 0, function(rf: RenderFlags, ctx: SimpleCard) {
+                  if (rf & RenderFlags.Create) {
+                    slot(0);
+                  }
+                  if (rf & RenderFlags.Update) {
+                    slotRefresh(0, contentGroup, "body");
+                  }
+                });
+              }
+            }
+            containerRefreshEnd(4);
+            componentRefresh(0);
+          }
+        }
+      }
+
+      `<SimpleCard [title]="{=titleExp}">
+        <:body>
+          Content
+        </:body>
+      </SimpleCard>`;
+      function app(rf: RenderFlags, ctx: { titleExp: string; showBody: boolean }) {
+        if (rf & RenderFlags.Create) {
+          componentStart(0, "simple-card", SimpleCard);
+          {
+            slotableStart(1, "body");
+            {
+              text(2, "Content");
+            }
+            slotableEnd(1);
+          }
+          componentEnd(0);
+        }
+        if (rf & RenderFlags.Update) {
+          const cmptInstance = load<SimpleCard>(0, 0);
+          input(0, 1, ctx.titleExp) && (cmptInstance.title = ctx.titleExp);
+          input(0, 2, ctx.showBody) && (cmptInstance.showBody = ctx.showBody);
+          componentRefresh(0);
+        }
+      }
+
+      const refreshFn = render(hostDiv, app, { titleExp: "Title", showBody: false });
+      expect(hostDiv.innerHTML).toBe(
+        `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body"><!--container 4--><!--slot 3--></div></card></simple-card>`
+      );
+
+      refreshFn({ titleExp: "New Title", showBody: true });
+      expect(hostDiv.innerHTML).toBe(
+        `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body">Content<!--slot 0--><!--container 4--><!--slot 3--></div></card></simple-card>`
+      );
+
+      refreshFn({ titleExp: "Old Title", showBody: false });
+      expect(hostDiv.innerHTML).toBe(
+        `<simple-card><card><div class="header">Old Title<!--slot 1--></div><div class="body"><!--container 4--><!--slot 3--></div></card></simple-card>`
       );
     });
   });
