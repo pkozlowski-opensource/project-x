@@ -1,6 +1,11 @@
 - fundamental questions
     - raison d'etre
-    - web only or web abstracted (is "ReactNative" possible)
+        - easy to learn and use 
+            - JS statements in templates reducing number of concepts / syntax constructs
+        - performant
+            - small size
+            - extreme tree shaking 
+    - web only or web abstracted (is "ReactNative" possible?)
     - framework vs. library => library
         - no http => use fetch
         - forms / validation (to be considered)
