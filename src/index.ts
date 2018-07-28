@@ -77,11 +77,11 @@ function appendNativeNode(parent: VNode, node: VNode) {
     // Otherwise insertion is delayed till a view is added to the DOM.
     if (parent.native) {
       const viewParent = parent.parent;
-      if (viewParent.type === VNodeType.Container) {
+      if (viewParent && viewParent.type === VNodeType.Container) {
         // embedded view
         parent.native.insertBefore(node.native, viewParent.native);
       } else {
-        // component view
+        // component view or root view
         parent.native.appendChild(node.native);
       }
     }
@@ -289,14 +289,7 @@ function createViewVNode(viewId: number, parent: VNode, renderParent = null) {
 }
 
 function refreshView(viewVNode: VNode, viewFn, ctx?) {
-  const oldView = currentView;
-
-  parentVNode = viewVNode;
-  currentView = viewVNode.view;
-  viewFn(RenderFlags.Update, ctx);
-
-  parentVNode = viewVNode.parent;
-  currentView = oldView;
+  executeViewFn(viewVNode, viewFn, RenderFlags.Update, ctx);
 }
 
 function findRenderParent(vNode: VNode): VNode | null {
@@ -312,22 +305,29 @@ function findRenderParent(vNode: VNode): VNode | null {
   throw `Unexpected node of type ${vNode.type}`;
 }
 
+function executeViewFn(viewVNode: VNode, viewFn, flags: RenderFlags, ctx?) {
+  const oldView = currentView;
+
+  parentVNode = viewVNode;
+  currentView = viewVNode.view;
+
+  viewFn(flags, ctx);
+
+  parentVNode = viewVNode.parent;
+  currentView = oldView;
+}
+
 function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: number, viewFn, ctx?) {
   const renderParent = findRenderParent(containerVNode);
   const viewVNode = (parentVNode = createViewVNode(viewId, containerVNode, renderParent));
+
   containerVNode.children.splice(viewIdx, 0, viewVNode);
 
-  const oldView = currentView;
-  currentView = viewVNode.view;
-
-  viewFn(RenderFlags.CreateAndUpdate, ctx);
+  executeViewFn(viewVNode, viewFn, RenderFlags.CreateAndUpdate, ctx);
 
   if (renderParent) {
     insertGroupOfNodesIntoDOM(renderParent, containerVNode, viewVNode);
   }
-
-  parentVNode = containerVNode.parent;
-  currentView = oldView;
 }
 
 // PERF(pk): this instruction will re-create a closure in each and every change detection cycle
@@ -471,6 +471,7 @@ function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
   const slotVNode = currentView.nodes[idx];
   const renderParent = findRenderParent(slotVNode);
 
+  // PERF(pk): split into 2 functions for better tree-shaking
   if (slotName) {
     const slotablesFound = findSlotables(defaultSlotable, slotName, []);
     if (slotablesFound.length > 0) {
@@ -495,18 +496,10 @@ function directiveRefresh(hostIdx: number, directiveIdx: number) {
   }
 }
 
-function render(nativeHost, tpl, ctx?) {
-  const viewData: ViewData = { viewId: -1, nodes: [] };
-  const hostVNode = createVNode(VNodeType.Element, viewData, null!, nativeHost);
-
-  parentVNode = hostVNode;
-  currentView = viewData;
-  tpl(RenderFlags.CreateAndUpdate, ctx);
-
-  currentView = null;
-  parentVNode = hostVNode.parent;
-
+function render(nativeHost, tplFn, ctx?) {
+  const viewVNode = createViewVNode(-1, null!, nativeHost);
+  executeViewFn(viewVNode, tplFn, RenderFlags.CreateAndUpdate, ctx);
   return function refreshFromRoot(ctx?) {
-    refreshView(hostVNode, tpl, ctx);
+    refreshView(viewVNode, tplFn, ctx);
   };
 }
