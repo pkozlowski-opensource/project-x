@@ -1952,6 +1952,62 @@ describe("integration", () => {
 
       expect(hostDiv.innerHTML).toBe('<div id="id from test directive"></div>');
     });
+
+    it("should support directives with outputs", () => {
+      class Ticker {
+        counter = 0;
+        out: ($event: any) => void;
+
+        refresh() {}
+
+        tick() {
+          if (this.out) {
+            this.out(++this.counter);
+          }
+        }
+      }
+
+      let ticker: Ticker;
+      let model = {
+        count: 0
+      };
+
+      `
+      <div @ticker (@ticker.out)="ctx.count = $event"></div>
+      {{ctx.count}}
+      `;
+      const refreshFn = render(
+        hostDiv,
+        (rf: RenderFlags, ctx: { count: number }) => {
+          if (rf & RenderFlags.Create) {
+            element(0, "div");
+            directive(0, 0, Ticker);
+            text(1);
+          }
+          if (rf & RenderFlags.Update) {
+            const directiveInstance = (ticker = load<Ticker>(0, 0));
+            // PERF(pk): once again, a closure on each and every change detection :-/
+            directiveInstance.out = function($event) {
+              ctx.count = $event;
+            };
+            directiveRefresh(0, 0);
+            textContent(1, `${ctx.count}`);
+          }
+        },
+        model
+      );
+
+      expect(hostDiv.innerHTML).toBe("<div></div>0");
+
+      ticker.tick();
+      refreshFn(model);
+      expect(hostDiv.innerHTML).toBe("<div></div>1");
+
+      ticker.tick();
+      ticker.tick();
+      refreshFn(model);
+      expect(hostDiv.innerHTML).toBe("<div></div>3");
+    });
   });
 
   describe("refs", () => {

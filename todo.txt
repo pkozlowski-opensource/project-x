@@ -127,7 +127,7 @@
         - host 
             - bindings
             - other directives
-        - listeners / outputs
+        + listeners / outputs
         - lifecycle and lifecycle hooks
         - refs
             + single
