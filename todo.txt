@@ -51,9 +51,8 @@
     - component definition:
         import {MyComponent} from './my-component';
 
-        x`<MyComponent></MyComponent>`; // this would have to be based on the naming convention...
         x`<@MyComponent></@MyComponent>`;
-        x`<div:@MyComponent></div:@MyComponent>`; // to specify a host???
+        x`<tr @x-component="MyComponent"></tr>`; 
     - event handlers
         - (click)="handler($event)"
         - (click)="handler(args)"
@@ -92,7 +91,7 @@
         - reference multiple elements in a given view
         - sanitization    
     - components
-        - host by default? host-less components?
+        + host by default? host-less components?
         - content projection
             + containers at the root of a slot (can't immediatelly insert)
             + multiple slotables with the same name        

@@ -348,19 +348,15 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
   const domEl = document.createElement(tagName);
   const hostElVNode = (currentView.nodes[idx] = createVNode(VNodeType.Element, currentView, parentVNode, domEl));
   parentVNode.children.push(hostElVNode);
-  hostElVNode.data[0] = new constructorFn();
 
   setAttributes(domEl, attrs);
   appendNativeNode(parentVNode, hostElVNode);
 
-  const groupVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, null);
-
-  hostElVNode.children[0] = groupVNode;
-  parentVNode = groupVNode;
+  componentForHostStart(idx, constructorFn);
 }
 
-function componentEnd(idx: number) {
-  const hostElVNode = currentView.nodes[idx];
+function componentEnd(hostElIdx: number) {
+  const hostElVNode = currentView.nodes[hostElIdx];
   const cmptInstance = hostElVNode.data[0];
   const componentViewNode = createViewVNode(-1, hostElVNode, hostElVNode.native);
   const oldView = currentView;
@@ -378,6 +374,21 @@ function componentEnd(idx: number) {
 function component(idx: number, tagName: string, constructorFn, attrs?: string[] | null) {
   componentStart(idx, tagName, constructorFn, attrs);
   componentEnd(idx);
+}
+
+function componentForHostStart(hostElIdx: number, constructorFn) {
+  const hostElVNode = currentView.nodes[hostElIdx];
+
+  hostElVNode.data[0] = new constructorFn();
+  const groupVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, null);
+
+  hostElVNode.children[0] = groupVNode;
+  parentVNode = groupVNode;
+}
+
+function componentForHost(hostElIdx: number, constructorFn) {
+  componentForHostStart(hostElIdx, constructorFn);
+  componentEnd(hostElIdx);
 }
 
 function componentRefresh(hostElIdx: number) {

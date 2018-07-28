@@ -891,6 +891,40 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe("<test-component>Hello, New World!</test-component>");
     });
 
+    it("should support hostless components", () => {
+      class TdComponent {
+        /**
+         * <td>I'm a cell!</td>
+         */
+        render(rf: RenderFlags, ctx: TdComponent) {
+          if (rf & RenderFlags.Create) {
+            elementStart(0, "td");
+            text(1, "I'm a cell!");
+            elementEnd(0);
+          }
+        }
+      }
+
+      /**
+       * <table><tr @component="TdComponent"></tr></table>
+       */
+      const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
+        if (rf & RenderFlags.Create) {
+          elementStart(0, "table");
+          {
+            element(1, "tr");
+            componentForHost(1, TdComponent);
+          }
+          elementEnd(0);
+        }
+        if (rf & RenderFlags.Update) {
+          componentRefresh(1);
+        }
+      });
+
+      expect(hostDiv.innerHTML).toBe("<table><tr><td>I'm a cell!</td></tr></table>");
+    });
+
     it("should support default slot", () => {
       class TestComponent {
         /**
@@ -1959,6 +1993,7 @@ describe("integration", () => {
         out: ($event: any) => void;
 
         tick() {
+          // TALK(bl): was it part of iv?
           if (this.out) {
             this.out(++this.counter);
           }
