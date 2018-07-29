@@ -67,6 +67,14 @@ function setAttributes(domEl, attrs?: string[] | null) {
   }
 }
 
+function setAttributesNS(domEl, nsURI: string | null, attrs?: string[] | null) {
+  if (attrs) {
+    for (let i = 0; i < attrs.length; i += 2) {
+      domEl.setAttributeNS(nsURI, attrs[i], attrs[i + 1]);
+    }
+  }
+}
+
 function appendNativeNode(parent: VNode, node: VNode) {
   // possible values: Element, View, Slotable
   if (parent.type === VNodeType.Element) {
@@ -132,6 +140,34 @@ function elementEnd(idx: number) {
 
 function element(idx: number, tagName: string, attrs?: string[] | null) {
   elementStart(idx, tagName, attrs);
+  elementEnd(idx);
+}
+
+const NS = {
+  SVG: "http://www.w3.org/2000/svg"
+};
+
+function elementNSStart(
+  idx: number,
+  nsURI: string,
+  tagName: string,
+  attrs?: string[] | null,
+  nsAttrs?: string[] | null
+) {
+  const domEl = document.createElementNS(nsURI, tagName);
+  const vNode = (currentView.nodes[idx] = createVNode(VNodeType.Element, currentView, parentVNode, domEl));
+
+  parentVNode.children.push(vNode);
+
+  setAttributes(domEl, attrs);
+  setAttributesNS(domEl, nsURI, nsAttrs);
+  appendNativeNode(parentVNode, vNode);
+
+  parentVNode = vNode;
+}
+
+function elementNS(idx: number, nsURI: string, tagName: string, attrs?: string[] | null, nsAttrs?: string[] | null) {
+  elementNSStart(idx, nsURI, tagName, attrs, nsAttrs);
   elementEnd(idx);
 }
 
