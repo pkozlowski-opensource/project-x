@@ -68,6 +68,9 @@
         - <MyComponent #el #cmpt="@MyComponent"></MyComponent>
         - <div @tooltip="Great tip!" #t="@tooltip">
 - runtime impl
+    - devMode
+        - flag
+        - asserts
     - basic template syntax
         + static elements
         - namespaced elements / attributes (SVG)
@@ -152,5 +155,7 @@
     - open questions / points of worry
         - closures for handlers (don't see how to remove)
         - closures for views (could be removed)
+    - ideas:
+        - instruction for static HTML blocks (this would imply web only)
 - chore / project organization
     - split into multiple files (src and tests)

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>SVG analog clock</title>
+    <script src="../src/index.js"></script>
+    <style>
+        #face {
+            stroke-width: 2px;
+            stroke: #fff;
+        }
+
+        #hour, #min, #sec {
+            stroke-width: 1px;
+            fill: #333;
+            stroke: #555;
+        }
+
+        #sec {
+            stroke: #f55;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="clockApp"></div>
+    <script>
+        `<svg id="clock" viewBox="0 0 100 100">
+            <circle id="face" cx="50" cy="50" r="45" />
+            <g id="hands">
+                <rect id="hour" x="48.5" y="12.5" width="5" height="40" rx="2.5" ry="2.55" />
+                <rect id="min" x="48" y="12.5" width="3" height="40" rx="2" ry="2" />
+                <line id="sec" x1="50" y1="50" x2="50" y2="16" />
+            </g>
+        </svg>`
+        function clockApp(rf, d) {
+            if (rf & 0b01 /* RenderFlags.Create */) {
+                elementNSStart(0, NS.SVG, "svg", ["id", "clock"], ["viewBox", "0 0 100 100"]);
+                {
+                    elementNS(1, NS.SVG, "circle", ["id", "face"], ["cx", "50", "cy", "50", "r", "45"]);
+                    elementNSStart(2, NS.SVG, "g", ["id", "hands"]);
+                    {
+                        elementNS(3, NS.SVG, "rect", ["id", "hour"], ["x", "48.5", "y", "12.5", "width", "5", "height", "40", "rx", "2.5", "ry", "2.55"]);
+                        elementNS(4, NS.SVG, "rect", ["id", "min"], ["x", "48", "y", "12.5", "width", "3", "height", "40", "rx", "2", "ry", "2"]);
+                        elementNS(5, NS.SVG, "line", ["id", "sec"], ["x1", "50", "y1", "50", "x2", "50", "y2", "16"]);
+                    }
+                    elementEnd(2);
+                }
+                elementEnd(0);
+            }
+            if (rf & 0b10 /* RenderFlags.Update */) {
+                // r(hour, 30*(d.getHours()%12) + d.getMinutes()/2)
+                elementAttribute(3, 0, "transform", `rotate(${30*(d.getHours()%12) + d.getMinutes()/2})`);
+                // r(min, 6*d.getMinutes())
+                elementAttribute(4, 0, "transform", `rotate(${6*d.getMinutes()})`);
+                // r(sec, 6*d.getSeconds()) 
+                elementAttribute(5, 0, "transform", `rotate(${6*d.getSeconds()})`); 
+            }
+        }
+
+        var refreshClock = render(document.getElementById('clockApp'), clockApp, new Date());
+        setInterval(function() {
+            refreshClock(new Date());
+        });
+    </script>
+</body>
+
+</html>
