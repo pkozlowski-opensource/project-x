@@ -122,68 +122,30 @@ function insertGroupOfNodesIntoDOM(renderParent: any, groupContainer: VNode, gro
   }
 }
 
-// TODO(pk): merge with removeViewDOMFromContainer when all possible children of slotable are covered
-function removeSlotableDOMFromSlot(slotable: VNode) {
-  for (let node of slotable.children) {
+function removeGroupOfNodesFromDOM(viewOrSlotable: VNode) {
+  for (let node of viewOrSlotable.children) {
     if (node.type === VNodeType.Element || node.type === VNodeType.Text) {
-      slotable.native.removeChild(node.native);
-    }
-    // TODO(PK): else if (node.type === VNodeType.Container)
-    // TODO(PK): else if (node.type === VNodeType.Slot)
-    // TODO(PK): else if (node.type === VNodeType.Slotable)
-  }
-
-  slotable.renderParent = null;
-  // reset render parent to indicate that slotable is no longer inserted into the DOM
-  slotable.native = null;
-}
-
-// TODO(pk): merge with removeViewDOMFromContainer when all possible children of slotable are covered
-function removeSlotableDOMFromView(slotable: VNode) {
-  for (let node of slotable.children) {
-    if (node.type === VNodeType.Element || node.type === VNodeType.Text) {
-      slotable.native.removeChild(node.native);
-    } else if (node.type === VNodeType.Container) {
-      for (let viewNode of node.children) {
-        removeViewDOMFromContainer(viewNode);
-      }
-      slotable.native.removeChild(node.native);
-    }
-    // TODO(PK): else if (node.type === VNodeType.Slot)
-    // TODO(PK): else if (node.type === VNodeType.Slotable)
-  }
-}
-
-function removeViewDOMFromContainer(view: VNode) {
-  for (let node of view.children) {
-    if (node.type === VNodeType.Element || node.type === VNodeType.Text) {
-      view.native.removeChild(node.native);
-    } else if (node.type === VNodeType.Container) {
-      for (let viewNode of node.children) {
-        removeViewDOMFromContainer(viewNode);
+      viewOrSlotable.native.removeChild(node.native);
+    } else if (node.type === VNodeType.Container || node.type === VNodeType.Slot) {
+      for (let child of node.children) {
+        removeGroupOfNodesFromDOM(child);
       }
       // remove comment node of a container but only if a view defining this container was inserted into the DOM
       // it might happen that the comment node never makes it into the DOM for cotainers that are at the root of
       // slotables (and are there to define other slotables)
-      if (view.native) {
-        view.native.removeChild(node.native);
+      if (viewOrSlotable.native) {
+        viewOrSlotable.native.removeChild(node.native);
       }
-    } else if (node.type === VNodeType.Slot) {
-      for (let slotableNode of node.children) {
-        removeSlotableDOMFromSlot(slotableNode);
-      }
-      // remove comment node of a slot
-      view.native.removeChild(node.native);
     } else if (node.type === VNodeType.Slotable) {
-      removeSlotableDOMFromView(node);
-      node.native = null;
+      removeGroupOfNodesFromDOM(node);
     } else {
-      throw `Unexpected node type ${node.type} at the root of a view`;
+      throw `Unexpected node type ${node.type} when removing nodes from the DOM`;
     }
   }
 
-  // reset render parent to indeicate that view is no longer inserted into the DOM
-  view.native = null;
+  // reset render parent to indeicate that view or slotable is no longer inserted into the DOM
+  viewOrSlotable.native = null;
+  viewOrSlotable.renderParent = null;
 }
 
 // =========
@@ -325,7 +287,7 @@ function include(containerIdx: number, tplFn, ctx?) {
     // remove if already exists
     if (existingViewVNode) {
       views.splice(0, 1);
-      removeViewDOMFromContainer(existingViewVNode);
+      removeGroupOfNodesFromDOM(existingViewVNode);
     }
     // re-create (unless it is null)
     if (tplFn) {
@@ -348,8 +310,7 @@ function containerRefreshEnd(containerIdx: number) {
   if (remainingViewsCount > 0) {
     const removedViews = views.splice(nextViewIdx, remainingViewsCount);
     for (let removedView of removedViews) {
-      // for each remove DOM (optionally find a parent)
-      removeViewDOMFromContainer(removedView);
+      removeGroupOfNodesFromDOM(removedView);
     }
   }
 }
@@ -362,7 +323,7 @@ function findView(views: VNode[], startIdx: number, viewIdx: number): VNode | un
       return viewVNode;
     } else if (viewVNode.view.viewId < viewIdx) {
       views.splice(i, 1);
-      removeViewDOMFromContainer(viewVNode);
+      removeGroupOfNodesFromDOM(viewVNode);
     }
     i++;
   }

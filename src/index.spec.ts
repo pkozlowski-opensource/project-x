@@ -794,6 +794,58 @@ describe("integration", () => {
       );
     });
 
+    it("should support components with containers at the root", () => {
+      `
+      {% if (this.show) { %}
+        Showing
+      {% } %}
+      `;
+      class TestComponent {
+        show: boolean;
+        render(rf: RenderFlags) {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            if (this.show) {
+              view(0, 0, function(rf: RenderFlags) {
+                if (rf & RenderFlags.Create) {
+                  text(0, "Showing");
+                }
+              });
+            }
+            containerRefreshEnd(0);
+          }
+        }
+      }
+
+      const refreshFn = render(hostDiv, (rf: RenderFlags, show: boolean) => {
+        if (rf & RenderFlags.Create) {
+          component(0, "test-component", TestComponent);
+        }
+        if (rf & RenderFlags.Update) {
+          const cmptInstance = load<TestComponent>(0, 0);
+          input(0, 1, show) && (cmptInstance.show = show);
+          componentRefresh(0);
+        }
+      });
+
+      expect(hostDiv.innerHTML).toBe("<test-component><!--container 0--></test-component>");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test-component>Showing<!--container 0--></test-component>");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test-component>Showing<!--container 0--></test-component>");
+
+      refreshFn(false);
+      expect(hostDiv.innerHTML).toBe("<test-component><!--container 0--></test-component>");
+
+      refreshFn(true);
+      expect(hostDiv.innerHTML).toBe("<test-component>Showing<!--container 0--></test-component>");
+    });
+
     it("should support components at the root of a view", () => {
       class Test {
         render(rf: RenderFlags) {
