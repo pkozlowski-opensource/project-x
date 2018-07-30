@@ -1550,6 +1550,100 @@ describe("integration", () => {
         expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
       });
 
+      it("should support containers inside conditional slotables", () => {
+        `<x-slot name="foobar"></x-slot>`;
+        class Test {
+          render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+            if (rf & RenderFlags.Create) {
+              slot(0);
+            }
+            if (rf & RenderFlags.Update) {
+              slotRefresh(0, $contentGroup, "foobar");
+            }
+          }
+        }
+
+        const ctx = { includeSlotable: false, includeContent: false };
+
+        `
+        <Test>
+          {% if(ctx.includeSlotable) { %}
+            <:foobar>
+              {% if(ctx.includeContent) { %}
+                foo
+              {% } %}
+            </:foobar>
+            <:foobar>
+              bar
+            </:foobar>
+          {% } %}
+        </Test>
+        `;
+        const refreshFn = render(
+          hostDiv,
+          (rf: RenderFlags, ctx: { includeSlotable: boolean; includeContent: boolean }) => {
+            if (rf & RenderFlags.Create) {
+              componentStart(0, "test", Test);
+              {
+                container(1);
+              }
+              componentEnd(0);
+            }
+            if (rf & RenderFlags.Update) {
+              containerRefreshStart(1);
+              {
+                if (ctx.includeSlotable) {
+                  view(1, 0, (rf: RenderFlags) => {
+                    if (rf & RenderFlags.Create) {
+                      slotableStart(0, "foobar");
+                      {
+                        container(1);
+                      }
+                      slotableEnd(0);
+                      slotableStart(2, "foobar");
+                      {
+                        text(3, "bar");
+                      }
+                      slotableEnd(2);
+                    }
+                    if (rf & RenderFlags.Update) {
+                      containerRefreshStart(1);
+                      if (ctx.includeContent) {
+                        view(1, 0, (rf: RenderFlags) => {
+                          text(1, "foo");
+                        });
+                      }
+                      containerRefreshEnd(1);
+                    }
+                  });
+                }
+              }
+              containerRefreshEnd(1);
+              componentRefresh(0);
+            }
+          },
+          ctx
+        );
+
+        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+
+        ctx.includeSlotable = true;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe("<test><!--container 1-->bar<!--slot 0--></test>");
+
+        ctx.includeContent = true;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe("<test>foo<!--container 1-->bar<!--slot 0--></test>");
+
+        ctx.includeSlotable = false;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+
+        ctx.includeSlotable = true;
+        refreshFn(ctx);
+        expect(hostDiv.innerHTML).toBe("<test>foo<!--container 1-->bar<!--slot 0--></test>");
+      });
+
       it("should conditionally move slotables between slots", () => {
         `
         <div>

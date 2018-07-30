@@ -128,6 +128,9 @@ function removeSlotableDOMFromSlot(slotable: VNode) {
     if (node.type === VNodeType.Element || node.type === VNodeType.Text) {
       slotable.native.removeChild(node.native);
     }
+    // TODO(PK): else if (node.type === VNodeType.Container)
+    // TODO(PK): else if (node.type === VNodeType.Slot)
+    // TODO(PK): else if (node.type === VNodeType.Slotable)
   }
 
   slotable.renderParent = null;
@@ -140,7 +143,14 @@ function removeSlotableDOMFromView(slotable: VNode) {
   for (let node of slotable.children) {
     if (node.type === VNodeType.Element || node.type === VNodeType.Text) {
       slotable.native.removeChild(node.native);
+    } else if (node.type === VNodeType.Container) {
+      for (let viewNode of node.children) {
+        removeViewDOMFromContainer(viewNode);
+      }
+      slotable.native.removeChild(node.native);
     }
+    // TODO(PK): else if (node.type === VNodeType.Slot)
+    // TODO(PK): else if (node.type === VNodeType.Slotable)
   }
 }
 
