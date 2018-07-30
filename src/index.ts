@@ -64,6 +64,10 @@ let nextViewIdx = 0; // TODO(pk): this can't be global as it won't work for nest
 let currentView: ViewData;
 
 // ========= dom.ts
+const NS = {
+  SVG: "http://www.w3.org/2000/svg"
+};
+
 function setAttributes(domEl, attrs?: string[] | null) {
   if (attrs) {
     for (let i = 0; i < attrs.length; i += 2) {
@@ -99,6 +103,17 @@ function appendNativeNode(parent: VNode, node: VNode) {
       }
     }
   }
+}
+
+function findRenderParent(vNode: VNode): VNode | null {
+  while ((vNode = vNode.parent)) {
+    if (vNode.type === VNodeType.Element) {
+      return vNode.native;
+    } else if (vNode.type === VNodeType.View || vNode.type === VNodeType.Slotable) {
+      return vNode.native;
+    }
+  }
+  throw `Unexpected node of type ${vNode.type}`;
 }
 
 /**
@@ -171,10 +186,6 @@ function element(idx: number, tagName: string, attrs?: string[] | null) {
   elementStart(idx, tagName, attrs);
   elementEnd(idx);
 }
-
-const NS = {
-  SVG: "http://www.w3.org/2000/svg"
-};
 
 function elementNSStart(
   idx: number,
@@ -336,17 +347,6 @@ function createViewVNode(viewId: number, parent: VNode, renderParent = null) {
 
 function refreshView(viewVNode: VNode, viewFn, ctx?) {
   executeViewFn(viewVNode, viewFn, RenderFlags.Update, ctx);
-}
-
-function findRenderParent(vNode: VNode): VNode | null {
-  while ((vNode = vNode.parent)) {
-    if (vNode.type === VNodeType.Element) {
-      return vNode.native;
-    } else if (vNode.type === VNodeType.View || vNode.type === VNodeType.Slotable) {
-      return vNode.native;
-    }
-  }
-  throw `Unexpected node of type ${vNode.type}`;
 }
 
 function executeViewFn(viewVNode: VNode, viewFn, flags: RenderFlags, ctx?) {
