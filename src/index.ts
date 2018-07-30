@@ -18,6 +18,10 @@ const enum VNodeType {
 interface VNode {
   readonly type: VNodeType;
   parent: VNode;
+  /**
+   * Only applies to slotables and indicates projection target of a given node.
+   */
+  renderParent: VNode;
   children: VNode[];
   native: any; // TODO(pk): type it properly
   data: any[]; // PERF(pk): storing bindings separatelly for each and every individual node might not be super-performant :-)
@@ -39,13 +43,14 @@ const enum RenderFlags {
   CreateAndUpdate = 0b11
 }
 
-function createVNode(type: VNodeType, view: ViewData, parent: VNode, nativeOrRenderParent): VNode {
+function createVNode(type: VNodeType, view: ViewData, parent: VNode, nativeOrNativeRenderParent): VNode {
   return {
     type: type,
     view: view,
     parent: parent,
+    renderParent: null,
     children: [], // PERF(pk): lazy-init children array => or better yet, have the exact number of children handy :-)
-    native: nativeOrRenderParent,
+    native: nativeOrNativeRenderParent,
     data: [], // PERF(pk): lazy-init data array => or better yet, have the exact number of bindings handy :-)
     componentView: null
   };
@@ -94,29 +99,81 @@ function appendNativeNode(parent: VNode, node: VNode) {
       }
     }
   }
-  // TODO(pk): why we are not checking for Slotable?
 }
 
 /**
  * Inserts a view or a slotable into the DOM given position of their respective container / slot.
  */
 function insertGroupOfNodesIntoDOM(renderParent: any, groupContainer: VNode, group: VNode) {
-  group.native = renderParent;
-  for (const vNode of group.children) {
-    if (vNode.type === VNodeType.Container) {
-      renderParent.insertBefore(vNode.native, groupContainer.native);
-      for (const viewVnode of vNode.children) {
-        insertGroupOfNodesIntoDOM(renderParent, vNode, viewVnode);
+  // append to DOM only if not already inserted before or changing render parent
+  // TODO(pk): this doesn't take into account cases where view / slotable moves inside the same render parent!
+  if (!group.native || group.native !== renderParent) {
+    group.native = renderParent;
+    for (const vNode of group.children) {
+      if (vNode.type === VNodeType.Container || vNode.type === VNodeType.Slot) {
+        renderParent.insertBefore(vNode.native, groupContainer.native);
+        for (const viewOrSlotableVNode of vNode.children) {
+          insertGroupOfNodesIntoDOM(renderParent, vNode, viewOrSlotableVNode);
+        }
+      } else if (vNode.type !== VNodeType.Slotable) {
+        renderParent.insertBefore(vNode.native, groupContainer.native);
       }
-    } else if (vNode.type === VNodeType.Slot) {
-      renderParent.insertBefore(vNode.native, groupContainer.native);
-      for (const slotable of vNode.children) {
-        insertGroupOfNodesIntoDOM(renderParent, vNode, slotable);
-      }
-    } else if (vNode.type !== VNodeType.Slotable) {
-      renderParent.insertBefore(vNode.native, groupContainer.native);
     }
   }
+}
+
+// TODO(pk): merge with removeViewDOMFromContainer when all possible children of slotable are covered
+function removeSlotableDOMFromSlot(slotable: VNode) {
+  for (let node of slotable.children) {
+    if (node.type === VNodeType.Element || node.type === VNodeType.Text) {
+      slotable.native.removeChild(node.native);
+    }
+  }
+
+  slotable.renderParent = null;
+  // reset render parent to indicate that slotable is no longer inserted into the DOM
+  slotable.native = null;
+}
+
+// TODO(pk): merge with removeViewDOMFromContainer when all possible children of slotable are covered
+function removeSlotableDOMFromView(slotable: VNode) {
+  for (let node of slotable.children) {
+    if (node.type === VNodeType.Element || node.type === VNodeType.Text) {
+      slotable.native.removeChild(node.native);
+    }
+  }
+}
+
+function removeViewDOMFromContainer(view: VNode) {
+  for (let node of view.children) {
+    if (node.type === VNodeType.Element || node.type === VNodeType.Text) {
+      view.native.removeChild(node.native);
+    } else if (node.type === VNodeType.Container) {
+      for (let viewNode of node.children) {
+        removeViewDOMFromContainer(viewNode);
+      }
+      // remove comment node of a container but only if a view defining this container was inserted into the DOM
+      // it might happen that the comment node never makes it into the DOM for cotainers that are at the root of
+      // slotables (and are there to define other slotables)
+      if (view.native) {
+        view.native.removeChild(node.native);
+      }
+    } else if (node.type === VNodeType.Slot) {
+      for (let slotableNode of node.children) {
+        removeSlotableDOMFromSlot(slotableNode);
+      }
+      // remove comment node of a slot
+      view.native.removeChild(node.native);
+    } else if (node.type === VNodeType.Slotable) {
+      removeSlotableDOMFromView(node);
+      node.native = null;
+    } else {
+      throw `Unexpected node type ${node.type} at the root of a view`;
+    }
+  }
+
+  // reset render parent to indeicate that view is no longer inserted into the DOM
+  view.native = null;
 }
 
 // =========
@@ -258,7 +315,7 @@ function include(containerIdx: number, tplFn, ctx?) {
     // remove if already exists
     if (existingViewVNode) {
       views.splice(0, 1);
-      removeNodesFromDOM(existingViewVNode);
+      removeViewDOMFromContainer(existingViewVNode);
     }
     // re-create (unless it is null)
     if (tplFn) {
@@ -273,24 +330,6 @@ function containerRefreshStart(containerIdx: number) {
   nextViewIdx = 0;
 }
 
-function removeNodesFromDOM(nodeOrGroup: VNode) {
-  for (let node of nodeOrGroup.children) {
-    if (
-      node.type === VNodeType.Container ||
-      node.type === VNodeType.Slot ||
-      node.type === VNodeType.Slotable ||
-      node.type === VNodeType.View
-    ) {
-      removeNodesFromDOM(node);
-    }
-    if (node.type !== VNodeType.View && node.type !== VNodeType.Slotable) {
-      node.native.remove();
-    } else {
-      node.native = null;
-    }
-  }
-}
-
 function containerRefreshEnd(containerIdx: number) {
   const containerVNode = currentView.nodes[containerIdx];
   const views = containerVNode.children;
@@ -300,7 +339,7 @@ function containerRefreshEnd(containerIdx: number) {
     const removedViews = views.splice(nextViewIdx, remainingViewsCount);
     for (let removedView of removedViews) {
       // for each remove DOM (optionally find a parent)
-      removeNodesFromDOM(removedView);
+      removeViewDOMFromContainer(removedView);
     }
   }
 }
@@ -313,7 +352,7 @@ function findView(views: VNode[], startIdx: number, viewIdx: number): VNode | un
       return viewVNode;
     } else if (viewVNode.view.viewId < viewIdx) {
       views.splice(i, 1);
-      removeNodesFromDOM(viewVNode);
+      removeViewDOMFromContainer(viewVNode);
     }
     i++;
   }
@@ -331,10 +370,8 @@ function refreshView(viewVNode: VNode, viewFn, ctx?) {
 function findRenderParent(vNode: VNode): VNode | null {
   while ((vNode = vNode.parent)) {
     if (vNode.type === VNodeType.Element) {
-      // child of a regular element
       return vNode.native;
     } else if (vNode.type === VNodeType.View || vNode.type === VNodeType.Slotable) {
-      // a child of a view that was not yet inserted into the DOM
       return vNode.native;
     }
   }
@@ -493,13 +530,23 @@ function findSlotables(containerVNode: VNode, slotName: string, result: VNode[])
 }
 
 function appendSlotable(renderParent: any, slot: VNode, slotable: VNode) {
-  // only append if not already appended
-  if (!slotable.native) {
-    slot.children.push(slotable);
-    // slotables can be only inserted into already inserted slots
-    if (renderParent) {
-      insertGroupOfNodesIntoDOM(renderParent, slot, slotable);
+  slot.children.push(slotable);
+  // was is it attatched somewhere else before?
+  // THINK(pk): the logic below means that we would be "stealing" nodes if there are duplicate insertion points
+  // this is probaby fine as we should never have this situation in a properly written application
+  if (slotable.renderParent && slotable.renderParent !== slot) {
+    const previousSlot = slotable.renderParent;
+    const prevChildIdx = previousSlot.children.indexOf(slotable);
+    if (prevChildIdx > -1) {
+      previousSlot.children.splice(prevChildIdx, 1);
+    } else {
+      throw `parent points to a slot but slotable not found in the collection`;
     }
+  }
+  slotable.renderParent = slot;
+  // slotables can be only inserted into already inserted slots
+  if (renderParent) {
+    insertGroupOfNodesIntoDOM(renderParent, slot, slotable);
   }
 }
 

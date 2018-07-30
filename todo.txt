@@ -112,14 +112,14 @@
                 + named slotables
                 + named and default slotables at the root of other slotables
                 + named and default slotables at the root of a container
-            - mix of named slotables and default nodes in a container
-            - dynamic slottables (loop + track-by)
+            + slotables moving between slots
+            - slotables moving in the same slot (loop + trackBy or imperative API call)
             - properties binding on slottables
             - imperative (ex.: wrapping in a loop)
             - nested slottables (ex.: tabs)
             - "lazy" slottables (ex. delayed tabs / panels) 
-            - perf: when are content nodes (VNode and DOM) destroyed?
             - corner cases:
+                - mix of named slotables and default nodes in a container (talk(BL))
                 - multiple usages of <x-slot> (and imperative equivalent)
                 - multiple usages of <x-slot name=""> (and imperative equivalent)
         - dynamic creation (create content given component type)
@@ -155,6 +155,7 @@
     - open questions / points of worry
         - closures for handlers (don't see how to remove)
         - closures for views (could be removed)
+        - when are content nodes (VNode and DOM) destroyed? How to ensure that no one holds reference to it?
     - ideas:
         - instruction for static HTML blocks (this would imply web only)
 - chore / project organization
