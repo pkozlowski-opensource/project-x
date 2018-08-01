@@ -20,6 +20,7 @@
     - scope
         - animations?
         - dependency injection?
+        - style encapsulation?
         - server-side rendering?
         - relation to web components (custom elements, shadow dom)
         - dynamic compilation (AngularJS $compile)
@@ -38,7 +39,11 @@
         import {x} from 'x';
         ...
         x`hi!`    
-    - expression vs. statement: {=expression} vs. {% statement %}  
+    - expression vs. statement ideas: 
+        - {=expression} vs. {% statement %}  
+        - ${} vs. 
+        <% if (exp) { %>
+        <% } %>
     - bindings: 
         - text nodes: Hello, {=name}!
         - attributes: attr="{=expression1} {=expression2}"
@@ -49,7 +54,7 @@
             - named: <div [@tooltip.title]="Great tip!" [@tooltip.delay]="500">
     - one-time bindings: Hello, {::=name}!
     - interpolations: {=expression1} {=expression2}
-    - comments: {* *}
+    - comments: {* *} / <* *> / <!-- --> / <%-- -->
     - component definition:
         import {MyComponent} from './my-component';
 
@@ -68,9 +73,7 @@
         - <MyComponent #el #cmpt="@MyComponent"></MyComponent>
         - <div @tooltip="Great tip!" #t="@tooltip">
 - runtime impl
-    - devMode
-        - flag
-        - asserts
+    - devMode to remove assert / debug code      
     - basic template syntax
         + static elements
         + namespaced elements / attributes (SVG)
@@ -80,12 +83,13 @@
             + class toggle
             + interpolation in text nodes
             + one vs. multiple text nodes => one, use `before ${toEmptyStr(exp1)} after`
+            - boolean attributes (or just tell people to bind to properties - would it work for custome elements?)
         - one-time binding
             - attributes
             - properties
             - class toggle
             - inputs
-            - text nodes (interpolation)
+            - text nodes (interpolation) => basic idea: text(0, `befoe ${oneTimeExp} after`)
             - mixed interpolation (ex.: <span>{::=exp1})|{=exp2}</span>)
         - 2-way data binding
             + manual / the "hard way"

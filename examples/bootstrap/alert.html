@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="../../src/index.js"></script>
+    <link href="http://getbootstrap.com/docs/4.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script>
+        // THINK(pk):
+        // - mapping XBAlert to <xb-alert> - fundamental question here: should it be derived or explictly specified? (derived could change from inocation to invocation so hard to style)            
+        // - writing dynamic CSS classes in a non-destructive way (manipulating classList) - sth a la built in ngClass
+        // - manipulating host from a component / directive
+        // - named entities handling (just convert to unicode in the compiler?)
+        // - typed input / type conversion for inputs
+
+        class XBAlert {
+
+            constructor() {
+                this.dismissible = false;
+                this.type = '';
+                this.close = null;
+            }
+
+            render(rf, ctx, $content) {
+                `<div class="alert ${this.close ? 'alert-dismissible' : ' '}alert-${this.type}" role="alert">
+                    <% if (this.close) { %>
+                        <button type="button" class="close" aria-label="Close" (click)="this.close()">
+                            <span aria-hidden="true"&times;</span>
+                        </button>
+                    <% } %>
+                    <x-slot></x-slot>
+                </div>`;
+                if (rf & 0b01 /* RenderFlags.Create */) {
+                    elementStart(0, 'div', ['role', 'alert']);
+                    {
+                        container(1);
+                        slot(2);
+                    }
+                    elementEnd(0);
+                }
+                if (rf & 0b10 /* RenderFlags.Update */) {
+                    elementAttribute(0, 0, "class", `alert ${this.close ? 'alert-dismissible ' : ''}alert-${this.type}`);
+                    containerRefreshStart(1);
+                    {
+                        if (this.close) {
+                            view(1, 0, (rf) => {
+                                if (rf & 0b01 /* RenderFlags.Create */) {
+                                    elementStart(0, "button", ["type", "button", "class", "close", "aria-label", "Close"]);
+                                    {
+                                        listener(0, 0, "click");
+                                        elementStart(1, "span", ["aria-hidden", "true"]);
+                                        text(2, '\u00D7');
+                                        elementEnd(1);
+                                    }
+                                    elementEnd(0);
+                                }
+                                if (rf & 0b10 /* RenderFlags.Update */) {
+                                    listenerRefresh(0, 0, ($event) => {
+                                        this.close();
+                                    });
+                                }
+                            });
+                        }
+                    }
+                    containerRefreshEnd(1);
+                    slotRefresh(2, $content);
+                }
+            }
+        }
+
+        `<XBAlert [type]="warning" (close)="alert('About to be closed')">
+            <strong>Warning!</strong> Better check yourself, you're not looking too good.     
+        </XBAlert>`;
+        function app(rf) {
+            if (rf & 0b01 /* RenderFlags.Create */) {
+                componentStart(0, 'xb-alert', XBAlert);
+                {
+                    elementStart(1, 'strong');
+                    {
+                        text(2, 'Warning!');
+                    }
+                    elementEnd(1);
+                    text(3, ' Better check yourself, you\'re not looking too good.');
+                }
+                componentEnd(0);
+            }
+            if (rf & 0b10 /* RenderFlags.Update */) {
+                const cmpt = load(0, 0);
+                input(0, 1, 'warning') && (cmpt.type = 'warning');
+                cmpt.close = function($event) {
+                    alert('About to be closed');
+                }
+                componentRefresh(0);
+            }
+        }
+
+        const refresh = render(document.getElementById('app'), app);
+    </script>
+</body>
+
+</html>
