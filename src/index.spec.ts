@@ -943,38 +943,80 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe("<test-component>Hello, New World!</test-component>");
     });
 
-    it("should support hostless components", () => {
-      class TdComponent {
+    describe('host', () => {
+
+      it("should support hostless components", () => {
+        class TdComponent {
+          /**
+           * <td>I'm a cell!</td>
+           */
+          render(rf: RenderFlags, ctx: TdComponent) {
+            if (rf & RenderFlags.Create) {
+              elementStart(0, "td");
+              text(1, "I'm a cell!");
+              elementEnd(0);
+            }
+          }
+        }
+  
         /**
-         * <td>I'm a cell!</td>
+         * <table><tr @component="TdComponent"></tr></table>
          */
-        render(rf: RenderFlags, ctx: TdComponent) {
+        const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
           if (rf & RenderFlags.Create) {
-            elementStart(0, "td");
-            text(1, "I'm a cell!");
+            elementStart(0, "table");
+            {
+              element(1, "tr");
+              componentForHost(1, TdComponent);
+            }
             elementEnd(0);
           }
-        }
-      }
-
-      /**
-       * <table><tr @component="TdComponent"></tr></table>
-       */
-      const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
-        if (rf & RenderFlags.Create) {
-          elementStart(0, "table");
-          {
-            element(1, "tr");
-            componentForHost(1, TdComponent);
+          if (rf & RenderFlags.Update) {
+            componentRefresh(1);
           }
-          elementEnd(0);
+        });
+  
+        expect(hostDiv.innerHTML).toBe("<table><tr><td>I'm a cell!</td></tr></table>");
+      });
+    
+      it('should support components with host bindings', () => {
+
+        class CSSSettingComponent {
+          setOnHost : boolean;
+          /**
+           * I'm setting CSS class on my host
+           */
+          render(rf: RenderFlags, ctx: CSSSettingComponent) {
+            if (rf & RenderFlags.Create) {
+              text(1, "I'm setting CSS class on my host");
+            }
+          }
+
+          host() {            
+            `[class.foo]="setOnHost"`;
+            elementClass(0, 0, "foo", this.setOnHost);
+          }
         }
-        if (rf & RenderFlags.Update) {
-          componentRefresh(1);
-        }
+
+        `<CSSSettingComponent [classExp]="setOrNot"></CSSSettingComponent>`;
+        const refreshFn = render(hostDiv, (rf: RenderFlags, setOrNot: boolean) => {
+          if (rf & RenderFlags.Create) {
+            component(0, "CSSSettingComponent", CSSSettingComponent);
+          }
+          if (rf & RenderFlags.Update) {
+            const cmptInstance = load<CSSSettingComponent>(0, 0);
+            input(0, 2, setOrNot) && (cmptInstance.setOnHost = setOrNot);
+            componentRefresh(0);
+          }
+        });
+
+        expect(hostDiv.innerHTML).toBe("<csssettingcomponent>I'm setting CSS class on my host</csssettingcomponent>");
+
+        refreshFn(true);
+        expect(hostDiv.innerHTML).toBe(`<csssettingcomponent class="foo">I'm setting CSS class on my host</csssettingcomponent>`);
       });
 
-      expect(hostDiv.innerHTML).toBe("<table><tr><td>I'm a cell!</td></tr></table>");
+
     });
 
     describe("content projection", () => {
@@ -2283,6 +2325,41 @@ describe("integration", () => {
       refreshFn(model);
       expect(hostDiv.innerHTML).toBe("<div></div>3");
     });
+
+    describe('host', () => {
+    
+      it('should support directives with host bindings', () => {
+        class IdDirective {
+          constructor() {}
+          id;
+
+          host() {
+            `[id]="this.id"`;
+            elementProperty(0, 0, "id", this.id);
+          }
+        }
+
+        `<div [@IdDirective.id]="ctx"></div>`;
+        const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
+          if (rf & RenderFlags.Create) {
+            element(0, "div");
+            directive(0, 0, IdDirective);
+          }
+          if (rf & RenderFlags.Update) {
+            const dirInstance = load<IdDirective>(0, 0);
+            input(0, 2, ctx) && (dirInstance.id = ctx);
+            directiveRefresh(0, 0);
+          }
+        }, "id from ctx");
+
+        expect(hostDiv.innerHTML).toBe('<div id="id from ctx"></div>');
+
+        refreshFn("changed id");
+        expect(hostDiv.innerHTML).toBe('<div id="changed id"></div>');
+      });
+
+    });
+    
   });
 
   describe("refs", () => {

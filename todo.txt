@@ -135,9 +135,9 @@
             - multiple
     - directives
         - host 
-            - bindings
+            + bindings
             - listeners
-            - other directives
+            - other directives ?
         + listeners / outputs
         - lifecycle and lifecycle hooks
         - refs

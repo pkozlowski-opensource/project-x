@@ -345,20 +345,51 @@ function createViewVNode(viewId: number, parent: VNode, renderParent = null) {
   return createVNode(VNodeType.View, viewData, parent, renderParent);
 }
 
+function createHostBindingView(nativeEl: any): VNode {
+  const lView = createViewVNode(-1, null!, nativeEl);
+  // TODO(pk): do I need a dedicated VNode? 
+  lView.view.nodes[0] = createVNode(VNodeType.Element, lView.view, lView, nativeEl);
+  return lView;
+}
+
 function refreshView(viewVNode: VNode, viewFn, ctx?) {
   executeViewFn(viewVNode, viewFn, RenderFlags.Update, ctx);
 }
 
-function executeViewFn(viewVNode: VNode, viewFn, flags: RenderFlags, ctx?) {
+function enterView(viewVNode: VNode): ViewData {
   const oldView = currentView;
 
   parentVNode = viewVNode;
   currentView = viewVNode.view;
 
+  return oldView;
+}
+
+function executeViewFn(viewVNode: VNode, viewFn, flags: RenderFlags, ctx?) {
+  const oldView = enterView(viewVNode);
+
   viewFn(flags, ctx);
 
-  parentVNode = viewVNode.parent;
   currentView = oldView;
+  parentVNode = viewVNode.parent;
+}
+
+function executeDirectiveHostFn(hostElVNode: VNode, directiveHostViewVnode: VNode, directiveInstance) {
+  const oldView = enterView(directiveHostViewVnode);  
+
+  directiveInstance.host();
+
+  currentView = oldView;
+  parentVNode = hostElVNode;
+}
+
+function executeComponentRenderFn(hostElVNode: VNode, cmptViewVNode: VNode, cmptInstance, flags: RenderFlags, content?) {
+  const oldView = enterView(cmptViewVNode);
+
+  cmptInstance.render(flags, cmptInstance, content);
+
+  currentView = oldView;
+  parentVNode = hostElVNode.parent;
 }
 
 function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: number, viewFn, ctx?) {
@@ -403,16 +434,9 @@ function componentEnd(hostElIdx: number) {
   const hostElVNode = currentView.nodes[hostElIdx];
   const cmptInstance = hostElVNode.data[0];
   const componentViewNode = createViewVNode(-1, hostElVNode, hostElVNode.native);
-  const oldView = currentView;
 
-  parentVNode = componentViewNode;
-  currentView = componentViewNode.view;
-
-  cmptInstance.render(RenderFlags.Create, cmptInstance);
+  executeComponentRenderFn(hostElVNode, componentViewNode, cmptInstance, RenderFlags.Create);
   hostElVNode.componentView = componentViewNode;
-
-  currentView = oldView;
-  parentVNode = hostElVNode.parent;
 }
 
 function component(idx: number, tagName: string, constructorFn, attrs?: string[] | null) {
@@ -422,9 +446,12 @@ function component(idx: number, tagName: string, constructorFn, attrs?: string[]
 
 function componentForHostStart(hostElIdx: number, constructorFn) {
   const hostElVNode = currentView.nodes[hostElIdx];
-
-  hostElVNode.data[0] = new constructorFn();
+  const cmptInstance = hostElVNode.data[0] = new constructorFn();
   const groupVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, null);
+
+  if (cmptInstance.host) {
+    hostElVNode.data[1] = createHostBindingView(hostElVNode.native);
+  }
 
   hostElVNode.children[0] = groupVNode;
   parentVNode = groupVNode;
@@ -438,16 +465,11 @@ function componentForHost(hostElIdx: number, constructorFn) {
 function componentRefresh(hostElIdx: number) {
   const hostElVNode = currentView.nodes[hostElIdx];
   const cmptInstance = hostElVNode.data[0];
-  const componentView = hostElVNode.componentView;
 
-  const oldView = currentView;
-  parentVNode = componentView;
-  currentView = componentView.view;
-
-  cmptInstance.render(RenderFlags.Update, cmptInstance, hostElVNode.children[0]);
-
-  currentView = oldView;
-  parentVNode = hostElVNode.parent;
+  if (cmptInstance.host) {
+    executeDirectiveHostFn(hostElVNode, hostElVNode.data[0 + 1], cmptInstance);
+  }
+  executeComponentRenderFn(hostElVNode, hostElVNode.componentView, cmptInstance, RenderFlags.Update, hostElVNode.children[0]);
 }
 
 function load<T>(nodeIdx: number, dataIdx: number): T {
@@ -540,14 +562,24 @@ function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
 
 function directive(hostIdx: number, directiveIdx: number, constructorFn) {
   const hostVNode = currentView.nodes[hostIdx];
-  hostVNode.data[directiveIdx] = new constructorFn(hostVNode.native);
+  const directiveInstance = hostVNode.data[directiveIdx] = new constructorFn(hostVNode.native);
+
+  // PERF(pk): split into 2 instructions so I don't have to do this checking at runtime and have smaller generated code?
+  if (directiveInstance.host) {
+    hostVNode.data[directiveIdx + 1] = createHostBindingView(hostVNode.native);
+  } 
 }
 
 function directiveRefresh(hostIdx: number, directiveIdx: number) {
-  const directiveInstance = currentView.nodes[hostIdx].data[directiveIdx];
+  const hostElVNode = currentView.nodes[hostIdx];
+  const directiveInstance = hostElVNode.data[directiveIdx];
+
+  if (directiveInstance.host) {
+    executeDirectiveHostFn(hostElVNode,  hostElVNode.data[directiveIdx + 1], directiveInstance);
+  }
   if (directiveInstance.refresh) {
     directiveInstance.refresh();
-  }
+  }  
 }
 
 function render(nativeHost, tplFn, ctx?) {

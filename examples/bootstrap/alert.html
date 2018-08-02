@@ -15,18 +15,21 @@
 
     <script>
         // THINK(pk):
-        // - mapping XBAlert to <xb-alert> - fundamental question here: should it be derived or explictly specified? (derived could change from inocation to invocation so hard to style)            
-        // - writing dynamic CSS classes in a non-destructive way (manipulating classList) - sth a la built in ngClass
         // - manipulating host from a component / directive
+        // - mapping XBAlert to <xb-alert> - fundamental question here: should it be derived or explictly specified? (derived could change from invocation to invocation so hard to style)            
+        // - writing dynamic CSS classes in a non-destructive way (manipulating classList) - sth like a built-in ngClass
         // - named entities handling (just convert to unicode in the compiler?)
         // - typed input / type conversion for inputs
 
         class XBAlert {
 
             constructor() {
-                this.dismissible = false;
                 this.type = '';
                 this.close = null;
+            }
+
+            host() {
+                `class="alert ${this.close ? 'alert-dismissible' : ' '}alert-${this.type}" role="alert"`;
             }
 
             render(rf, ctx, $content) {
@@ -95,7 +98,7 @@
             if (rf & 0b10 /* RenderFlags.Update */) {
                 const cmpt = load(0, 0);
                 input(0, 1, 'warning') && (cmpt.type = 'warning');
-                cmpt.close = function($event) {
+                cmpt.close = function ($event) {
                     alert('About to be closed');
                 }
                 componentRefresh(0);
