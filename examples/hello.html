@@ -34,13 +34,13 @@
                 elementEnd(3);
             }
             if (rf & 0b10 /* RenderFlags.Update */) {
-                textContent(1, `Hello, ${ctx.name}`);
+                bindText(1, `Hello, ${ctx.name}`);
                 listenerRefresh(2, 0, function el2_input($event) {
                     ctx.name = $event.target.value;
                     // TODO(pk): super-hacky, needs a proper solution here
                     refreshHelloWorld(ctx);
                 });
-                elementProperty(2, 1, "value", ctx.name);
+                bindProperty(2, 1, "value", ctx.name);
                 listenerRefresh(3, 0, function el3_click($event) {
                     ctx.name = 'World';
                     refreshHelloWorld(ctx);

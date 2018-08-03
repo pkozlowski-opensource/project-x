@@ -52,9 +52,9 @@
                 elementEnd(0);
             }
             if (rf & 0b10 /* RenderFlags.Update */) {
-                elementAttribute(3, 0, "transform", `rotate(${30*(d.getHours()%12) + d.getMinutes()/2} 50 50)`);
-                elementAttribute(4, 0, "transform", `rotate(${6*d.getMinutes()} 50 50)`);
-                elementAttribute(5, 0, "transform", `rotate(${6*d.getSeconds()} 50 50)`); 
+                bindAttribute(3, 0, "transform", `rotate(${30*(d.getHours()%12) + d.getMinutes()/2} 50 50)`);
+                bindAttribute(4, 0, "transform", `rotate(${6*d.getMinutes()} 50 50)`);
+                bindAttribute(5, 0, "transform", `rotate(${6*d.getSeconds()} 50 50)`); 
             }
         }
 

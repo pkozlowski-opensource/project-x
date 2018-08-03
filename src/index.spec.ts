@@ -42,7 +42,7 @@ describe("integration", () => {
           text(0);
         }
         if (rf & RenderFlags.Update) {
-          textContent(0, name);
+          bindText(0, name);
         }
       }
 
@@ -68,7 +68,7 @@ describe("integration", () => {
             text(0);
           }
           if (rf & RenderFlags.Update) {
-            textContent(0, `Hello, ${ctx}`);
+            bindText(0, `Hello, ${ctx}`);
           }
         },
         "World"
@@ -88,7 +88,7 @@ describe("integration", () => {
             element(0, "div");
           }
           if (rf & RenderFlags.Update) {
-            elementProperty(0, 0, "id", ctx);
+            bindProperty(0, 0, "id", ctx);
           }
         },
         "initial"
@@ -108,7 +108,7 @@ describe("integration", () => {
             element(0, "div");
           }
           if (rf & RenderFlags.Update) {
-            elementAttribute(0, 0, "aria-label", ctx);
+            bindAttribute(0, 0, "aria-label", ctx);
           }
         },
         "initial"
@@ -129,7 +129,7 @@ describe("integration", () => {
             element(0, "div");
           }
           if (rf & RenderFlags.Update) {
-            elementClass(0, 0, "show", shouldShow);
+            bindClass(0, 0, "show", shouldShow);
           }
         },
         false
@@ -154,8 +154,8 @@ describe("integration", () => {
             elementEnd(0);
           }
           if (rf & RenderFlags.Update) {
-            elementProperty(0, 0, "id", ctx + "_for_div");
-            elementProperty(1, 0, "id", ctx + "_for_span");
+            bindProperty(0, 0, "id", ctx + "_for_div");
+            bindProperty(1, 0, "id", ctx + "_for_span");
           }
         },
         "initial"
@@ -190,7 +190,7 @@ describe("integration", () => {
           listenerRefresh(0, 0, function() {
             ctx.counter++;
           });
-          textContent(2, `Counter: ${ctx.counter}`);
+          bindText(2, `Counter: ${ctx.counter}`);
         }
       }
 
@@ -240,7 +240,7 @@ describe("integration", () => {
             text(0);
           }
           if (rf & RenderFlags.Update) {
-            textContent(0, `Hello, ${ctx.name}!`);
+            bindText(0, `Hello, ${ctx.name}!`);
           }
         }
 
@@ -269,7 +269,7 @@ describe("integration", () => {
             text(0);
           }
           if (rf & RenderFlags.Update) {
-            textContent(0, `Hello, ${ctx.name}!`);
+            bindText(0, `Hello, ${ctx.name}!`);
           }
         }
 
@@ -549,7 +549,7 @@ describe("integration", () => {
                     text(0);
                   }
                   if (rf & RenderFlags.Update) {
-                    textContent(0, `Hello, ${name}!`);
+                    bindText(0, `Hello, ${name}!`);
                   }
                 });
               }
@@ -592,8 +592,8 @@ describe("integration", () => {
                     text(3, "-");
                   }
                   if (rf & RenderFlags.Update) {
-                    textContent(0, `${i}`);
-                    textContent(2, items[i]);
+                    bindText(0, `${i}`);
+                    bindText(2, items[i]);
                   }
                 });
               }
@@ -633,7 +633,7 @@ describe("integration", () => {
                     text(1, "-");
                   }
                   if (rf & RenderFlags.Update) {
-                    textContent(0, item);
+                    bindText(0, item);
                   }
                 });
               }
@@ -678,7 +678,7 @@ describe("integration", () => {
                     text(1, "-");
                   }
                   if (rf & RenderFlags.Update) {
-                    textContent(0, fruits[i]);
+                    bindText(0, fruits[i]);
                   }
                 });
                 i++;
@@ -912,7 +912,7 @@ describe("integration", () => {
             text(0);
           }
           if (rf & RenderFlags.Update) {
-            textContent(0, `Hello, ${ctx.name}!`);
+            bindText(0, `Hello, ${ctx.name}!`);
           }
         }
       }
@@ -943,8 +943,7 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe("<test-component>Hello, New World!</test-component>");
     });
 
-    describe('host', () => {
-
+    describe("host", () => {
       it("should support hostless components", () => {
         class TdComponent {
           /**
@@ -958,7 +957,7 @@ describe("integration", () => {
             }
           }
         }
-  
+
         /**
          * <table><tr @component="TdComponent"></tr></table>
          */
@@ -975,14 +974,13 @@ describe("integration", () => {
             componentRefresh(1);
           }
         });
-  
+
         expect(hostDiv.innerHTML).toBe("<table><tr><td>I'm a cell!</td></tr></table>");
       });
-    
-      it('should support components with host bindings', () => {
 
+      it("should support components with host bindings", () => {
         class CSSSettingComponent {
-          setOnHost : boolean;
+          setOnHost: boolean;
           /**
            * I'm setting CSS class on my host
            */
@@ -992,9 +990,9 @@ describe("integration", () => {
             }
           }
 
-          host() {            
+          host() {
             `[class.foo]="setOnHost"`;
-            elementClass(0, 0, "foo", this.setOnHost);
+            bindClass(0, 0, "foo", this.setOnHost);
           }
         }
 
@@ -1013,10 +1011,47 @@ describe("integration", () => {
         expect(hostDiv.innerHTML).toBe("<csssettingcomponent>I'm setting CSS class on my host</csssettingcomponent>");
 
         refreshFn(true);
-        expect(hostDiv.innerHTML).toBe(`<csssettingcomponent class="foo">I'm setting CSS class on my host</csssettingcomponent>`);
+        expect(hostDiv.innerHTML).toBe(
+          `<csssettingcomponent class="foo">I'm setting CSS class on my host</csssettingcomponent>`
+        );
       });
 
+      it("should support components with static host attributes and bindings", () => {
+        class CSSSettingComponent {
+          setOnHost: boolean;
+          render(rf: RenderFlags) {}
 
+          host(rf: RenderFlags) {
+            `id="static" [class.foo]="setOnHost"`;
+            if (rf & RenderFlags.Create) {
+              setAttribute(0, "id", "static");
+            }
+            if (rf & RenderFlags.Update) {
+              bindClass(0, 0, "foo", this.setOnHost);
+            }
+          }
+        }
+
+        `<CSSSettingComponent [classExp]="setOrNot"></CSSSettingComponent>`;
+        const refreshFn = render(hostDiv, (rf: RenderFlags, setOrNot: boolean) => {
+          if (rf & RenderFlags.Create) {
+            component(0, "cmpt", CSSSettingComponent);
+          }
+          if (rf & RenderFlags.Update) {
+            const cmptInstance = load<CSSSettingComponent>(0, 0);
+            input(0, 2, setOrNot) && (cmptInstance.setOnHost = setOrNot);
+            componentRefresh(0);
+          }
+        });
+
+        expect(hostDiv.innerHTML).toBe(`<cmpt id="static"></cmpt>`);
+
+        refreshFn(true);
+        expect(hostDiv.innerHTML).toBe(`<cmpt id="static" class="foo"></cmpt>`);
+
+        refreshFn(false);
+        expect(hostDiv.innerHTML).toBe(`<cmpt id="static" class=""></cmpt>`);
+      });
     });
 
     describe("content projection", () => {
@@ -1054,7 +1089,7 @@ describe("integration", () => {
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
-              textContent(1, name);
+              bindText(1, name);
               componentRefresh(0);
             }
           },
@@ -1890,7 +1925,7 @@ describe("integration", () => {
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
-              textContent(2, ctx.title);
+              bindText(2, ctx.title);
               slotRefresh(5, contentGroup);
               componentRefresh(0);
             }
@@ -1974,7 +2009,7 @@ describe("integration", () => {
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
-              textContent(2, ctx.title);
+              bindText(2, ctx.title);
               slotRefresh(4, contentGroup);
               componentRefresh(0);
             }
@@ -2058,7 +2093,7 @@ describe("integration", () => {
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
-              textContent(2, ctx.title);
+              bindText(2, ctx.title);
               slotRefresh(4, contentGroup, "body");
               componentRefresh(0);
             }
@@ -2155,7 +2190,7 @@ describe("integration", () => {
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
-              textContent(2, ctx.title);
+              bindText(2, ctx.title);
               containerRefreshStart(4);
               {
                 if (this.showBody) {
@@ -2308,7 +2343,7 @@ describe("integration", () => {
               ctx.count = $event;
             };
             directiveRefresh(0, 0);
-            textContent(1, `${ctx.count}`);
+            bindText(1, `${ctx.count}`);
           }
         },
         model
@@ -2326,40 +2361,70 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe("<div></div>3");
     });
 
-    describe('host', () => {
-    
-      it('should support directives with host bindings', () => {
+    describe("host", () => {
+      it("should support directives with static host attributes", () => {
         class IdDirective {
           constructor() {}
           id;
 
-          host() {
-            `[id]="this.id"`;
-            elementProperty(0, 0, "id", this.id);
+          host(rf: RenderFlags) {
+            `id="static"`;
+            if (rf & RenderFlags.Create) {
+              setAttribute(0, "id", "static");
+            }
           }
         }
 
-        `<div [@IdDirective.id]="ctx"></div>`;
+        `<div @IdDirective></div>`;
         const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
           if (rf & RenderFlags.Create) {
             element(0, "div");
             directive(0, 0, IdDirective);
           }
           if (rf & RenderFlags.Update) {
-            const dirInstance = load<IdDirective>(0, 0);
-            input(0, 2, ctx) && (dirInstance.id = ctx);
             directiveRefresh(0, 0);
           }
-        }, "id from ctx");
+        });
+
+        expect(hostDiv.innerHTML).toBe('<div id="static"></div>');
+      });
+
+      it("should support directives with host bindings", () => {
+        class IdDirective {
+          constructor() {}
+          id;
+
+          host(rf: RenderFlags) {
+            `[id]="this.id"`;
+            if (rf & RenderFlags.Update) {
+              bindProperty(0, 0, "id", this.id);
+            }
+          }
+        }
+
+        `<div [@IdDirective.id]="ctx"></div>`;
+        const refreshFn = render(
+          hostDiv,
+          (rf: RenderFlags, ctx) => {
+            if (rf & RenderFlags.Create) {
+              element(0, "div");
+              directive(0, 0, IdDirective);
+            }
+            if (rf & RenderFlags.Update) {
+              const dirInstance = load<IdDirective>(0, 0);
+              input(0, 2, ctx) && (dirInstance.id = ctx);
+              directiveRefresh(0, 0);
+            }
+          },
+          "id from ctx"
+        );
 
         expect(hostDiv.innerHTML).toBe('<div id="id from ctx"></div>');
 
         refreshFn("changed id");
         expect(hostDiv.innerHTML).toBe('<div id="changed id"></div>');
       });
-
     });
-    
   });
 
   describe("refs", () => {
@@ -2375,7 +2440,7 @@ describe("integration", () => {
         }
         if (rf & RenderFlags.Update) {
           const i = loadElementRef(0);
-          textContent(1, `Hello, ${i.value}!`);
+          bindText(1, `Hello, ${i.value}!`);
         }
       }
 

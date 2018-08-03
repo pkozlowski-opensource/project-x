@@ -68,7 +68,7 @@ const NS = {
   SVG: "http://www.w3.org/2000/svg"
 };
 
-function setAttributes(domEl, attrs?: string[] | null) {
+function setNativeAttributes(domEl, attrs?: string[] | null) {
   if (attrs) {
     for (let i = 0; i < attrs.length; i += 2) {
       domEl.setAttribute(attrs[i], attrs[i + 1]);
@@ -76,7 +76,7 @@ function setAttributes(domEl, attrs?: string[] | null) {
   }
 }
 
-function setAttributesNS(domEl, nsURI: string | null, attrs?: string[] | null) {
+function setNativeAttributesNS(domEl, nsURI: string | null, attrs?: string[] | null) {
   if (attrs) {
     for (let i = 0; i < attrs.length; i += 2) {
       domEl.setAttributeNS(nsURI, attrs[i], attrs[i + 1]);
@@ -171,7 +171,7 @@ function elementStart(idx: number, tagName: string, attrs?: string[] | null) {
 
   parentVNode.children.push(vNode);
 
-  setAttributes(domEl, attrs);
+  setNativeAttributes(domEl, attrs);
   appendNativeNode(parentVNode, vNode);
 
   parentVNode = vNode;
@@ -199,8 +199,8 @@ function elementNSStart(
 
   parentVNode.children.push(vNode);
 
-  setAttributes(domEl, attrs);
-  setAttributesNS(domEl, nsURI, nsAttrs);
+  setNativeAttributes(domEl, attrs);
+  setNativeAttributesNS(domEl, nsURI, nsAttrs);
   appendNativeNode(parentVNode, vNode);
 
   parentVNode = vNode;
@@ -260,28 +260,36 @@ function checkAndUpdateBinding(bindings: any[], bindIdx: number, newValue: any):
   return false;
 }
 
-function textContent(vNodeIdx: number, newValue: string) {
+function bindText(vNodeIdx: number, newValue: string) {
   const vNode = currentView.nodes[vNodeIdx];
   if (checkAndUpdateBinding(vNode.data, 0, newValue)) {
     vNode.native.textContent = newValue;
   }
 }
 
-function elementProperty(vNodeIdx: number, bindIdx: number, propName: string, newValue: any) {
+function bindProperty(vNodeIdx: number, bindIdx: number, propName: string, newValue: any) {
   const vNode = currentView.nodes[vNodeIdx];
   if (checkAndUpdateBinding(vNode.data, bindIdx, newValue)) {
     vNode.native[propName] = newValue;
   }
 }
 
-function elementAttribute(vNodeIdx: number, bindIdx: number, attrName: string, newValue: string) {
+/**
+ * Sets a native attribue for a give {@link VNode}. Useful for static host bindings and one-time bindings.
+ */
+function setAttribute(vNodeIdx: number, attrName: string, value: string) {
+  const vNode = currentView.nodes[vNodeIdx];
+  vNode.native.setAttribute(attrName, value);
+}
+
+function bindAttribute(vNodeIdx: number, bindIdx: number, attrName: string, newValue: string) {
   const vNode = currentView.nodes[vNodeIdx];
   if (checkAndUpdateBinding(vNode.data, bindIdx, newValue)) {
     vNode.native.setAttribute(attrName, newValue);
   }
 }
 
-function elementClass(vNodeIdx: number, bindIdx: number, className: string, toogleState: boolean) {
+function bindClass(vNodeIdx: number, bindIdx: number, className: string, toogleState: boolean) {
   const vNode = currentView.nodes[vNodeIdx];
   if (checkAndUpdateBinding(vNode.data, bindIdx, toogleState)) {
     vNode.native.classList.toggle(className, toogleState);
@@ -347,7 +355,7 @@ function createViewVNode(viewId: number, parent: VNode, renderParent = null) {
 
 function createHostBindingView(nativeEl: any): VNode {
   const lView = createViewVNode(-1, null!, nativeEl);
-  // TODO(pk): do I need a dedicated VNode? 
+  // TODO(pk): do I need a dedicated VNode?
   lView.view.nodes[0] = createVNode(VNodeType.Element, lView.view, lView, nativeEl);
   return lView;
 }
@@ -374,16 +382,22 @@ function executeViewFn(viewVNode: VNode, viewFn, flags: RenderFlags, ctx?) {
   parentVNode = viewVNode.parent;
 }
 
-function executeDirectiveHostFn(hostElVNode: VNode, directiveHostViewVnode: VNode, directiveInstance) {
-  const oldView = enterView(directiveHostViewVnode);  
+function executeDirectiveHostFn(hostElVNode: VNode, directiveHostViewVnode: VNode, directiveInstance, rf: RenderFlags) {
+  const oldView = enterView(directiveHostViewVnode);
 
-  directiveInstance.host();
+  directiveInstance.host(rf);
 
   currentView = oldView;
   parentVNode = hostElVNode;
 }
 
-function executeComponentRenderFn(hostElVNode: VNode, cmptViewVNode: VNode, cmptInstance, flags: RenderFlags, content?) {
+function executeComponentRenderFn(
+  hostElVNode: VNode,
+  cmptViewVNode: VNode,
+  cmptInstance,
+  flags: RenderFlags,
+  content?
+) {
   const oldView = enterView(cmptViewVNode);
 
   cmptInstance.render(flags, cmptInstance, content);
@@ -424,7 +438,7 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
   const hostElVNode = (currentView.nodes[idx] = createVNode(VNodeType.Element, currentView, parentVNode, domEl));
   parentVNode.children.push(hostElVNode);
 
-  setAttributes(domEl, attrs);
+  setNativeAttributes(domEl, attrs);
   appendNativeNode(parentVNode, hostElVNode);
 
   componentForHostStart(idx, constructorFn);
@@ -434,6 +448,10 @@ function componentEnd(hostElIdx: number) {
   const hostElVNode = currentView.nodes[hostElIdx];
   const cmptInstance = hostElVNode.data[0];
   const componentViewNode = createViewVNode(-1, hostElVNode, hostElVNode.native);
+
+  if (cmptInstance.host) {
+    executeDirectiveHostFn(hostElVNode, hostElVNode.data[1], cmptInstance, RenderFlags.Create);
+  }
 
   executeComponentRenderFn(hostElVNode, componentViewNode, cmptInstance, RenderFlags.Create);
   hostElVNode.componentView = componentViewNode;
@@ -446,7 +464,7 @@ function component(idx: number, tagName: string, constructorFn, attrs?: string[]
 
 function componentForHostStart(hostElIdx: number, constructorFn) {
   const hostElVNode = currentView.nodes[hostElIdx];
-  const cmptInstance = hostElVNode.data[0] = new constructorFn();
+  const cmptInstance = (hostElVNode.data[0] = new constructorFn());
   const groupVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, null);
 
   if (cmptInstance.host) {
@@ -467,9 +485,15 @@ function componentRefresh(hostElIdx: number) {
   const cmptInstance = hostElVNode.data[0];
 
   if (cmptInstance.host) {
-    executeDirectiveHostFn(hostElVNode, hostElVNode.data[0 + 1], cmptInstance);
+    executeDirectiveHostFn(hostElVNode, hostElVNode.data[0 + 1], cmptInstance, RenderFlags.Update);
   }
-  executeComponentRenderFn(hostElVNode, hostElVNode.componentView, cmptInstance, RenderFlags.Update, hostElVNode.children[0]);
+  executeComponentRenderFn(
+    hostElVNode,
+    hostElVNode.componentView,
+    cmptInstance,
+    RenderFlags.Update,
+    hostElVNode.children[0]
+  );
 }
 
 function load<T>(nodeIdx: number, dataIdx: number): T {
@@ -562,12 +586,13 @@ function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
 
 function directive(hostIdx: number, directiveIdx: number, constructorFn) {
   const hostVNode = currentView.nodes[hostIdx];
-  const directiveInstance = hostVNode.data[directiveIdx] = new constructorFn(hostVNode.native);
+  const directiveInstance = (hostVNode.data[directiveIdx] = new constructorFn(hostVNode.native));
 
   // PERF(pk): split into 2 instructions so I don't have to do this checking at runtime and have smaller generated code?
   if (directiveInstance.host) {
-    hostVNode.data[directiveIdx + 1] = createHostBindingView(hostVNode.native);
-  } 
+    const hostView = (hostVNode.data[directiveIdx + 1] = createHostBindingView(hostVNode.native));
+    executeDirectiveHostFn(hostVNode, hostView, directiveInstance, RenderFlags.Create);
+  }
 }
 
 function directiveRefresh(hostIdx: number, directiveIdx: number) {
@@ -575,11 +600,11 @@ function directiveRefresh(hostIdx: number, directiveIdx: number) {
   const directiveInstance = hostElVNode.data[directiveIdx];
 
   if (directiveInstance.host) {
-    executeDirectiveHostFn(hostElVNode,  hostElVNode.data[directiveIdx + 1], directiveInstance);
+    executeDirectiveHostFn(hostElVNode, hostElVNode.data[directiveIdx + 1], directiveInstance, RenderFlags.Update);
   }
   if (directiveInstance.refresh) {
     directiveInstance.refresh();
-  }  
+  }
 }
 
 function render(nativeHost, tplFn, ctx?) {
