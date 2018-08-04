@@ -965,8 +965,7 @@ describe("integration", () => {
           if (rf & RenderFlags.Create) {
             elementStart(0, "table");
             {
-              element(1, "tr");
-              componentForHost(1, TdComponent);
+              component(1, "tr", TdComponent);
             }
             elementEnd(0);
           }
