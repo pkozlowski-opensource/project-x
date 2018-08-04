@@ -15,9 +15,8 @@
 
     <script>
         // THINK(pk):
-        // - manipulating host from a component / directive
-        // - mapping XBAlert to <xb-alert> - fundamental question here: should it be derived or explictly specified? (derived could change from invocation to invocation so hard to style)            
         // - writing dynamic CSS classes in a non-destructive way (manipulating classList) - sth like a built-in ngClass
+        // - mapping XBAlert to <xb-alert> - fundamental question here: should it be derived or explictly specified? (derived could change from invocation to invocation so hard to style)            
         // - named entities handling (just convert to unicode in the compiler?)
         // - typed input / type conversion for inputs
 
@@ -28,33 +27,33 @@
                 this.close = null;
             }
 
-            host() {
-                `class="alert ${this.close ? 'alert-dismissible' : ' '}alert-${this.type}" role="alert"`;
+            host(rf) {
+                if (rf & 0b01 /* RenderFlags.Create */) {
+                    setAttributes(0, ["role", "alert", "style", "display: block;"]);
+                }
+                if (rf & 0b10 /* RenderFlags.Update */) {
+                    bindAttribute(0, 0, "class", `alert ${this.close ? 'alert-dismissible ' : ''}alert-${this.type}`);
+                }
             }
 
             render(rf, ctx, $content) {
-                `<div class="alert ${this.close ? 'alert-dismissible' : ' '}alert-${this.type}" role="alert">
+                `<x:host class="alert ${this.close ? 'alert-dismissible' : ' '}alert-${this.type}" role="alert">
                     <% if (this.close) { %>
                         <button type="button" class="close" aria-label="Close" (click)="this.close()">
                             <span aria-hidden="true"&times;</span>
                         </button>
                     <% } %>
                     <x-slot></x-slot>
-                </div>`;
+                <x:host>`;
                 if (rf & 0b01 /* RenderFlags.Create */) {
-                    elementStart(0, 'div', ['role', 'alert']);
-                    {
-                        container(1);
-                        slot(2);
-                    }
-                    elementEnd(0);
+                    container(0);
+                    slot(1);
                 }
                 if (rf & 0b10 /* RenderFlags.Update */) {
-                    elementAttribute(0, 0, "class", `alert ${this.close ? 'alert-dismissible ' : ''}alert-${this.type}`);
-                    containerRefreshStart(1);
+                    containerRefreshStart(0);
                     {
                         if (this.close) {
-                            view(1, 0, (rf) => {
+                            view(0, 0, (rf) => {
                                 if (rf & 0b01 /* RenderFlags.Create */) {
                                     elementStart(0, "button", ["type", "button", "class", "close", "aria-label", "Close"]);
                                     {
@@ -73,8 +72,8 @@
                             });
                         }
                     }
-                    containerRefreshEnd(1);
-                    slotRefresh(2, $content);
+                    containerRefreshEnd(0);
+                    slotRefresh(1, $content);
                 }
             }
         }
@@ -84,7 +83,7 @@
         </XBAlert>`;
         function app(rf) {
             if (rf & 0b01 /* RenderFlags.Create */) {
-                componentStart(0, 'xb-alert', XBAlert);
+                componentStart(0, 'xb-alert', XBAlert, ["class", "from_outside"]);
                 {
                     elementStart(1, 'strong');
                     {
@@ -97,7 +96,7 @@
             }
             if (rf & 0b10 /* RenderFlags.Update */) {
                 const cmpt = load(0, 0);
-                input(0, 1, 'warning') && (cmpt.type = 'warning');
+                input(0, 2, 'warning') && (cmpt.type = 'warning');
                 cmpt.close = function ($event) {
                     alert('About to be closed');
                 }

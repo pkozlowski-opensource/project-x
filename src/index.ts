@@ -282,6 +282,11 @@ function setAttribute(vNodeIdx: number, attrName: string, value: string) {
   vNode.native.setAttribute(attrName, value);
 }
 
+function setAttributes(vNodeIdx: number, attrNameVals: string[]) {
+  const vNode = currentView.nodes[vNodeIdx];
+  setNativeAttributes(vNode.native, attrNameVals);
+}
+
 function bindAttribute(vNodeIdx: number, bindIdx: number, attrName: string, newValue: string) {
   const vNode = currentView.nodes[vNodeIdx];
   if (checkAndUpdateBinding(vNode.data, bindIdx, newValue)) {
