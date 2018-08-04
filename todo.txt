@@ -77,12 +77,14 @@
     - basic template syntax
         + static elements
         + namespaced elements / attributes (SVG)
-        + bindings
+        - bindings
             + attributes 
             + properties
             + class toggle
+            - class replace (need to think of sytnax!)
             + interpolation in text nodes
             + one vs. multiple text nodes => one, use `before ${toEmptyStr(exp1)} after`
+            - style?
             - boolean attributes (or just tell people to bind to properties - would it work for custome elements?)
         - one-time binding
             - attributes
@@ -91,6 +93,7 @@
             - inputs
             - text nodes (interpolation) => basic idea: text(0, `befoe ${oneTimeExp} after`)
             - mixed interpolation (ex.: <span>{::=exp1})|{=exp2}</span>)
+            - in host (need to be evaluated after initial inputs were set!)
         - 2-way data binding
             + manual / the "hard way"
             - sugar
@@ -130,13 +133,14 @@
             - basic
             - with inputs / outputs
             - with content (named, multiple named, default)
+            - with host (who should run the host() function?)
         - refs
             - single
             - multiple
     - directives
-        - host 
+        + host 
             + bindings
-            - listeners
+            + listeners
             - other directives ?
         + listeners / outputs
         - lifecycle and lifecycle hooks

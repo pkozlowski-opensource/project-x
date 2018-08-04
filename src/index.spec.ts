@@ -2424,6 +2424,40 @@ describe("integration", () => {
         refreshFn("changed id");
         expect(hostDiv.innerHTML).toBe('<div id="changed id"></div>');
       });
+
+      it("should support listeners in host", () => {
+        class OnClickDirective {
+          constructor() {}
+          host(rf: RenderFlags) {
+            `(click)="$event.target.id = 'clicked'"`;
+            if (rf & RenderFlags.Create) {
+              listener(0, 0, "click");
+            }
+            if (rf & RenderFlags.Update) {
+              listenerRefresh(0, 0, function($event) {
+                $event.target.id = "clicked";
+              });
+            }
+          }
+        }
+
+        `<div @OnClickDirective></div>`;
+        const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
+          if (rf & RenderFlags.Create) {
+            element(0, "div");
+            directive(0, 0, OnClickDirective);
+          }
+          if (rf & RenderFlags.Update) {
+            directiveRefresh(0, 0);
+          }
+        });
+
+        expect(hostDiv.innerHTML).toBe("<div></div>");
+
+        const divWithDirective = hostDiv.firstChild as HTMLDivElement;
+        divWithDirective.click();
+        expect(hostDiv.innerHTML).toBe('<div id="clicked"></div>');
+      });
     });
   });
 
