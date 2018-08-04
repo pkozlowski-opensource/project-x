@@ -629,7 +629,7 @@ function directiveRefresh(hostIdx: number, directiveIdx: number) {
 function render(nativeHost, tplFn, ctx?) {
   const viewVNode = createViewVNode(-1, null!, nativeHost);
   executeViewFn(viewVNode, tplFn, RenderFlags.CreateAndUpdate, ctx);
-  return function refreshFromRoot(ctx?) {
-    refreshView(viewVNode, tplFn, ctx);
+  return function refreshFromRoot(refreshCtx?) {
+    refreshView(viewVNode, tplFn, refreshCtx !== undefined ? refreshCtx : ctx);
   };
 }

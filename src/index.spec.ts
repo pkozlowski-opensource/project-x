@@ -450,23 +450,23 @@ describe("integration", () => {
         expect(hostDiv.innerHTML).toBe("<!--container 0-->");
 
         ctx.inner = true;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("<!--container 0-->");
 
         ctx.outer = true;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("outer shown|inner shown<!--container 1-->|<!--container 0-->");
 
         ctx.inner = false;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("outer shown|<!--container 1-->|<!--container 0-->");
 
         ctx.inner = true;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("outer shown|inner shown<!--container 1-->|<!--container 0-->");
 
         ctx.outer = false;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("<!--container 0-->");
       });
 
@@ -520,15 +520,15 @@ describe("integration", () => {
         expect(hostDiv.innerHTML).toBe("<!--container 0-->|<!--container 2-->");
 
         ctx.second = true;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("<!--container 0-->|second<!--container 2-->");
 
         ctx.first = true;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("first<!--container 0-->|second<!--container 2-->");
 
         ctx.second = false;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("first<!--container 0-->|<!--container 2-->");
       });
 
@@ -606,7 +606,7 @@ describe("integration", () => {
         expect(hostDiv.innerHTML).toBe("0-one-1-two-2-three-<!--container 0-->");
 
         ctx.splice(1, 1);
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("0-one-1-three-<!--container 0-->");
       });
 
@@ -646,7 +646,7 @@ describe("integration", () => {
         expect(hostDiv.innerHTML).toBe("one-two-three-<!--container 0-->");
 
         ctx.splice(1, 1);
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("one-three-<!--container 0-->");
       });
 
@@ -692,7 +692,7 @@ describe("integration", () => {
         expect(hostDiv.innerHTML).toBe("apple-banana-orange-<!--container 0-->");
 
         fruits.splice(1, 1);
-        refreshFn(fruits);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("apple-orange-<!--container 0-->");
       });
     });
@@ -938,7 +938,7 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe("<test-component>Hello, World!</test-component>");
 
       ctx.name = "New World";
-      refreshFn(ctx);
+      refreshFn();
       expect(hostDiv.innerHTML).toBe("<test-component>Hello, New World!</test-component>");
     });
 
@@ -1378,8 +1378,8 @@ describe("integration", () => {
         refreshFn(true);
         expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--><!--container 0--></test>");
 
-        //refreshFn(false);
-        //expect(hostDiv.innerHTML).toBe("<test><!--container 0--></test>");
+        refreshFn(false);
+        expect(hostDiv.innerHTML).toBe("<test><!--container 0--></test>");
       });
 
       it("should support conditional named slottables", () => {
@@ -1755,19 +1755,19 @@ describe("integration", () => {
         expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
 
         ctx.includeSlotable = true;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("<test><!--container 1-->bar<!--slot 0--></test>");
 
         ctx.includeContent = true;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("<test>foo<!--container 1-->bar<!--slot 0--></test>");
 
         ctx.includeSlotable = false;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
 
         ctx.includeSlotable = true;
-        refreshFn(ctx);
+        refreshFn();
         expect(hostDiv.innerHTML).toBe("<test>foo<!--container 1-->bar<!--slot 0--></test>");
       });
 
@@ -2350,12 +2350,12 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe("<div></div>0");
 
       ticker.tick();
-      refreshFn(model);
+      refreshFn();
       expect(hostDiv.innerHTML).toBe("<div></div>1");
 
       ticker.tick();
       ticker.tick();
-      refreshFn(model);
+      refreshFn();
       expect(hostDiv.innerHTML).toBe("<div></div>3");
     });
 

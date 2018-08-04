@@ -38,12 +38,12 @@
                 listenerRefresh(2, 0, function el2_input($event) {
                     ctx.name = $event.target.value;
                     // TODO(pk): super-hacky, needs a proper solution here
-                    refreshHelloWorld(ctx);
+                    refreshHelloWorld();
                 });
                 bindProperty(2, 1, "value", ctx.name);
                 listenerRefresh(3, 0, function el3_click($event) {
                     ctx.name = 'World';
-                    refreshHelloWorld(ctx);
+                    refreshHelloWorld();
                 });
             }
         }
