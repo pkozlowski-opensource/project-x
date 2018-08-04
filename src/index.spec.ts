@@ -765,7 +765,7 @@ describe("integration", () => {
         /**
          * Hello, Component!
          */
-        render(rf: RenderFlags, ctx: TestComponent) {
+        render(rf: RenderFlags) {
           if (rf & RenderFlags.Create) {
             text(0, "Hello, Component!");
           }
@@ -777,7 +777,7 @@ describe("integration", () => {
        * <hr>
        * <TestComponent></TestComponent>
        */
-      const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
+      render(hostDiv, (rf: RenderFlags) => {
         if (rf & RenderFlags.Create) {
           component(0, "test-component", TestComponent);
           element(1, "hr");
@@ -907,12 +907,12 @@ describe("integration", () => {
         /**
          * Hello, {{name}}!
          */
-        render(rf: RenderFlags, ctx: TestComponent) {
+        render(rf: RenderFlags) {
           if (rf & RenderFlags.Create) {
             text(0);
           }
           if (rf & RenderFlags.Update) {
-            bindText(0, `Hello, ${ctx.name}!`);
+            bindText(0, `Hello, ${this.name}!`);
           }
         }
       }
@@ -922,9 +922,8 @@ describe("integration", () => {
        */
       const refreshFn = render(
         hostDiv,
-        (rf: RenderFlags, ctx) => {
+        (rf: RenderFlags, ctx: { name: string }) => {
           if (rf & RenderFlags.Create) {
-            // TODO(pk): element creation could be probably in-lined into component() instruction
             component(0, "test-component", TestComponent);
           }
           if (rf & RenderFlags.Update) {
@@ -949,7 +948,7 @@ describe("integration", () => {
           /**
            * <td>I'm a cell!</td>
            */
-          render(rf: RenderFlags, ctx: TdComponent) {
+          render(rf: RenderFlags) {
             if (rf & RenderFlags.Create) {
               elementStart(0, "td");
               text(1, "I'm a cell!");
@@ -961,7 +960,7 @@ describe("integration", () => {
         /**
          * <table><tr @component="TdComponent"></tr></table>
          */
-        const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
+        render(hostDiv, (rf: RenderFlags) => {
           if (rf & RenderFlags.Create) {
             elementStart(0, "table");
             {
@@ -983,7 +982,7 @@ describe("integration", () => {
           /**
            * I'm setting CSS class on my host
            */
-          render(rf: RenderFlags, ctx: CSSSettingComponent) {
+          render(rf: RenderFlags) {
             if (rf & RenderFlags.Create) {
               text(1, "I'm setting CSS class on my host");
             }
@@ -1059,7 +1058,7 @@ describe("integration", () => {
           /**
            * Hello, <x-slot></x-slot>!
            */
-          render(rf: RenderFlags, ctx: TestComponent, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               text(0, "Hello, ");
               elementStart(1, "span");
@@ -1111,7 +1110,7 @@ describe("integration", () => {
            *   <x-slot name="content"></x-slot>
            * </div>
            */
-          render(rf: RenderFlags, ctx: Card, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               elementStart(0, "h1");
               {
@@ -1137,7 +1136,7 @@ describe("integration", () => {
          *   <:content>Content</:content>
          * </Card>
          */
-        const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
+        render(hostDiv, (rf: RenderFlags) => {
           if (rf & RenderFlags.Create) {
             componentStart(0, "card", Card);
             {
@@ -1165,7 +1164,7 @@ describe("integration", () => {
       it("should support named slots at the component view root", () => {
         `<Test><:foo>foo<:/foo></Test>`;
         class Test {
-          render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               slot(0);
             }
@@ -1209,7 +1208,7 @@ describe("integration", () => {
            *   <x-slot name="footer"></x-slot>
            * </footer>
            */
-          render(rf: RenderFlags, ctx: Card, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               elementStart(0, "h1");
               {
@@ -1242,7 +1241,7 @@ describe("integration", () => {
          *   <:footer>Bottom</:footer>
          * </Card>
          */
-        const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
+        render(hostDiv, (rf: RenderFlags) => {
           if (rf & RenderFlags.Create) {
             componentStart(0, "card", Card);
             {
@@ -1275,7 +1274,7 @@ describe("integration", () => {
         <x-slot name="item"></x-slot>
         `;
         class Menu {
-          render(rf: RenderFlags, ctx: Menu, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               elementStart(0, "span");
               {
@@ -1295,7 +1294,7 @@ describe("integration", () => {
           <:item>two</:item>
         </Menu>
         `;
-        const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
+        render(hostDiv, (rf: RenderFlags) => {
           if (rf & RenderFlags.Create) {
             componentStart(0, "menu", Menu);
             {
@@ -1327,14 +1326,14 @@ describe("integration", () => {
         {% } %} `;
         class Test {
           show = false;
-          render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               container(0);
             }
             if (rf & RenderFlags.Update) {
               containerRefreshStart(0);
               {
-                if (ctx.show) {
+                if (this.show) {
                   view(0, 0, (rf: RenderFlags) => {
                     if (rf & RenderFlags.Create) {
                       slot(0);
@@ -1386,7 +1385,7 @@ describe("integration", () => {
       it("should support conditional named slottables", () => {
         `<x-slot name="foo"></x-slot>`;
         class Test {
-          render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               slot(0);
             }
@@ -1450,7 +1449,7 @@ describe("integration", () => {
       it("should support multiple conditional named slottables", () => {
         `<x-slot name="item"></x-slot>`;
         class Test {
-          render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               slot(0);
             }
@@ -1520,7 +1519,7 @@ describe("integration", () => {
       it("should support multiple conditional named slottables in different containers", () => {
         `<x-slot name="item"></x-slot>`;
         class Test {
-          render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               slot(0);
             }
@@ -1603,7 +1602,7 @@ describe("integration", () => {
       it("should support multiple conditional named slottables in nested containers", () => {
         `<x-slot name="item"></x-slot>`;
         class Test {
-          render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               slot(0);
             }
@@ -1681,7 +1680,7 @@ describe("integration", () => {
       it("should support containers inside conditional slotables", () => {
         `<x-slot name="foobar"></x-slot>`;
         class Test {
-          render(rf: RenderFlags, ctx: Test, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               slot(0);
             }
@@ -1787,7 +1786,7 @@ describe("integration", () => {
         `;
         class TestCmpt {
           inFirst;
-          render(rf: RenderFlags, ctx: any, $contentGroup: VNode) {
+          render(rf: RenderFlags, $contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               elementStart(0, "div");
               {
@@ -1876,7 +1875,7 @@ describe("integration", () => {
         </div>
         `;
         class Card {
-          render(rf: RenderFlags, ctx: Card, contentGroup: VNode) {
+          render(rf: RenderFlags, contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               elementStart(0, "div", ["class", "header"]);
               slot(1);
@@ -1902,7 +1901,7 @@ describe("integration", () => {
         </Card>`;
         class SimpleCard {
           title: string;
-          render(rf: RenderFlags, ctx: SimpleCard, contentGroup: VNode) {
+          render(rf: RenderFlags, contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               componentStart(0, "card", Card);
               {
@@ -1924,7 +1923,7 @@ describe("integration", () => {
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
-              bindText(2, ctx.title);
+              bindText(2, this.title);
               slotRefresh(5, contentGroup);
               componentRefresh(0);
             }
@@ -1966,7 +1965,7 @@ describe("integration", () => {
         </div>
         `;
         class Card {
-          render(rf: RenderFlags, ctx: Card, contentGroup: VNode) {
+          render(rf: RenderFlags, contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               elementStart(0, "div", ["class", "header"]);
               slot(1);
@@ -1990,7 +1989,7 @@ describe("integration", () => {
         </Card>`;
         class SimpleCard {
           title: string;
-          render(rf: RenderFlags, ctx: SimpleCard, contentGroup: VNode) {
+          render(rf: RenderFlags, contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               componentStart(0, "card", Card);
               {
@@ -2008,7 +2007,7 @@ describe("integration", () => {
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
-              bindText(2, ctx.title);
+              bindText(2, this.title);
               slotRefresh(4, contentGroup);
               componentRefresh(0);
             }
@@ -2050,7 +2049,7 @@ describe("integration", () => {
         </div>
         `;
         class Card {
-          render(rf: RenderFlags, ctx: Card, contentGroup: VNode) {
+          render(rf: RenderFlags, contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               elementStart(0, "div", ["class", "header"]);
               slot(1);
@@ -2074,7 +2073,7 @@ describe("integration", () => {
         </Card>`;
         class SimpleCard {
           title: string;
-          render(rf: RenderFlags, ctx: SimpleCard, contentGroup: VNode) {
+          render(rf: RenderFlags, contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               componentStart(0, "card", Card);
               {
@@ -2092,7 +2091,7 @@ describe("integration", () => {
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
-              bindText(2, ctx.title);
+              bindText(2, this.title);
               slotRefresh(4, contentGroup, "body");
               componentRefresh(0);
             }
@@ -2144,7 +2143,7 @@ describe("integration", () => {
         </div>
         `;
         class Card {
-          render(rf: RenderFlags, ctx: Card, contentGroup: VNode) {
+          render(rf: RenderFlags, contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               elementStart(0, "div", ["class", "header"]);
               slot(1);
@@ -2171,7 +2170,7 @@ describe("integration", () => {
         class SimpleCard {
           showBody = false;
           title: string;
-          render(rf: RenderFlags, ctx: SimpleCard, contentGroup: VNode) {
+          render(rf: RenderFlags, contentGroup: VNode) {
             if (rf & RenderFlags.Create) {
               componentStart(0, "card", Card);
               {
@@ -2189,11 +2188,11 @@ describe("integration", () => {
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
-              bindText(2, ctx.title);
+              bindText(2, this.title);
               containerRefreshStart(4);
               {
                 if (this.showBody) {
-                  view(4, 0, function(rf: RenderFlags, ctx: SimpleCard) {
+                  view(4, 0, function(rf: RenderFlags) {
                     if (rf & RenderFlags.Create) {
                       slot(0);
                     }

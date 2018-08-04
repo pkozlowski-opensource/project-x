@@ -429,7 +429,7 @@ function executeComponentRenderFn(
 ) {
   const oldView = enterView(cmptViewVNode);
 
-  cmptInstance.render(flags, cmptInstance, content);
+  cmptInstance.render(flags, content);
 
   currentView = oldView;
   parentVNode = hostElVNode.parent;
