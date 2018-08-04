@@ -15,7 +15,6 @@
 
     <script>
         // THINK(pk):
-        // - writing dynamic CSS classes in a non-destructive way (manipulating classList) - sth like a built-in ngClass
         // - mapping XBAlert to <xb-alert> - fundamental question here: should it be derived or explictly specified? (derived could change from invocation to invocation so hard to style)            
         // - named entities handling (just convert to unicode in the compiler?)
         // - typed input / type conversion for inputs
@@ -23,21 +22,23 @@
         class XBAlert {
 
             constructor() {
-                this.type = '';
-                this.close = null;
+                this.type = "warning";
+                this.close = undefined;
             }
 
             host(rf) {
                 if (rf & 0b01 /* RenderFlags.Create */) {
                     setAttributes(0, ["role", "alert", "style", "display: block;"]);
+                    setCSSClass(0, "alert");
                 }
                 if (rf & 0b10 /* RenderFlags.Update */) {
-                    bindAttribute(0, 0, "class", `alert ${this.close ? 'alert-dismissible ' : ''}alert-${this.type}`);
+                    bindClass(0, 0, "alert-dismissible", this.close);
+                    replaceClass(0, 1, `alert-${this.type}`);
                 }
             }
 
             render(rf, ctx, $content) {
-                `<x:host class="alert ${this.close ? 'alert-dismissible' : ' '}alert-${this.type}" role="alert">
+                `<x:host class="alert [class.alert-dismissible]="${this.close}" [class.alert-{}]="${this.type}" role="alert">
                     <% if (this.close) { %>
                         <button type="button" class="close" aria-label="Close" (click)="this.close()">
                             <span aria-hidden="true"&times;</span>
@@ -96,7 +97,7 @@
             }
             if (rf & 0b10 /* RenderFlags.Update */) {
                 const cmpt = load(0, 0);
-                input(0, 2, 'warning') && (cmpt.type = 'warning');
+                input(0, 2, 'danger') && (cmpt.type = 'danger');
                 cmpt.close = function ($event) {
                     alert('About to be closed');
                 }

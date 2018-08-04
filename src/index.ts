@@ -287,6 +287,18 @@ function setAttributes(vNodeIdx: number, attrNameVals: string[]) {
   setNativeAttributes(vNode.native, attrNameVals);
 }
 
+function setCSSClass(vNodeIdx: number, className: string) {
+  const vNode = currentView.nodes[vNodeIdx];
+  vNode.native.classList.add(className);
+}
+
+function setCSSClasses(vNodeIdx: number, classNames: string[]) {
+  const vNode = currentView.nodes[vNodeIdx];
+  for (let cssClassName of classNames) {
+    vNode.native.classList.add(cssClassName);
+  }
+}
+
 function bindAttribute(vNodeIdx: number, bindIdx: number, attrName: string, newValue: string) {
   const vNode = currentView.nodes[vNodeIdx];
   if (checkAndUpdateBinding(vNode.data, bindIdx, newValue)) {
@@ -298,6 +310,18 @@ function bindClass(vNodeIdx: number, bindIdx: number, className: string, toogleS
   const vNode = currentView.nodes[vNodeIdx];
   if (checkAndUpdateBinding(vNode.data, bindIdx, toogleState)) {
     vNode.native.classList.toggle(className, toogleState);
+  }
+}
+
+function replaceClass(vNodeIdx: number, bindIdx: number, className: string) {
+  const vNode = currentView.nodes[vNodeIdx];
+  const oldValue = vNode.data[bindIdx];
+  if (checkAndUpdateBinding(vNode.data, bindIdx, className)) {
+    if (oldValue) {
+      vNode.native.classList.replace(oldValue, className);
+    } else {
+      vNode.native.classList.add(className);
+    }
   }
 }
 

@@ -2458,6 +2458,42 @@ describe("integration", () => {
         divWithDirective.click();
         expect(hostDiv.innerHTML).toBe('<div id="clicked"></div>');
       });
+
+      it("should set CSS classes in non-destructive way", () => {
+        class Directive {
+          flip = true;
+
+          host(rf: RenderFlags) {
+            `class="foo" [class.{}]="${this.flip ? "bar" : "bar2"}"`;
+            if (rf & RenderFlags.Create) {
+              setCSSClass(0, "bar");
+            }
+            if (rf & RenderFlags.Update) {
+              replaceClass(0, 0, this.flip ? "baz" : "baz2");
+            }
+          }
+
+          refresh(rf) {
+            this.flip = !this.flip;
+          }
+        }
+
+        `<div @Directive class="foo"></div>`;
+        const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
+          if (rf & RenderFlags.Create) {
+            element(0, "div", ["class", "foo"]);
+            directive(0, 0, Directive);
+          }
+          if (rf & RenderFlags.Update) {
+            directiveRefresh(0, 0);
+          }
+        });
+
+        expect(hostDiv.innerHTML).toBe(`<div class="foo bar baz"></div>`);
+
+        refreshFn();
+        expect(hostDiv.innerHTML).toBe(`<div class="foo bar baz2"></div>`);
+      });
     });
   });
 

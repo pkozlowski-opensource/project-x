@@ -81,7 +81,7 @@
             + attributes 
             + properties
             + class toggle
-            - class replace (need to think of sytnax!)
+            + class replace (need to think of sytnax!)
             + interpolation in text nodes
             + one vs. multiple text nodes => one, use `before ${toEmptyStr(exp1)} after`
             - style?
