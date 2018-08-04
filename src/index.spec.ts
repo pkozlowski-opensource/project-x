@@ -794,6 +794,30 @@ describe("integration", () => {
       );
     });
 
+    it("should inject native node in components constructor", () => {
+      class TestComponent {
+        constructor(nativeEl) {
+          nativeEl.classList.add("from_cmpt");
+        }
+
+        render(rf: RenderFlags) {
+          // intentionally left empty
+        }
+      }
+
+      `<test-cmpt></test-cmpt>`;
+      render(hostDiv, (rf: RenderFlags) => {
+        if (rf & RenderFlags.Create) {
+          component(0, "test-cmpt", TestComponent);
+        }
+        if (rf & RenderFlags.Update) {
+          componentRefresh(0);
+        }
+      });
+
+      expect(hostDiv.innerHTML).toBe('<test-cmpt class="from_cmpt"></test-cmpt>');
+    });
+
     it("should support components with containers at the root", () => {
       `
       {% if (this.show) { %}

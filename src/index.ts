@@ -470,7 +470,7 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
   setNativeAttributes(domEl, attrs);
   appendNativeNode(parentVNode, hostElVNode);
 
-  const cmptInstance = (hostElVNode.data[0] = new constructorFn());
+  const cmptInstance = (hostElVNode.data[0] = new constructorFn(hostElVNode.native));
   const groupVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, null);
 
   if (cmptInstance.host) {
