@@ -144,6 +144,31 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe('<div class=""></div>');
     });
 
+    it("should replace CSS class", () => {
+      `<div [class.{}]="cssReplace">`;
+      const refreshFn = render(
+        hostDiv,
+        (rf: RenderFlags, className?: string) => {
+          if (rf & RenderFlags.Create) {
+            element(0, "div");
+          }
+          if (rf & RenderFlags.Update) {
+            replaceClass(0, 0, className);
+          }
+        });
+
+      expect(hostDiv.innerHTML).toBe("<div></div>");
+
+      refreshFn('foo');
+      expect(hostDiv.innerHTML).toBe('<div class="foo"></div>');
+
+      refreshFn('bar');
+      expect(hostDiv.innerHTML).toBe('<div class="bar"></div>');
+
+      refreshFn(null);
+      expect(hostDiv.innerHTML).toBe('<div class=""></div>');
+    });
+
     it("should properly support binding on nested elements", () => {
       const refreshFn = render(
         hostDiv,

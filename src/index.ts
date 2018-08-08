@@ -317,10 +317,12 @@ function replaceClass(vNodeIdx: number, bindIdx: number, className: string) {
   const vNode = currentView.nodes[vNodeIdx];
   const oldValue = vNode.data[bindIdx];
   if (checkAndUpdateBinding(vNode.data, bindIdx, className)) {
-    if (oldValue) {
+    if (oldValue && className) {
       vNode.native.classList.replace(oldValue, className);
-    } else {
+    } else if (!oldValue && className) {
       vNode.native.classList.add(className);
+    } else if (oldValue) {
+      vNode.native.classList.remove(oldValue);
     }
   }
 }
