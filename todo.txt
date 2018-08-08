@@ -30,6 +30,8 @@
         - unit
         - e2e
     - name / logo / domain
+- comparing to Renderer2 / Renderer3:
+    - code is generated in the existing function so I can use private members in template bindings
 - compiler / syntax
     - render(...) function signature
         - single vs. multiple arguments for context

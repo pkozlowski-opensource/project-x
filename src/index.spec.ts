@@ -146,23 +146,21 @@ describe("integration", () => {
 
     it("should replace CSS class", () => {
       `<div [class.{}]="cssReplace">`;
-      const refreshFn = render(
-        hostDiv,
-        (rf: RenderFlags, className?: string) => {
-          if (rf & RenderFlags.Create) {
-            element(0, "div");
-          }
-          if (rf & RenderFlags.Update) {
-            replaceClass(0, 0, className);
-          }
-        });
+      const refreshFn = render(hostDiv, (rf: RenderFlags, className?: string) => {
+        if (rf & RenderFlags.Create) {
+          element(0, "div");
+        }
+        if (rf & RenderFlags.Update) {
+          replaceClass(0, 0, className);
+        }
+      });
 
       expect(hostDiv.innerHTML).toBe("<div></div>");
 
-      refreshFn('foo');
+      refreshFn("foo");
       expect(hostDiv.innerHTML).toBe('<div class="foo"></div>');
 
-      refreshFn('bar');
+      refreshFn("bar");
       expect(hostDiv.innerHTML).toBe('<div class="bar"></div>');
 
       refreshFn(null);
@@ -719,6 +717,65 @@ describe("integration", () => {
         fruits.splice(1, 1);
         refreshFn();
         expect(hostDiv.innerHTML).toBe("apple-orange-<!--container 0-->");
+      });
+
+      it("should support nested loops", () => {
+        const ctx = {
+          outter: ["1", "2"],
+          inner: ["a", "b", "c"]
+        };
+
+        `
+        <% for (let out of ctx.outter) { 
+            for (let inner of ctx.inner) { %>
+              {{out}}:{{inner}}-    
+        <%  } 
+          } 
+        %>
+        `;
+        const refreshFn = render(
+          hostDiv,
+          (rf: RenderFlags, items: string[]) => {
+            if (rf & RenderFlags.Create) {
+              container(0);
+            }
+            if (rf & RenderFlags.Update) {
+              containerRefreshStart(0);
+              for (let out of ctx.outter) {
+                view(0, 0, function f(rf: RenderFlags) {
+                  if (rf & RenderFlags.Create) {
+                    container(0);
+                  }
+                  if (rf & RenderFlags.Update) {
+                    containerRefreshStart(0);
+                    for (let inner of ctx.inner) {
+                      view(0, 0, function f(rf: RenderFlags) {
+                        if (rf & RenderFlags.Create) {
+                          text(0);
+                        }
+                        if (rf & RenderFlags.Update) {
+                          bindText(0, `${out}:${inner}-`);
+                        }
+                      });
+                    }
+                    containerRefreshEnd(0);
+                  }
+                });
+              }
+              containerRefreshEnd(0);
+            }
+          },
+          ctx
+        );
+
+        expect(hostDiv.innerHTML).toBe(
+          "1:a-1:b-1:c-<!--container 0-->2:a-2:b-2:c-<!--container 0--><!--container 0-->"
+        );
+
+        refreshFn();
+        expect(hostDiv.innerHTML).toBe(
+          "1:a-1:b-1:c-<!--container 0-->2:a-2:b-2:c-<!--container 0--><!--container 0-->"
+        );
       });
     });
 

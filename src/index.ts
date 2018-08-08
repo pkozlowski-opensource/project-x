@@ -59,8 +59,6 @@ function createVNode(type: VNodeType, view: ViewData, parent: VNode, nativeOrNat
 // INSANITY WARNING: global variables => think of passing context around
 // those fields here are part of the view-specific context
 let parentVNode: VNode;
-let nextViewIdx = 0; // TODO(pk): this can't be global as it won't work for nested containers
-
 let currentView: ViewData;
 
 // ========= dom.ts
@@ -215,6 +213,9 @@ function container(idx: number) {
   const domEl = document.createComment(`container ${idx}`);
   const vNode = (currentView.nodes[idx] = createVNode(VNodeType.Container, currentView, parentVNode, domEl));
 
+  // nextViewIdx
+  vNode.data[0] = 0;
+
   parentVNode.children.push(vNode);
   appendNativeNode(parentVNode, vNode);
 }
@@ -330,7 +331,7 @@ function replaceClass(vNodeIdx: number, bindIdx: number, className: string) {
 function include(containerIdx: number, tplFn, ctx?) {
   const containerVNode = currentView.nodes[containerIdx];
 
-  if (checkAndUpdateBinding(containerVNode.data, 0, tplFn)) {
+  if (checkAndUpdateBinding(containerVNode.data, 1, tplFn)) {
     const views = containerVNode.children;
     const existingViewVNode = views[0];
 
@@ -349,11 +350,14 @@ function include(containerIdx: number, tplFn, ctx?) {
 }
 
 function containerRefreshStart(containerIdx: number) {
-  nextViewIdx = 0;
+  const containerVNode = currentView.nodes[containerIdx];
+  // reset nextViewIdx;
+  containerVNode.data[0] = 0;
 }
 
 function containerRefreshEnd(containerIdx: number) {
   const containerVNode = currentView.nodes[containerIdx];
+  const nextViewIdx = containerVNode.data[0];
   const views = containerVNode.children;
 
   const remainingViewsCount = views.length - nextViewIdx;
@@ -453,6 +457,7 @@ function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: nu
 // PERF(pk): this instruction will re-create a closure in each and every change detection cycle
 function view(containerIdx: number, viewId: number, viewFn, ctx?) {
   const containerVNode = currentView.nodes[containerIdx];
+  const nextViewIdx = containerVNode.data[0];
   const existingVNode = findView(containerVNode.children, nextViewIdx, viewId);
 
   if (existingVNode) {
@@ -461,7 +466,7 @@ function view(containerIdx: number, viewId: number, viewFn, ctx?) {
     createAndRefreshView(containerVNode, nextViewIdx, viewId, viewFn, ctx);
   }
 
-  nextViewIdx++;
+  containerVNode.data[0]++;
 }
 
 function componentStart(idx: number, tagName: string, constructorFn, attrs?: string[] | null) {
