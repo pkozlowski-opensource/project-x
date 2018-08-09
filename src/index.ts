@@ -4,6 +4,7 @@
 interface ViewData {
   viewId: number;
   nodes: VNode[];
+  refresh: (ctx?: any) => void | null;
 }
 
 const enum VNodeType {
@@ -384,7 +385,7 @@ function findView(views: VNode[], startIdx: number, viewIdx: number): VNode | un
 }
 
 function createViewVNode(viewId: number, parent: VNode, renderParent = null) {
-  const viewData = { viewId: viewId, nodes: [] };
+  const viewData = { viewId: viewId, nodes: [], refresh: parent ? parent.view.refresh : null };
   return createVNode(VNodeType.View, viewData, parent, renderParent);
 }
 
@@ -408,10 +409,10 @@ function enterView(viewVNode: VNode): ViewData {
   return oldView;
 }
 
-function executeViewFn(viewVNode: VNode, viewFn, flags: RenderFlags, ctx?) {
+function executeViewFn(viewVNode: VNode, viewFn, flags: RenderFlags, ctx) {
   const oldView = enterView(viewVNode);
 
-  viewFn(flags, ctx);
+  viewFn(flags, ctx, viewVNode.view.refresh);
 
   currentView = oldView;
   parentVNode = viewVNode.parent;
@@ -477,7 +478,8 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
   setNativeAttributes(domEl, attrs);
   appendNativeNode(parentVNode, hostElVNode);
 
-  const cmptInstance = (hostElVNode.data[0] = new constructorFn(hostElVNode.native));
+  const componentViewVNode = (hostElVNode.componentView = createViewVNode(-1, hostElVNode, hostElVNode.native));
+  const cmptInstance = (hostElVNode.data[0] = new constructorFn(hostElVNode.native, componentViewVNode.view.refresh));
   const groupVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, null);
 
   if (cmptInstance.host) {
@@ -491,14 +493,12 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
 function componentEnd(hostElIdx: number) {
   const hostElVNode = currentView.nodes[hostElIdx];
   const cmptInstance = hostElVNode.data[0];
-  const componentViewNode = createViewVNode(-1, hostElVNode, hostElVNode.native);
+  const componentViewNode = hostElVNode.componentView;
 
   if (cmptInstance.host) {
     executeDirectiveHostFn(hostElVNode, hostElVNode.data[1], cmptInstance, RenderFlags.Create);
   }
-
   executeComponentRenderFn(hostElVNode, componentViewNode, cmptInstance, RenderFlags.Create);
-  hostElVNode.componentView = componentViewNode;
 }
 
 function component(idx: number, tagName: string, constructorFn, attrs?: string[] | null) {
@@ -635,8 +635,11 @@ function directiveRefresh(hostIdx: number, directiveIdx: number) {
 
 function render(nativeHost, tplFn, ctx?) {
   const viewVNode = createViewVNode(-1, null!, nativeHost);
-  executeViewFn(viewVNode, tplFn, RenderFlags.CreateAndUpdate, ctx);
-  return function refreshFromRoot(refreshCtx?) {
+  viewVNode.view.refresh = function refreshFromRoot(refreshCtx?) {
     refreshView(viewVNode, tplFn, refreshCtx !== undefined ? refreshCtx : ctx);
   };
+
+  executeViewFn(viewVNode, tplFn, RenderFlags.CreateAndUpdate, ctx);
+
+  return viewVNode.view.refresh;
 }

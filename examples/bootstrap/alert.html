@@ -37,7 +37,7 @@
                 }
             }
 
-            render(rf, ctx, $content) {
+            render(rf, $content) {
                 `<x:host class="alert [class.alert-dismissible]="${this.close}" [class.alert-{}]="${this.type}" role="alert">
                     <% if (this.close) { %>
                         <button type="button" class="close" aria-label="Close" (click)="this.close()">

@@ -2663,4 +2663,133 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe("<div>Lorem ipsum</div><button></button>");
     });
   });
+
+  describe("change detection", () => {
+    it("should expose refresh all functionality to the root view", () => {
+      `<button (click)="model.counter++; refreshMe()">Increment</button>
+      {{model.counter}}`;
+      function counter(rf: RenderFlags, model: { counter: number }, refreshMe) {
+        if (rf & RenderFlags.Create) {
+          elementStart(0, "button");
+          {
+            listener(0, 0, "click");
+            text(1, "Increment");
+          }
+          elementEnd(0);
+          text(2);
+        }
+        if (rf & RenderFlags.Update) {
+          listenerRefresh(0, 0, () => {
+            model.counter++;
+            refreshMe();
+          });
+          bindText(2, `${model.counter}`);
+        }
+      }
+
+      const extenrnalRefresh = render(hostDiv, counter, { counter: 0 });
+      expect(hostDiv.innerHTML).toBe(`<button>Increment</button>0`);
+
+      hostDiv.querySelector("button").click();
+      expect(hostDiv.innerHTML).toBe(`<button>Increment</button>1`);
+
+      extenrnalRefresh();
+      expect(hostDiv.innerHTML).toBe(`<button>Increment</button>1`);
+
+      hostDiv.querySelector("button").click();
+      expect(hostDiv.innerHTML).toBe(`<button>Increment</button>2`);
+    });
+
+    it("should expose refresh all functionality to all child views", () => {
+      `<% if(true) { %>
+        <button (click)="model.counter++; refreshMe()">Increment</button>
+      <% } %>
+      {{model.counter}}`;
+      function counter(rf: RenderFlags, model: { counter: number }) {
+        if (rf & RenderFlags.Create) {
+          container(0);
+          text(1);
+        }
+        if (rf & RenderFlags.Update) {
+          containerRefreshStart(0);
+          if (true) {
+            view(0, 0, (rf: RenderFlags, ctx: any, refreshSub) => {
+              if (rf & RenderFlags.Create) {
+                elementStart(0, "button");
+                {
+                  listener(0, 0, "click");
+                  text(1, "Increment");
+                }
+                elementEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                listenerRefresh(0, 0, () => {
+                  model.counter++;
+                  refreshSub();
+                });
+              }
+            });
+          }
+          containerRefreshEnd(0);
+          bindText(1, `${model.counter}`);
+        }
+      }
+
+      const extenrnalRefresh = render(hostDiv, counter, { counter: 0 });
+      expect(hostDiv.innerHTML).toBe(`<button>Increment</button><!--container 0-->0`);
+
+      hostDiv.querySelector("button").click();
+      expect(hostDiv.innerHTML).toBe(`<button>Increment</button><!--container 0-->1`);
+
+      extenrnalRefresh();
+      expect(hostDiv.innerHTML).toBe(`<button>Increment</button><!--container 0-->1`);
+
+      hostDiv.querySelector("button").click();
+      expect(hostDiv.innerHTML).toBe(`<button>Increment</button><!--container 0-->2`);
+    });
+
+    it("should expose refresh all functionality to components", () => {
+      class Counter {
+        counter = 0;
+
+        constructor(nativeEl, private _refresh) {}
+
+        render(rf: RenderFlags, content, refreshMe) {
+          `<button (click)="model.counter++; this._refresh()">Increment</button>
+          {{model.counter}}`;
+          if (rf & RenderFlags.Create) {
+            elementStart(0, "button");
+            {
+              listener(0, 0, "click");
+              text(1, "Increment");
+            }
+            elementEnd(0);
+            text(2);
+          }
+          if (rf & RenderFlags.Update) {
+            listenerRefresh(0, 0, () => {
+              this.counter++;
+              this._refresh();
+            });
+            bindText(2, `${this.counter}`);
+          }
+        }
+      }
+
+      function app(rf: RenderFlags) {
+        if (rf & RenderFlags.Create) {
+          component(0, "counter", Counter);
+        }
+        if (rf & RenderFlags.Update) {
+          componentRefresh(0);
+        }
+      }
+
+      const extenrnalRefresh = render(hostDiv, app);
+      expect(hostDiv.innerHTML).toBe(`<counter><button>Increment</button>0</counter>`);
+
+      hostDiv.querySelector("button").click();
+      expect(hostDiv.innerHTML).toBe(`<counter><button>Increment</button>1</counter>`);
+    });
+  });
 });

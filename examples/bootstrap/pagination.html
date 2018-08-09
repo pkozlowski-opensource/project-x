@@ -18,8 +18,6 @@
         // - substential code generated for input binding
         // - split into small components / replacing small components
 
-        let refresh;
-
         class XBPage {
 
             constructor() {
@@ -50,7 +48,8 @@
         }
 
         class XBPagination {
-            constructor() {
+            constructor(_nativeEl, _refresh) {
+                this._refresh = _refresh;
                 this.noOfPages = 10;
                 this.size = undefined;
                 this.selected = 0;
@@ -64,7 +63,7 @@
                 return this.selected === this.noOfPages - 1;
             }
 
-            render(rf) {
+            render(rf, content) {
                 `<ul class="pagination" [class.pagination-{}]="\${this.size}">
                     <li @component="XBPage" [XBPage.text]="<<" [class.disabled]="\${isFirst()}">/li>
                     <li @component="XBPage" [XBPage.text]="<"  [class.disabled]="\${isFirst()}">/li>
@@ -115,9 +114,9 @@
                                     bindClass(0, 2, "active", this.selected === i);
                                     input(0, 3, i + 1) && (p0.text = i + 1);
                                     listenerRefresh(0, 3, ($event) => {
-                                        console.log("Selected", i);
+                                        console.log("Selected", i + 1);
                                         this.selected = i;
-                                        refresh();
+                                        this._refresh();
                                     });
                                     componentRefresh(0);
                                 }
@@ -151,7 +150,7 @@
             }
         }
 
-        refresh = render(document.getElementById('app'), app);
+        render(document.getElementById('app'), app);
 
     </script>
 </body>

@@ -12,14 +12,12 @@
 <body>
     <div id="helloWorldApp"></div>
     <script>
-        var refreshHelloWorld;
-
         `
         Hello, {=ctx.name}!
         <input [value]="{=ctx.name}" (input)="ctx.name = $event.target.value">
         <button (click)="ctx.name = 'World'">Reset name</button>
         `;
-        function helloWorldApp(rf, ctx) {
+        function helloWorldApp(rf, ctx, refresh) {
             if (rf & 0b01 /* RenderFlags.Create */) {
                 elementStart(0, "h1"); {
                     text(1);
@@ -37,18 +35,17 @@
                 bindText(1, `Hello, ${ctx.name}`);
                 listenerRefresh(2, 0, function el2_input($event) {
                     ctx.name = $event.target.value;
-                    // TODO(pk): super-hacky, needs a proper solution here
-                    refreshHelloWorld();
+                    refresh();
                 });
                 bindProperty(2, 1, "value", ctx.name);
                 listenerRefresh(3, 0, function el3_click($event) {
                     ctx.name = 'World';
-                    refreshHelloWorld();
+                    refresh();
                 });
             }
         }
 
-        refreshHelloWorld = render(document.getElementById('helloWorldApp'), helloWorldApp, { name: 'World' });
+        render(document.getElementById('helloWorldApp'), helloWorldApp, { name: 'World' });
     </script>
 </body>
 
