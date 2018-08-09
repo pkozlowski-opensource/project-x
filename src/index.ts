@@ -612,7 +612,7 @@ function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
 
 function directive(hostIdx: number, directiveIdx: number, constructorFn) {
   const hostVNode = currentView.nodes[hostIdx];
-  const directiveInstance = (hostVNode.data[directiveIdx] = new constructorFn(hostVNode.native));
+  const directiveInstance = (hostVNode.data[directiveIdx] = new constructorFn(hostVNode.native, currentView.refresh));
 
   // PERF(pk): split into 2 instructions so I don't have to do this checking at runtime and have smaller generated code?
   if (directiveInstance.host) {

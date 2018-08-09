@@ -156,9 +156,9 @@
         - manual refresh
             + from root
             - from a given component
+        - OnPush / should component update equivalent
         - scheduling (call to refresh should not trigger it automatically)
         - automatic / implicit refresh in an event handlers?
-        - OnPush / should component update equivalent
     - dynamic compilation (give a string, get a function, a la AngularJS $compile)
 - perf
     - extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation

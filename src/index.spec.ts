@@ -2701,9 +2701,9 @@ describe("integration", () => {
     });
 
     it("should expose refresh all functionality to all child views", () => {
-      `<% if(true) { %>
+      `<{ if(true) { }>
         <button (click)="model.counter++; refreshMe()">Increment</button>
-      <% } %>
+      <{ } }>
       {{model.counter}}`;
       function counter(rf: RenderFlags, model: { counter: number }) {
         if (rf & RenderFlags.Create) {
@@ -2790,6 +2790,53 @@ describe("integration", () => {
 
       hostDiv.querySelector("button").click();
       expect(hostDiv.innerHTML).toBe(`<counter><button>Increment</button>1</counter>`);
+    });
+
+    it("should expose refresh all functionality to host listeners", () => {
+      class Counter {
+        current = 0;
+
+        constructor(_nativeEl, private _refresh) {}
+
+        host(rf: RenderFlags) {
+          `(click)="this.current++; this._refresh()"`;
+          if (rf & RenderFlags.Create) {
+            listener(0, 0, "click");
+          }
+          if (rf & RenderFlags.Update) {
+            listenerRefresh(0, 0, $event => {
+              this.current++;
+              this._refresh();
+            });
+          }
+        }
+      }
+
+      `<button @counter #c="counter">Increment</button>
+       {{c.current}}
+      `;
+      function app(rf: RenderFlags) {
+        if (rf & RenderFlags.Create) {
+          elementStart(0, "button");
+          {
+            directive(0, 0, Counter);
+            text(1, "Increment");
+          }
+          elementEnd(0);
+          text(2);
+        }
+        if (rf & RenderFlags.Update) {
+          directiveRefresh(0, 0);
+          let c = load<Counter>(0, 0);
+          bindText(2, `${c.current}`);
+        }
+      }
+
+      const extenrnalRefresh = render(hostDiv, app);
+      expect(hostDiv.innerHTML).toBe(`<button>Increment</button>0`);
+
+      hostDiv.querySelector("button").click();
+      expect(hostDiv.innerHTML).toBe(`<button>Increment</button>1`);
     });
   });
 });
