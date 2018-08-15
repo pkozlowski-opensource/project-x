@@ -23,7 +23,7 @@ interface VNode {
    * Only applies to slotables and indicates projection target of a given node.
    */
   projectionParent: VNode;
-  children: VNode[];
+  children: VNode[] | null;
   native: any; // TODO(pk): type it properly
   data: any[]; // PERF(pk): storing bindings separatelly for each and every individual node might not be super-performant :-)
 
@@ -50,7 +50,7 @@ function createVNode(type: VNodeType, view: ViewData, parent: VNode, nativeOrNat
     view: view,
     parent: parent,
     projectionParent: null,
-    children: [], // PERF(pk): lazy-init children array => or better yet, have the exact number of children handy :-)
+    children: type !== VNodeType.Text ? [] : null, // PERF(pk): lazy-init children array => or better yet, have the exact number of children handy :-)
     native: nativeOrNativeRenderParent,
     data: [], // PERF(pk): lazy-init data array => or better yet, have the exact number of bindings handy :-)
     componentView: null
