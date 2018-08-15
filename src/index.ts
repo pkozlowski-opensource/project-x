@@ -159,7 +159,6 @@ function removeGroupOfNodesFromDOM(viewOrSlotable: VNode) {
 
   // reset render parent to indeicate that view or slotable is no longer inserted into the DOM
   viewOrSlotable.native = null;
-  viewOrSlotable.projectionParent = null;
 }
 
 // =========
@@ -579,6 +578,7 @@ function attachSlotable(renderParent: any, slot: VNode, slotable: VNode) {
 
 function detatchSlotable(previousSlot: VNode, slotable: VNode) {
   const prevChildIdx = previousSlot.children.indexOf(slotable);
+  
   if (prevChildIdx > -1) {
     previousSlot.children.splice(prevChildIdx, 1);
   } else {
@@ -587,7 +587,10 @@ function detatchSlotable(previousSlot: VNode, slotable: VNode) {
   }
 
   slotable.projectionParent = null;
-  removeGroupOfNodesFromDOM(slotable);
+
+  if (slotable.native) {
+    removeGroupOfNodesFromDOM(slotable);    
+  }
 }
 
 function appendSlotable(renderParent: any, slot: VNode, slotable: VNode) {
