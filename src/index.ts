@@ -478,27 +478,22 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
   setNativeAttributes(domEl, attrs);
   appendNativeNode(parentVNode, hostElVNode);
 
-  const componentViewVNode = (hostElVNode.componentView = createViewVNode(-1, hostElVNode, hostElVNode.native));
-  const cmptInstance = (hostElVNode.data[0] = new constructorFn(hostElVNode.native, componentViewVNode.view.refresh));
-  const groupVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, null);
-
-  if (cmptInstance.host) {
-    hostElVNode.data[1] = createHostBindingView(hostElVNode.native);
-  }
-
-  hostElVNode.children[0] = groupVNode;
-  parentVNode = groupVNode;
+  // TODO(pk): think of moving constructorFn argument to componentEnd
+  hostElVNode.data[0] = constructorFn;
+  hostElVNode.children[0] = parentVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, null);
 }
 
 function componentEnd(hostElIdx: number) {
   const hostElVNode = currentView.nodes[hostElIdx];
-  const cmptInstance = hostElVNode.data[0];
-  const componentViewNode = hostElVNode.componentView;
+  const constructorFn = hostElVNode.data[0];
+  const componentViewNode = (hostElVNode.componentView = createViewVNode(-1, hostElVNode, hostElVNode.native));
+  const cmptInstance = (hostElVNode.data[0] = new constructorFn(hostElVNode.native, componentViewNode.view.refresh));
 
   if (cmptInstance.host) {
+    hostElVNode.data[1] = createHostBindingView(hostElVNode.native);
     executeDirectiveHostFn(hostElVNode, hostElVNode.data[1], cmptInstance, RenderFlags.Create);
   }
-  executeComponentRenderFn(hostElVNode, componentViewNode, cmptInstance, RenderFlags.Create);
+  executeComponentRenderFn(hostElVNode, componentViewNode, cmptInstance, RenderFlags.Create, hostElVNode.children[0]);
 }
 
 function component(idx: number, tagName: string, constructorFn, attrs?: string[] | null) {
@@ -560,7 +555,7 @@ function slot(idx: number) {
   appendNativeNode(parentVNode, vNode);
 }
 
-function findSlotables(containerVNode: VNode, slotName: string, result: VNode[]): VNode[] {
+function findSlotables(containerVNode: VNode, slotName: string, result: VNode[] = []): VNode[] {
   for (let vNode of containerVNode.children) {
     if (vNode.type === VNodeType.Slotable && vNode.data[0] === slotName) {
       result.push(vNode);
@@ -593,13 +588,13 @@ function appendSlotable(renderParent: any, slot: VNode, slotable: VNode) {
   }
 }
 
+// PERF(pk): split into several functions (default, named, instance) for better tree-shaking
 function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
   const slotVNode = currentView.nodes[idx];
   const renderParent = findRenderParent(slotVNode);
 
-  // PERF(pk): split into 2 functions for better tree-shaking
   if (slotName) {
-    const slotablesFound = findSlotables(defaultSlotable, slotName, []);
+    const slotablesFound = findSlotables(defaultSlotable, slotName);
     if (slotablesFound.length > 0) {
       for (const slotable of slotablesFound) {
         appendSlotable(renderParent, slotVNode, slotable);

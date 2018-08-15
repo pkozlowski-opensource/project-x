@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="../../src/index.js"></script>
+    <link href="http://getbootstrap.com/docs/4.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Bootstrap - carousel</title>
+</head>
+
+<body>
+    <div id="app"></div>
+    <script>
+        // TODO: content projection imperative API  
+        // TODO: bindings / directives on slotables  
+        // TODO: destroy lifecycle hook
+        
+        // THINK: find a way of passing indicators component / function (or true / false to toggle defaults)
+        // THINK: gestures support 
+
+        class NGBCarousel {
+            host(rf) {
+                if (rf & 0b01 /* RenderFlags.Create */) {
+                    setCSSClasses(0, ["carousel", "slide"]);
+                }
+            }
+
+            render(rf, $content) {
+                `<x:host class="carousel slide">
+                    <div class="carousel-inner">
+                        <% for (let slide of $content.getAll('slide')) { %>
+                            <div class="carousel-item [class.active]="">
+                                <x-slot slotable="slide"></x-slot>
+                            </div>
+                        <% } %>
+                    </div>
+                </x:host>`;
+                if (rf & 0b01 /* RenderFlags.Create */) {
+                    elementStart(0, "div", ["class", "carousel-inner"]);
+                    {
+                        container(1);
+                    }
+                    elementEnd(0);
+                }
+                if (rf & 0b10 /* RenderFlags.Update */) {
+                    containerRefreshStart(1);
+                    {
+                        for (let i = 0; i < 5; i++) {
+                            view(1, 0, (rf) => {
+                                if (rf & 0b01 /* RenderFlags.Create */) {
+                                    elementStart(0, "div", ["class", "carousel-item"]);
+                                    {
+                                        text(1, i);
+                                    }
+                                    elementEnd(0);
+                                }
+                                if (rf & 0b10 /* RenderFlags.Update */) {
+                                    bindClass(0, 0, "active", i === 0);
+                                }
+                            });
+                        }
+                    }
+                    containerRefreshEnd(1);
+                }
+            }
+        }
+
+        `<NGBCarousel>
+            <:slide></:slide>
+            <:slide></:slide>
+        </NGBCarousel>`;
+        function app(rf) {
+            if (rf & 0b01 /* RenderFlags.Create */) {
+                component(0, 'ngb-carousel', NGBCarousel);
+            }
+            if (rf & 0b10 /* RenderFlags.Update */) {
+                const c0 = load(0, 0);
+                componentRefresh(0);
+            }
+        }
+
+        render(document.getElementById('app'), app);
+
+    </script>
+</body>
+
+</html>

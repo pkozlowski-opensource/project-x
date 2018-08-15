@@ -11,7 +11,7 @@
     - framework vs. library => library
         - no http => use fetch
         - forms / validation (to be considered)
-        - no router (community project, at least initially)
+        - no router (community project initially, built-in support later on)
     - supported languages (TS / ES6 / ES5)
         - ES2015+?
     - required build / toolchain 
@@ -20,7 +20,8 @@
     - scope
         - animations?
         - dependency injection?
-        - style encapsulation?
+        - style encapsulation / CSS in JS
+        - gestures support (should not be tied to one solution like HammerJS)
         - server-side rendering?
         - relation to web components (custom elements, shadow dom)
         - dynamic compilation (AngularJS $compile)
@@ -126,7 +127,7 @@
                 + named and default slotables at the root of a container
             + slotables moving between slots
             - slotables moving in the same slot (loop + trackBy or imperative API call)
-            - properties binding on slottables
+            - properties binding on slottables / directives on slottables
             - imperative (ex.: wrapping in a loop)
             - nested slottables (ex.: tabs)
             - "lazy" slottables (ex. delayed tabs / panels) 

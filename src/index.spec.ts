@@ -1159,306 +1159,132 @@ describe("integration", () => {
     });
 
     describe("content projection", () => {
-      it("should support default slot", () => {
-        class TestComponent {
-          /**
-           * Hello, <x-slot></x-slot>!
-           */
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              text(0, "Hello, ");
-              elementStart(1, "span");
-              {
-                slot(2);
+      describe("declarative API", () => {
+        it("should support default slot", () => {
+          class TestComponent {
+            /**
+             * Hello, <x-slot></x-slot>!
+             */
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                text(0, "Hello, ");
+                elementStart(1, "span");
+                {
+                  slot(2);
+                }
+                elementEnd(1);
+                text(3, "!");
               }
-              elementEnd(1);
-              text(3, "!");
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(2, $contentGroup);
+              if (rf & RenderFlags.Update) {
+                slotRefresh(2, $contentGroup);
+              }
             }
           }
-        }
 
-        /**
-         * <TestComponent>{{name}}</TestComponent>
-         */
-        const refreshFn = render(
-          hostDiv,
-          (rf: RenderFlags, name: string) => {
+          /**
+           * <TestComponent>{{name}}</TestComponent>
+           */
+          const refreshFn = render(
+            hostDiv,
+            (rf: RenderFlags, name: string) => {
+              if (rf & RenderFlags.Create) {
+                // TODO(pk): element creation could be probably in-lined into component() instruction
+                componentStart(0, "test-component", TestComponent);
+                text(1);
+                componentEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                bindText(1, name);
+                componentRefresh(0);
+              }
+            },
+            "World"
+          );
+
+          expect(hostDiv.innerHTML).toBe("<test-component>Hello, <span>World<!--slot 2--></span>!</test-component>");
+
+          refreshFn("New World");
+          expect(hostDiv.innerHTML).toBe(
+            "<test-component>Hello, <span>New World<!--slot 2--></span>!</test-component>"
+          );
+        });
+
+        it("should support named slots", () => {
+          class Card {
+            /**
+             * <h1>
+             *   <x-slot name="header"></x-slot>
+             * </h1>
+             * <div>
+             *   <x-slot name="content"></x-slot>
+             * </div>
+             */
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                elementStart(0, "h1");
+                {
+                  slot(1);
+                }
+                elementEnd(0);
+                elementStart(2, "div");
+                {
+                  slot(3);
+                }
+                elementEnd(2);
+              }
+              if (rf & RenderFlags.Update) {
+                slotRefresh(1, $contentGroup, "header");
+                slotRefresh(3, $contentGroup, "content");
+              }
+            }
+          }
+
+          /**
+           * <Card>
+           *   <:header>Title</:header>
+           *   <:content>Content</:content>
+           * </Card>
+           */
+          render(hostDiv, (rf: RenderFlags) => {
             if (rf & RenderFlags.Create) {
-              // TODO(pk): element creation could be probably in-lined into component() instruction
-              componentStart(0, "test-component", TestComponent);
-              text(1);
+              componentStart(0, "card", Card);
+              {
+                slotableStart(1, "header");
+                {
+                  text(2, "Title");
+                }
+                slotableEnd(1);
+                slotableStart(3, "content");
+                {
+                  text(4, "Content");
+                }
+                slotableEnd(3);
+              }
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
-              bindText(1, name);
               componentRefresh(0);
             }
-          },
-          "World"
-        );
+          });
 
-        expect(hostDiv.innerHTML).toBe("<test-component>Hello, <span>World<!--slot 2--></span>!</test-component>");
-
-        refreshFn("New World");
-        expect(hostDiv.innerHTML).toBe("<test-component>Hello, <span>New World<!--slot 2--></span>!</test-component>");
-      });
-
-      it("should support named slots", () => {
-        class Card {
-          /**
-           * <h1>
-           *   <x-slot name="header"></x-slot>
-           * </h1>
-           * <div>
-           *   <x-slot name="content"></x-slot>
-           * </div>
-           */
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              elementStart(0, "h1");
-              {
-                slot(1);
-              }
-              elementEnd(0);
-              elementStart(2, "div");
-              {
-                slot(3);
-              }
-              elementEnd(2);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(1, $contentGroup, "header");
-              slotRefresh(3, $contentGroup, "content");
-            }
-          }
-        }
-
-        /**
-         * <Card>
-         *   <:header>Title</:header>
-         *   <:content>Content</:content>
-         * </Card>
-         */
-        render(hostDiv, (rf: RenderFlags) => {
-          if (rf & RenderFlags.Create) {
-            componentStart(0, "card", Card);
-            {
-              slotableStart(1, "header");
-              {
-                text(2, "Title");
-              }
-              slotableEnd(1);
-              slotableStart(3, "content");
-              {
-                text(4, "Content");
-              }
-              slotableEnd(3);
-            }
-            componentEnd(0);
-          }
-          if (rf & RenderFlags.Update) {
-            componentRefresh(0);
-          }
+          expect(hostDiv.innerHTML).toBe("<card><h1>Title<!--slot 1--></h1><div>Content<!--slot 3--></div></card>");
         });
 
-        expect(hostDiv.innerHTML).toBe("<card><h1>Title<!--slot 1--></h1><div>Content<!--slot 3--></div></card>");
-      });
-
-      it("should support named slots at the component view root", () => {
-        `<Test><:foo>foo<:/foo></Test>`;
-        class Test {
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              slot(0);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(0, $contentGroup, "foo");
+        it("should support named slots at the component view root", () => {
+          `<Test><:foo>foo<:/foo></Test>`;
+          class Test {
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                slot(0);
+              }
+              if (rf & RenderFlags.Update) {
+                slotRefresh(0, $contentGroup, "foo");
+              }
             }
           }
-        }
 
-        `<x-slot name="foo"></x-slot>`;
-        const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
-          if (rf & RenderFlags.Create) {
-            componentStart(0, "test", Test);
-            {
-              slotableStart(1, "foo");
-              {
-                text(2, "foo");
-              }
-              slotableEnd(1);
-            }
-            componentEnd(0);
-          }
-          if (rf & RenderFlags.Update) {
-            componentRefresh(0);
-          }
-        });
-
-        expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
-      });
-
-      it("should support mix of named and default slots", () => {
-        class Card {
-          /**
-           * <h1>
-           *   <x-slot name="header"></x-slot>
-           * </h1>
-           * <div>
-           *   <x-slot></x-slot>
-           * </div>
-           * <footer>
-           *   <x-slot name="footer"></x-slot>
-           * </footer>
-           */
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              elementStart(0, "h1");
-              {
-                slot(1);
-              }
-              elementEnd(0);
-              elementStart(2, "div");
-              {
-                slot(3);
-              }
-              elementEnd(2);
-              elementStart(4, "footer");
-              {
-                slot(5);
-              }
-              elementEnd(4);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(1, $contentGroup, "header");
-              slotRefresh(3, $contentGroup);
-              slotRefresh(5, $contentGroup, "footer");
-            }
-          }
-        }
-
-        /**
-         * <Card>
-         *   <:header>Title</:header>
-         *   Content
-         *   <:footer>Bottom</:footer>
-         * </Card>
-         */
-        render(hostDiv, (rf: RenderFlags) => {
-          if (rf & RenderFlags.Create) {
-            componentStart(0, "card", Card);
-            {
-              slotableStart(1, "header");
-              {
-                text(2, "Title");
-              }
-              slotableEnd(1);
-              text(3, "Content");
-              slotableStart(4, "footer");
-              {
-                text(5, "Bottom");
-              }
-              slotableEnd(4);
-            }
-            componentEnd(0);
-          }
-          if (rf & RenderFlags.Update) {
-            componentRefresh(0);
-          }
-
-          expect(hostDiv.innerHTML).toBe(
-            "<card><h1>Title<!--slot 1--></h1><div>Content<!--slot 3--></div><footer>Bottom<!--slot 5--></footer></card>"
-          );
-        });
-      });
-
-      it("should support multiple slottables with the same name (static)", () => {
-        `
-        <x-slot name="item"></x-slot>
-        `;
-        class Menu {
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              elementStart(0, "span");
-              {
-                slot(1);
-              }
-              elementEnd(0);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(1, $contentGroup, "item");
-            }
-          }
-        }
-
-        `
-        <Menu>
-          <:item>one</:item>
-          <:item>two</:item>
-        </Menu>
-        `;
-        render(hostDiv, (rf: RenderFlags) => {
-          if (rf & RenderFlags.Create) {
-            componentStart(0, "menu", Menu);
-            {
-              slotableStart(1, "item");
-              {
-                text(2, "one");
-              }
-              slotableEnd(1);
-              slotableStart(3, "item");
-              {
-                text(4, "two");
-              }
-              slotableEnd(3);
-            }
-            componentEnd(0);
-          }
-          if (rf & RenderFlags.Update) {
-            componentRefresh(0);
-          }
-        });
-
-        expect(hostDiv.innerHTML).toBe("<menu><span>onetwo<!--slot 1--></span></menu>");
-      });
-
-      it("should support conditional named slots", () => {
-        `
-        {% if (show) { %}
-          <x-slot name="foo"></x-slot>
-        {% } %} `;
-        class Test {
-          show = false;
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              container(0);
-            }
-            if (rf & RenderFlags.Update) {
-              containerRefreshStart(0);
-              {
-                if (this.show) {
-                  view(0, 0, (rf: RenderFlags) => {
-                    if (rf & RenderFlags.Create) {
-                      slot(0);
-                    }
-                    if (rf & RenderFlags.Update) {
-                      slotRefresh(0, $contentGroup, "foo");
-                    }
-                  });
-                }
-              }
-              containerRefreshEnd(0);
-            }
-          }
-        }
-
-        `<Test><:foo>foo<:/foo></Test>`;
-        const refreshFn = render(
-          hostDiv,
-          (rf: RenderFlags, show: boolean) => {
+          `<x-slot name="foo"></x-slot>`;
+          const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
             if (rf & RenderFlags.Create) {
               componentStart(0, "test", Test);
               {
@@ -1471,888 +1297,1066 @@ describe("integration", () => {
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
-              const componentInstance = load<Test>(0, 0);
-              input(0, 1, show) && (componentInstance.show = show);
               componentRefresh(0);
             }
-          },
-          false
-        );
+          });
 
-        expect(hostDiv.innerHTML).toBe("<test><!--container 0--></test>");
+          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
+        });
 
-        refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--><!--container 0--></test>");
-
-        refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<test><!--container 0--></test>");
-      });
-
-      it("should support conditional named slottables", () => {
-        `<x-slot name="foo"></x-slot>`;
-        class Test {
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              slot(0);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(0, $contentGroup, "foo");
-            }
-          }
-        }
-
-        `
-        <Test>
-          {% if(includeContent) { %}
-            <:foo>foo</:foo>
-          {% } %}
-        </Test>
-        `;
-        const refreshFn = render(
-          hostDiv,
-          (rf: RenderFlags, includeContent: boolean) => {
-            if (rf & RenderFlags.Create) {
-              componentStart(0, "test", Test);
-              {
-                container(1);
-              }
-              componentEnd(0);
-            }
-            if (rf & RenderFlags.Update) {
-              containerRefreshStart(1);
-              {
-                if (includeContent) {
-                  view(1, 0, (rf: RenderFlags) => {
-                    if (rf & RenderFlags.Create) {
-                      slotableStart(0, "foo");
-                      {
-                        text(1, "foo");
-                      }
-                      slotableEnd(0);
-                    }
-                  });
+        it("should support mix of named and default slots", () => {
+          class Card {
+            /**
+             * <h1>
+             *   <x-slot name="header"></x-slot>
+             * </h1>
+             * <div>
+             *   <x-slot></x-slot>
+             * </div>
+             * <footer>
+             *   <x-slot name="footer"></x-slot>
+             * </footer>
+             */
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                elementStart(0, "h1");
+                {
+                  slot(1);
                 }
-              }
-              containerRefreshEnd(1);
-              componentRefresh(0);
-            }
-          },
-          false
-        );
-
-        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
-
-        refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
-
-        refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
-
-        refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
-      });
-
-      it("should support multiple conditional named slottables", () => {
-        `<x-slot name="item"></x-slot>`;
-        class Test {
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              slot(0);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(0, $contentGroup, "item");
-            }
-          }
-        }
-
-        `
-        <Test>
-          {% if(includeContent) { %}
-            <:item>foo</:item>
-            <:item>bar</:item>
-          {% } %}
-        </Test>
-        `;
-        const refreshFn = render(
-          hostDiv,
-          (rf: RenderFlags, includeContent: boolean) => {
-            if (rf & RenderFlags.Create) {
-              componentStart(0, "test", Test);
-              {
-                container(1);
-              }
-              componentEnd(0);
-            }
-            if (rf & RenderFlags.Update) {
-              containerRefreshStart(1);
-              {
-                if (includeContent) {
-                  view(1, 0, (rf: RenderFlags) => {
-                    if (rf & RenderFlags.Create) {
-                      slotableStart(0, "item");
-                      {
-                        text(1, "foo");
-                      }
-                      slotableEnd(0);
-                      slotableStart(2, "item");
-                      {
-                        text(3, "bar");
-                      }
-                      slotableEnd(2);
-                    }
-                  });
+                elementEnd(0);
+                elementStart(2, "div");
+                {
+                  slot(3);
                 }
-              }
-              containerRefreshEnd(1);
-              componentRefresh(0);
-            }
-          },
-          false
-        );
-
-        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
-
-        refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
-
-        refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
-
-        refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
-      });
-
-      it("should support multiple conditional named slottables in different containers", () => {
-        `<x-slot name="item"></x-slot>`;
-        class Test {
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              slot(0);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(0, $contentGroup, "item");
-            }
-          }
-        }
-
-        `
-        <Test>
-          {% if(includeContent) { %}
-            <:item>bar</:item>
-          {% } %}
-          {% if(includeContent) { %}
-            <:item>bar</:item>
-          {% } %}
-        </Test>
-        `;
-        const refreshFn = render(
-          hostDiv,
-          (rf: RenderFlags, includeContent: boolean) => {
-            if (rf & RenderFlags.Create) {
-              componentStart(0, "test", Test);
-              {
-                container(1);
-                container(2);
-              }
-              componentEnd(0);
-            }
-            if (rf & RenderFlags.Update) {
-              containerRefreshStart(1);
-              {
-                if (includeContent) {
-                  view(1, 0, (rf: RenderFlags) => {
-                    if (rf & RenderFlags.Create) {
-                      slotableStart(0, "item");
-                      {
-                        text(1, "foo");
-                      }
-                      slotableEnd(0);
-                    }
-                  });
+                elementEnd(2);
+                elementStart(4, "footer");
+                {
+                  slot(5);
                 }
+                elementEnd(4);
               }
-              containerRefreshEnd(1);
-              containerRefreshStart(2);
-              {
-                if (includeContent) {
-                  view(2, 0, (rf: RenderFlags) => {
-                    if (rf & RenderFlags.Create) {
-                      slotableStart(0, "item");
-                      {
-                        text(1, "bar");
-                      }
-                      slotableEnd(0);
-                    }
-                  });
-                }
+              if (rf & RenderFlags.Update) {
+                slotRefresh(1, $contentGroup, "header");
+                slotRefresh(3, $contentGroup);
+                slotRefresh(5, $contentGroup, "footer");
               }
-              containerRefreshEnd(2);
-              componentRefresh(0);
-            }
-          },
-          false
-        );
-
-        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
-
-        refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
-
-        refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
-
-        refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
-      });
-
-      it("should support multiple conditional named slottables in nested containers", () => {
-        `<x-slot name="item"></x-slot>`;
-        class Test {
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              slot(0);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(0, $contentGroup, "item");
             }
           }
-        }
 
-        `
-        <Test>
-          {% 
-          if(includeContent) {
-            if(includeContent) { %}
-              <:item>foo</:item>
-          {%} 
-          } %}
-        </Test>
-        `;
-        const refreshFn = render(
-          hostDiv,
-          (rf: RenderFlags, includeContent: boolean) => {
-            if (rf & RenderFlags.Create) {
-              componentStart(0, "test", Test);
-              {
-                container(1);
-              }
-              componentEnd(0);
-            }
-            if (rf & RenderFlags.Update) {
-              containerRefreshStart(1);
-              {
-                if (includeContent) {
-                  view(1, 0, (rf: RenderFlags) => {
-                    if (rf & RenderFlags.Create) {
-                      container(0);
-                    }
-                    if (rf & RenderFlags.Update) {
-                      containerRefreshStart(0);
-                      if (includeContent) {
-                        view(0, 0, (rf: RenderFlags) => {
-                          if (rf & RenderFlags.Create) {
-                            slotableStart(0, "item");
-                            {
-                              text(1, "foo");
-                            }
-                            slotableEnd(0);
-                          }
-                        });
-                      }
-                      containerRefreshEnd(0);
-                    }
-                  });
-                }
-              }
-              containerRefreshEnd(1);
-              componentRefresh(0);
-            }
-          },
-          false
-        );
-
-        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
-
-        refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
-
-        refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
-
-        refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
-      });
-
-      it("should support containers inside conditional slotables", () => {
-        `<x-slot name="foobar"></x-slot>`;
-        class Test {
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              slot(0);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(0, $contentGroup, "foobar");
-            }
-          }
-        }
-
-        const ctx = { includeSlotable: false, includeContent: false };
-
-        `
-        <Test>
-          {% if(ctx.includeSlotable) { %}
-            <:foobar>
-              {% if(ctx.includeContent) { %}
-                foo
-              {% } %}
-            </:foobar>
-            <:foobar>
-              bar
-            </:foobar>
-          {% } %}
-        </Test>
-        `;
-        const refreshFn = render(
-          hostDiv,
-          (rf: RenderFlags, ctx: { includeSlotable: boolean; includeContent: boolean }) => {
-            if (rf & RenderFlags.Create) {
-              componentStart(0, "test", Test);
-              {
-                container(1);
-              }
-              componentEnd(0);
-            }
-            if (rf & RenderFlags.Update) {
-              containerRefreshStart(1);
-              {
-                if (ctx.includeSlotable) {
-                  view(1, 0, (rf: RenderFlags) => {
-                    if (rf & RenderFlags.Create) {
-                      slotableStart(0, "foobar");
-                      {
-                        container(1);
-                      }
-                      slotableEnd(0);
-                      slotableStart(2, "foobar");
-                      {
-                        text(3, "bar");
-                      }
-                      slotableEnd(2);
-                    }
-                    if (rf & RenderFlags.Update) {
-                      containerRefreshStart(1);
-                      if (ctx.includeContent) {
-                        view(1, 0, (rf: RenderFlags) => {
-                          text(1, "foo");
-                        });
-                      }
-                      containerRefreshEnd(1);
-                    }
-                  });
-                }
-              }
-              containerRefreshEnd(1);
-              componentRefresh(0);
-            }
-          },
-          ctx
-        );
-
-        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
-
-        ctx.includeSlotable = true;
-        refreshFn();
-        expect(hostDiv.innerHTML).toBe("<test><!--container 1-->bar<!--slot 0--></test>");
-
-        ctx.includeContent = true;
-        refreshFn();
-        expect(hostDiv.innerHTML).toBe("<test>foo<!--container 1-->bar<!--slot 0--></test>");
-
-        ctx.includeSlotable = false;
-        refreshFn();
-        expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
-
-        ctx.includeSlotable = true;
-        refreshFn();
-        expect(hostDiv.innerHTML).toBe("<test>foo<!--container 1-->bar<!--slot 0--></test>");
-      });
-
-      it("should conditionally move slotables between slots", () => {
-        `
-        <div>
-          {% if (this.inFirst) { %}
-            <x-slot></x-slot>
-          {% } %}
-        </div>
-        <div>
-          {% if (!this.inFirst) { %}
-            <x-slot></x-slot>
-          {% } %}
-        </div>
-        `;
-        class TestCmpt {
-          inFirst;
-          render(rf: RenderFlags, $contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              elementStart(0, "div");
-              {
-                container(1);
-              }
-              elementEnd(0);
-              elementStart(2, "div");
-              {
-                container(3);
-              }
-              elementEnd(2);
-            }
-            if (rf & RenderFlags.Update) {
-              containerRefreshStart(1);
-              if (this.inFirst) {
-                view(1, 0, (rf: RenderFlags) => {
-                  if (rf & RenderFlags.Create) {
-                    slot(0);
-                  }
-                  if (rf & RenderFlags.Update) {
-                    slotRefresh(0, $contentGroup);
-                  }
-                });
-              }
-              containerRefreshEnd(1);
-              containerRefreshStart(3);
-              if (!this.inFirst) {
-                view(3, 0, (rf: RenderFlags) => {
-                  if (rf & RenderFlags.Create) {
-                    slot(0);
-                  }
-                  if (rf & RenderFlags.Update) {
-                    slotRefresh(0, $contentGroup);
-                  }
-                });
-              }
-              containerRefreshEnd(3);
-            }
-          }
-        }
-
-        `<TestCmpt [inFirst]="inFirst">content</TestCmpt>`;
-        const refreshFn = render(
-          hostDiv,
-          function(rf: RenderFlags, inFirst: boolean) {
-            if (rf & RenderFlags.Create) {
-              componentStart(0, "TestCmpt", TestCmpt);
-              {
-                text(1, "content");
-              }
-              componentEnd(0);
-            }
-            if (rf & RenderFlags.Update) {
-              const cmptInstance = load<TestCmpt>(0, 0);
-              input(0, 1, inFirst) && (cmptInstance.inFirst = inFirst);
-              componentRefresh(0);
-            }
-          },
-          true
-        );
-
-        const inFirstHtml =
-          "<testcmpt><div>content<!--slot 0--><!--container 1--></div><div><!--container 3--></div></testcmpt>";
-        const inSecondHtml =
-          "<testcmpt><div><!--container 1--></div><div>content<!--slot 0--><!--container 3--></div></testcmpt>";
-
-        expect(hostDiv.innerHTML).toBe(inFirstHtml);
-
-        refreshFn(false);
-        expect(hostDiv.innerHTML).toBe(inSecondHtml);
-
-        refreshFn(true);
-        expect(hostDiv.innerHTML).toBe(inFirstHtml);
-
-        refreshFn(false);
-        expect(hostDiv.innerHTML).toBe(inSecondHtml);
-      });
-
-      it("should support re-projection of default content", () => {
-        `
-        <div class="header">
-          <x-slot name="header"></x-slot>
-        </div>
-        <div class="body">
-          <x-slot name="body"></x-slot>
-        </div>
-        `;
-        class Card {
-          render(rf: RenderFlags, contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              elementStart(0, "div", ["class", "header"]);
-              slot(1);
-              elementEnd(0);
-              elementStart(2, "div", ["class", "body"]);
-              slot(3);
-              elementEnd(2);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(1, contentGroup, "header");
-              slotRefresh(3, contentGroup, "body");
-            }
-          }
-        }
-
-        `<Card>
-          <:header>{=ctx.title}</:header>
-          <:body>
-            <div>
-              <x-slot></x-slot>
-            </div>
-          </:body>
-        </Card>`;
-        class SimpleCard {
-          title: string;
-          render(rf: RenderFlags, contentGroup: VNode) {
+          /**
+           * <Card>
+           *   <:header>Title</:header>
+           *   Content
+           *   <:footer>Bottom</:footer>
+           * </Card>
+           */
+          render(hostDiv, (rf: RenderFlags) => {
             if (rf & RenderFlags.Create) {
               componentStart(0, "card", Card);
               {
                 slotableStart(1, "header");
                 {
-                  text(2);
+                  text(2, "Title");
                 }
                 slotableEnd(1);
-                slotableStart(3, "body");
+                text(3, "Content");
+                slotableStart(4, "footer");
                 {
-                  elementStart(4, "div");
+                  text(5, "Bottom");
+                }
+                slotableEnd(4);
+              }
+              componentEnd(0);
+            }
+            if (rf & RenderFlags.Update) {
+              componentRefresh(0);
+            }
+
+            expect(hostDiv.innerHTML).toBe(
+              "<card><h1>Title<!--slot 1--></h1><div>Content<!--slot 3--></div><footer>Bottom<!--slot 5--></footer></card>"
+            );
+          });
+        });
+
+        it("should support multiple slottables with the same name (static)", () => {
+          `
+          <x-slot name="item"></x-slot>
+          `;
+          class Menu {
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                elementStart(0, "span");
+                {
+                  slot(1);
+                }
+                elementEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                slotRefresh(1, $contentGroup, "item");
+              }
+            }
+          }
+
+          `
+          <Menu>
+            <:item>one</:item>
+            <:item>two</:item>
+          </Menu>
+          `;
+          render(hostDiv, (rf: RenderFlags) => {
+            if (rf & RenderFlags.Create) {
+              componentStart(0, "menu", Menu);
+              {
+                slotableStart(1, "item");
+                {
+                  text(2, "one");
+                }
+                slotableEnd(1);
+                slotableStart(3, "item");
+                {
+                  text(4, "two");
+                }
+                slotableEnd(3);
+              }
+              componentEnd(0);
+            }
+            if (rf & RenderFlags.Update) {
+              componentRefresh(0);
+            }
+          });
+
+          expect(hostDiv.innerHTML).toBe("<menu><span>onetwo<!--slot 1--></span></menu>");
+        });
+
+        it("should support conditional named slots", () => {
+          `
+          {% if (show) { %}
+            <x-slot name="foo"></x-slot>
+          {% } %} `;
+          class Test {
+            show = false;
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                container(0);
+              }
+              if (rf & RenderFlags.Update) {
+                containerRefreshStart(0);
+                {
+                  if (this.show) {
+                    view(0, 0, (rf: RenderFlags) => {
+                      if (rf & RenderFlags.Create) {
+                        slot(0);
+                      }
+                      if (rf & RenderFlags.Update) {
+                        slotRefresh(0, $contentGroup, "foo");
+                      }
+                    });
+                  }
+                }
+                containerRefreshEnd(0);
+              }
+            }
+          }
+
+          `<Test><:foo>foo<:/foo></Test>`;
+          const refreshFn = render(
+            hostDiv,
+            (rf: RenderFlags, show: boolean) => {
+              if (rf & RenderFlags.Create) {
+                componentStart(0, "test", Test);
+                {
+                  slotableStart(1, "foo");
                   {
-                    slot(5);
+                    text(2, "foo");
                   }
-                  elementEnd(4);
+                  slotableEnd(1);
                 }
-                slotableEnd(3);
+                componentEnd(0);
               }
-              componentEnd(0);
-            }
-            if (rf & RenderFlags.Update) {
-              bindText(2, this.title);
-              slotRefresh(5, contentGroup);
-              componentRefresh(0);
-            }
-          }
-        }
-
-        `<SimpleCard [title]="{=titleExp}">Content</SimpleCard>`;
-        function app(rf: RenderFlags, titleExp: string) {
-          if (rf & RenderFlags.Create) {
-            componentStart(0, "simple-card", SimpleCard);
-            text(1, "Content");
-            componentEnd(0);
-          }
-          if (rf & RenderFlags.Update) {
-            const cmptInstance = load<SimpleCard>(0, 0);
-            input(0, 1, titleExp) && (cmptInstance.title = titleExp);
-            componentRefresh(0);
-          }
-        }
-
-        const refreshFn = render(hostDiv, app, "Title");
-        expect(hostDiv.innerHTML).toBe(
-          `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body"><div>Content<!--slot 5--></div><!--slot 3--></div></card></simple-card>`
-        );
-
-        refreshFn("New Title");
-        expect(hostDiv.innerHTML).toBe(
-          `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body"><div>Content<!--slot 5--></div><!--slot 3--></div></card></simple-card>`
-        );
-      });
-
-      it("should support re-projection of default content at the root of a slottable", () => {
-        `
-        <div class="header">
-          <x-slot name="header"></x-slot>
-        </div>
-        <div class="body">
-          <x-slot name="body"></x-slot>
-        </div>
-        `;
-        class Card {
-          render(rf: RenderFlags, contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              elementStart(0, "div", ["class", "header"]);
-              slot(1);
-              elementEnd(0);
-              elementStart(2, "div", ["class", "body"]);
-              slot(3);
-              elementEnd(2);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(1, contentGroup, "header");
-              slotRefresh(3, contentGroup, "body");
-            }
-          }
-        }
-
-        `<Card>
-          <:header>{=ctx.title}</:header>
-          <:body>
-            <x-slot></x-slot>
-          </:body>
-        </Card>`;
-        class SimpleCard {
-          title: string;
-          render(rf: RenderFlags, contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              componentStart(0, "card", Card);
-              {
-                slotableStart(1, "header");
-                {
-                  text(2);
-                }
-                slotableEnd(1);
-                slotableStart(3, "body");
-                {
-                  slot(4);
-                }
-                slotableEnd(3);
+              if (rf & RenderFlags.Update) {
+                const componentInstance = load<Test>(0, 0);
+                input(0, 1, show) && (componentInstance.show = show);
+                componentRefresh(0);
               }
-              componentEnd(0);
-            }
-            if (rf & RenderFlags.Update) {
-              bindText(2, this.title);
-              slotRefresh(4, contentGroup);
-              componentRefresh(0);
-            }
-          }
-        }
+            },
+            false
+          );
 
-        `<SimpleCard [title]="{=titleExp}">Content</SimpleCard>`;
-        function app(rf: RenderFlags, titleExp: string) {
-          if (rf & RenderFlags.Create) {
-            componentStart(0, "simple-card", SimpleCard);
-            text(1, "Content");
-            componentEnd(0);
-          }
-          if (rf & RenderFlags.Update) {
-            const cmptInstance = load<SimpleCard>(0, 0);
-            input(0, 1, titleExp) && (cmptInstance.title = titleExp);
-            componentRefresh(0);
-          }
-        }
+          expect(hostDiv.innerHTML).toBe("<test><!--container 0--></test>");
 
-        const refreshFn = render(hostDiv, app, "Title");
-        expect(hostDiv.innerHTML).toBe(
-          `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
-        );
+          refreshFn(true);
+          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--><!--container 0--></test>");
 
-        refreshFn("New Title");
-        expect(hostDiv.innerHTML).toBe(
-          `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
-        );
-      });
+          refreshFn(false);
+          expect(hostDiv.innerHTML).toBe("<test><!--container 0--></test>");
+        });
 
-      it("should support re-projection of named content at the root of a slottable", () => {
-        `
-        <div class="header">
-          <x-slot name="header"></x-slot>
-        </div>
-        <div class="body">
-          <x-slot name="body"></x-slot>
-        </div>
-        `;
-        class Card {
-          render(rf: RenderFlags, contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              elementStart(0, "div", ["class", "header"]);
-              slot(1);
-              elementEnd(0);
-              elementStart(2, "div", ["class", "body"]);
-              slot(3);
-              elementEnd(2);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(1, contentGroup, "header");
-              slotRefresh(3, contentGroup, "body");
-            }
-          }
-        }
-
-        `<Card>
-          <:header>{=ctx.title}</:header>
-          <:body>
-            <x-slot name="body"></x-slot>
-          </:body>
-        </Card>`;
-        class SimpleCard {
-          title: string;
-          render(rf: RenderFlags, contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              componentStart(0, "card", Card);
-              {
-                slotableStart(1, "header");
-                {
-                  text(2);
-                }
-                slotableEnd(1);
-                slotableStart(3, "body");
-                {
-                  slot(4);
-                }
-                slotableEnd(3);
+        it("should support conditional named slottables", () => {
+          `<x-slot name="foo"></x-slot>`;
+          class Test {
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                slot(0);
               }
-              componentEnd(0);
-            }
-            if (rf & RenderFlags.Update) {
-              bindText(2, this.title);
-              slotRefresh(4, contentGroup, "body");
-              componentRefresh(0);
-            }
-          }
-        }
-
-        `<SimpleCard [title]="{=titleExp}">
-          <:body>
-            Content
-          </:body>
-        </SimpleCard>`;
-        function app(rf: RenderFlags, titleExp: string) {
-          if (rf & RenderFlags.Create) {
-            componentStart(0, "simple-card", SimpleCard);
-            {
-              slotableStart(1, "body");
-              {
-                text(2, "Content");
+              if (rf & RenderFlags.Update) {
+                slotRefresh(0, $contentGroup, "foo");
               }
-              slotableEnd(1);
-            }
-            componentEnd(0);
-          }
-          if (rf & RenderFlags.Update) {
-            const cmptInstance = load<SimpleCard>(0, 0);
-            input(0, 1, titleExp) && (cmptInstance.title = titleExp);
-            componentRefresh(0);
-          }
-        }
-
-        const refreshFn = render(hostDiv, app, "Title");
-        expect(hostDiv.innerHTML).toBe(
-          `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
-        );
-
-        refreshFn("New Title");
-        expect(hostDiv.innerHTML).toBe(
-          `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
-        );
-      });
-
-      it("should support re-projection of named content at the root of a container in slotable", () => {
-        `
-        <div class="header">
-          <x-slot name="header"></x-slot>
-        </div>
-        <div class="body">
-          <x-slot name="body"></x-slot>
-        </div>
-        `;
-        class Card {
-          render(rf: RenderFlags, contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              elementStart(0, "div", ["class", "header"]);
-              slot(1);
-              elementEnd(0);
-              elementStart(2, "div", ["class", "body"]);
-              slot(3);
-              elementEnd(2);
-            }
-            if (rf & RenderFlags.Update) {
-              slotRefresh(1, contentGroup, "header");
-              slotRefresh(3, contentGroup, "body");
             }
           }
-        }
 
-        `<Card>
-          <:header>{=ctx.title}</:header>
-          <:body>
-            {% if (showBody) { %}
-              <x-slot name="body"></x-slot>
-            {% } %} 
-          </:body>
-        </Card>`;
-        class SimpleCard {
-          showBody = false;
-          title: string;
-          render(rf: RenderFlags, contentGroup: VNode) {
-            if (rf & RenderFlags.Create) {
-              componentStart(0, "card", Card);
-              {
-                slotableStart(1, "header");
+          `
+          <Test>
+            {% if(includeContent) { %}
+              <:foo>foo</:foo>
+            {% } %}
+          </Test>
+          `;
+          const refreshFn = render(
+            hostDiv,
+            (rf: RenderFlags, includeContent: boolean) => {
+              if (rf & RenderFlags.Create) {
+                componentStart(0, "test", Test);
                 {
-                  text(2);
+                  container(1);
                 }
-                slotableEnd(1);
-                slotableStart(3, "body");
-                {
-                  container(4);
-                }
-                slotableEnd(3);
+                componentEnd(0);
               }
-              componentEnd(0);
+              if (rf & RenderFlags.Update) {
+                containerRefreshStart(1);
+                {
+                  if (includeContent) {
+                    view(1, 0, (rf: RenderFlags) => {
+                      if (rf & RenderFlags.Create) {
+                        slotableStart(0, "foo");
+                        {
+                          text(1, "foo");
+                        }
+                        slotableEnd(0);
+                      }
+                    });
+                  }
+                }
+                containerRefreshEnd(1);
+                componentRefresh(0);
+              }
+            },
+            false
+          );
+
+          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+
+          refreshFn(true);
+          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
+
+          refreshFn(true);
+          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
+
+          refreshFn(false);
+          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+        });
+
+        it("should support multiple conditional named slottables", () => {
+          `<x-slot name="item"></x-slot>`;
+          class Test {
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                slot(0);
+              }
+              if (rf & RenderFlags.Update) {
+                slotRefresh(0, $contentGroup, "item");
+              }
             }
-            if (rf & RenderFlags.Update) {
-              bindText(2, this.title);
-              containerRefreshStart(4);
-              {
-                if (this.showBody) {
-                  view(4, 0, function(rf: RenderFlags) {
+          }
+
+          `
+          <Test>
+            {% if(includeContent) { %}
+              <:item>foo</:item>
+              <:item>bar</:item>
+            {% } %}
+          </Test>
+          `;
+          const refreshFn = render(
+            hostDiv,
+            (rf: RenderFlags, includeContent: boolean) => {
+              if (rf & RenderFlags.Create) {
+                componentStart(0, "test", Test);
+                {
+                  container(1);
+                }
+                componentEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                containerRefreshStart(1);
+                {
+                  if (includeContent) {
+                    view(1, 0, (rf: RenderFlags) => {
+                      if (rf & RenderFlags.Create) {
+                        slotableStart(0, "item");
+                        {
+                          text(1, "foo");
+                        }
+                        slotableEnd(0);
+                        slotableStart(2, "item");
+                        {
+                          text(3, "bar");
+                        }
+                        slotableEnd(2);
+                      }
+                    });
+                  }
+                }
+                containerRefreshEnd(1);
+                componentRefresh(0);
+              }
+            },
+            false
+          );
+
+          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+
+          refreshFn(true);
+          expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
+
+          refreshFn(true);
+          expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
+
+          refreshFn(false);
+          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+        });
+
+        it("should support multiple conditional named slottables in different containers", () => {
+          `<x-slot name="item"></x-slot>`;
+          class Test {
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                slot(0);
+              }
+              if (rf & RenderFlags.Update) {
+                slotRefresh(0, $contentGroup, "item");
+              }
+            }
+          }
+
+          `
+          <Test>
+            {% if(includeContent) { %}
+              <:item>bar</:item>
+            {% } %}
+            {% if(includeContent) { %}
+              <:item>bar</:item>
+            {% } %}
+          </Test>
+          `;
+          const refreshFn = render(
+            hostDiv,
+            (rf: RenderFlags, includeContent: boolean) => {
+              if (rf & RenderFlags.Create) {
+                componentStart(0, "test", Test);
+                {
+                  container(1);
+                  container(2);
+                }
+                componentEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                containerRefreshStart(1);
+                {
+                  if (includeContent) {
+                    view(1, 0, (rf: RenderFlags) => {
+                      if (rf & RenderFlags.Create) {
+                        slotableStart(0, "item");
+                        {
+                          text(1, "foo");
+                        }
+                        slotableEnd(0);
+                      }
+                    });
+                  }
+                }
+                containerRefreshEnd(1);
+                containerRefreshStart(2);
+                {
+                  if (includeContent) {
+                    view(2, 0, (rf: RenderFlags) => {
+                      if (rf & RenderFlags.Create) {
+                        slotableStart(0, "item");
+                        {
+                          text(1, "bar");
+                        }
+                        slotableEnd(0);
+                      }
+                    });
+                  }
+                }
+                containerRefreshEnd(2);
+                componentRefresh(0);
+              }
+            },
+            false
+          );
+
+          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+
+          refreshFn(true);
+          expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
+
+          refreshFn(true);
+          expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
+
+          refreshFn(false);
+          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+        });
+
+        it("should support multiple conditional named slottables in nested containers", () => {
+          `<x-slot name="item"></x-slot>`;
+          class Test {
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                slot(0);
+              }
+              if (rf & RenderFlags.Update) {
+                slotRefresh(0, $contentGroup, "item");
+              }
+            }
+          }
+
+          `
+          <Test>
+            {% 
+            if(includeContent) {
+              if(includeContent) { %}
+                <:item>foo</:item>
+            {%} 
+            } %}
+          </Test>
+          `;
+          const refreshFn = render(
+            hostDiv,
+            (rf: RenderFlags, includeContent: boolean) => {
+              if (rf & RenderFlags.Create) {
+                componentStart(0, "test", Test);
+                {
+                  container(1);
+                }
+                componentEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                containerRefreshStart(1);
+                {
+                  if (includeContent) {
+                    view(1, 0, (rf: RenderFlags) => {
+                      if (rf & RenderFlags.Create) {
+                        container(0);
+                      }
+                      if (rf & RenderFlags.Update) {
+                        containerRefreshStart(0);
+                        if (includeContent) {
+                          view(0, 0, (rf: RenderFlags) => {
+                            if (rf & RenderFlags.Create) {
+                              slotableStart(0, "item");
+                              {
+                                text(1, "foo");
+                              }
+                              slotableEnd(0);
+                            }
+                          });
+                        }
+                        containerRefreshEnd(0);
+                      }
+                    });
+                  }
+                }
+                containerRefreshEnd(1);
+                componentRefresh(0);
+              }
+            },
+            false
+          );
+
+          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+
+          refreshFn(true);
+          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
+
+          refreshFn(true);
+          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
+
+          refreshFn(false);
+          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+        });
+
+        it("should support containers inside conditional slotables", () => {
+          `<x-slot name="foobar"></x-slot>`;
+          class Test {
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                slot(0);
+              }
+              if (rf & RenderFlags.Update) {
+                slotRefresh(0, $contentGroup, "foobar");
+              }
+            }
+          }
+
+          const ctx = { includeSlotable: false, includeContent: false };
+
+          `
+          <Test>
+            {% if(ctx.includeSlotable) { %}
+              <:foobar>
+                {% if(ctx.includeContent) { %}
+                  foo
+                {% } %}
+              </:foobar>
+              <:foobar>
+                bar
+              </:foobar>
+            {% } %}
+          </Test>
+          `;
+          const refreshFn = render(
+            hostDiv,
+            (rf: RenderFlags, ctx: { includeSlotable: boolean; includeContent: boolean }) => {
+              if (rf & RenderFlags.Create) {
+                componentStart(0, "test", Test);
+                {
+                  container(1);
+                }
+                componentEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                containerRefreshStart(1);
+                {
+                  if (ctx.includeSlotable) {
+                    view(1, 0, (rf: RenderFlags) => {
+                      if (rf & RenderFlags.Create) {
+                        slotableStart(0, "foobar");
+                        {
+                          container(1);
+                        }
+                        slotableEnd(0);
+                        slotableStart(2, "foobar");
+                        {
+                          text(3, "bar");
+                        }
+                        slotableEnd(2);
+                      }
+                      if (rf & RenderFlags.Update) {
+                        containerRefreshStart(1);
+                        if (ctx.includeContent) {
+                          view(1, 0, (rf: RenderFlags) => {
+                            text(1, "foo");
+                          });
+                        }
+                        containerRefreshEnd(1);
+                      }
+                    });
+                  }
+                }
+                containerRefreshEnd(1);
+                componentRefresh(0);
+              }
+            },
+            ctx
+          );
+
+          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+
+          ctx.includeSlotable = true;
+          refreshFn();
+          expect(hostDiv.innerHTML).toBe("<test><!--container 1-->bar<!--slot 0--></test>");
+
+          ctx.includeContent = true;
+          refreshFn();
+          expect(hostDiv.innerHTML).toBe("<test>foo<!--container 1-->bar<!--slot 0--></test>");
+
+          ctx.includeSlotable = false;
+          refreshFn();
+          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+
+          ctx.includeSlotable = true;
+          refreshFn();
+          expect(hostDiv.innerHTML).toBe("<test>foo<!--container 1-->bar<!--slot 0--></test>");
+        });
+
+        it("should conditionally move slotables between slots", () => {
+          `
+          <div>
+            {% if (this.inFirst) { %}
+              <x-slot></x-slot>
+            {% } %}
+          </div>
+          <div>
+            {% if (!this.inFirst) { %}
+              <x-slot></x-slot>
+            {% } %}
+          </div>
+          `;
+          class TestCmpt {
+            inFirst;
+            render(rf: RenderFlags, $contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                elementStart(0, "div");
+                {
+                  container(1);
+                }
+                elementEnd(0);
+                elementStart(2, "div");
+                {
+                  container(3);
+                }
+                elementEnd(2);
+              }
+              if (rf & RenderFlags.Update) {
+                containerRefreshStart(1);
+                if (this.inFirst) {
+                  view(1, 0, (rf: RenderFlags) => {
                     if (rf & RenderFlags.Create) {
                       slot(0);
                     }
                     if (rf & RenderFlags.Update) {
-                      slotRefresh(0, contentGroup, "body");
+                      slotRefresh(0, $contentGroup);
                     }
                   });
                 }
+                containerRefreshEnd(1);
+                containerRefreshStart(3);
+                if (!this.inFirst) {
+                  view(3, 0, (rf: RenderFlags) => {
+                    if (rf & RenderFlags.Create) {
+                      slot(0);
+                    }
+                    if (rf & RenderFlags.Update) {
+                      slotRefresh(0, $contentGroup);
+                    }
+                  });
+                }
+                containerRefreshEnd(3);
               }
-              containerRefreshEnd(4);
+            }
+          }
+
+          `<TestCmpt [inFirst]="inFirst">content</TestCmpt>`;
+          const refreshFn = render(
+            hostDiv,
+            function(rf: RenderFlags, inFirst: boolean) {
+              if (rf & RenderFlags.Create) {
+                componentStart(0, "TestCmpt", TestCmpt);
+                {
+                  text(1, "content");
+                }
+                componentEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                const cmptInstance = load<TestCmpt>(0, 0);
+                input(0, 1, inFirst) && (cmptInstance.inFirst = inFirst);
+                componentRefresh(0);
+              }
+            },
+            true
+          );
+
+          const inFirstHtml =
+            "<testcmpt><div>content<!--slot 0--><!--container 1--></div><div><!--container 3--></div></testcmpt>";
+          const inSecondHtml =
+            "<testcmpt><div><!--container 1--></div><div>content<!--slot 0--><!--container 3--></div></testcmpt>";
+
+          expect(hostDiv.innerHTML).toBe(inFirstHtml);
+
+          refreshFn(false);
+          expect(hostDiv.innerHTML).toBe(inSecondHtml);
+
+          refreshFn(true);
+          expect(hostDiv.innerHTML).toBe(inFirstHtml);
+
+          refreshFn(false);
+          expect(hostDiv.innerHTML).toBe(inSecondHtml);
+        });
+
+        it("should support re-projection of default content", () => {
+          `
+          <div class="header">
+            <x-slot name="header"></x-slot>
+          </div>
+          <div class="body">
+            <x-slot name="body"></x-slot>
+          </div>
+          `;
+          class Card {
+            render(rf: RenderFlags, contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                elementStart(0, "div", ["class", "header"]);
+                slot(1);
+                elementEnd(0);
+                elementStart(2, "div", ["class", "body"]);
+                slot(3);
+                elementEnd(2);
+              }
+              if (rf & RenderFlags.Update) {
+                slotRefresh(1, contentGroup, "header");
+                slotRefresh(3, contentGroup, "body");
+              }
+            }
+          }
+
+          `<Card>
+            <:header>{=ctx.title}</:header>
+            <:body>
+              <div>
+                <x-slot></x-slot>
+              </div>
+            </:body>
+          </Card>`;
+          class SimpleCard {
+            title: string;
+            render(rf: RenderFlags, contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                componentStart(0, "card", Card);
+                {
+                  slotableStart(1, "header");
+                  {
+                    text(2);
+                  }
+                  slotableEnd(1);
+                  slotableStart(3, "body");
+                  {
+                    elementStart(4, "div");
+                    {
+                      slot(5);
+                    }
+                    elementEnd(4);
+                  }
+                  slotableEnd(3);
+                }
+                componentEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                bindText(2, this.title);
+                slotRefresh(5, contentGroup);
+                componentRefresh(0);
+              }
+            }
+          }
+
+          `<SimpleCard [title]="{=titleExp}">Content</SimpleCard>`;
+          function app(rf: RenderFlags, titleExp: string) {
+            if (rf & RenderFlags.Create) {
+              componentStart(0, "simple-card", SimpleCard);
+              text(1, "Content");
+              componentEnd(0);
+            }
+            if (rf & RenderFlags.Update) {
+              const cmptInstance = load<SimpleCard>(0, 0);
+              input(0, 1, titleExp) && (cmptInstance.title = titleExp);
               componentRefresh(0);
             }
           }
-        }
 
-        `<SimpleCard [title]="{=titleExp}">
-          <:body>
-            Content
-          </:body>
-        </SimpleCard>`;
-        function app(rf: RenderFlags, ctx: { titleExp: string; showBody: boolean }) {
-          if (rf & RenderFlags.Create) {
-            componentStart(0, "simple-card", SimpleCard);
-            {
-              slotableStart(1, "body");
-              {
-                text(2, "Content");
+          const refreshFn = render(hostDiv, app, "Title");
+          expect(hostDiv.innerHTML).toBe(
+            `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body"><div>Content<!--slot 5--></div><!--slot 3--></div></card></simple-card>`
+          );
+
+          refreshFn("New Title");
+          expect(hostDiv.innerHTML).toBe(
+            `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body"><div>Content<!--slot 5--></div><!--slot 3--></div></card></simple-card>`
+          );
+        });
+
+        it("should support re-projection of default content at the root of a slottable", () => {
+          `
+          <div class="header">
+            <x-slot name="header"></x-slot>
+          </div>
+          <div class="body">
+            <x-slot name="body"></x-slot>
+          </div>
+          `;
+          class Card {
+            render(rf: RenderFlags, contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                elementStart(0, "div", ["class", "header"]);
+                slot(1);
+                elementEnd(0);
+                elementStart(2, "div", ["class", "body"]);
+                slot(3);
+                elementEnd(2);
               }
-              slotableEnd(1);
+              if (rf & RenderFlags.Update) {
+                slotRefresh(1, contentGroup, "header");
+                slotRefresh(3, contentGroup, "body");
+              }
             }
-            componentEnd(0);
           }
-          if (rf & RenderFlags.Update) {
-            const cmptInstance = load<SimpleCard>(0, 0);
-            input(0, 1, ctx.titleExp) && (cmptInstance.title = ctx.titleExp);
-            input(0, 2, ctx.showBody) && (cmptInstance.showBody = ctx.showBody);
-            componentRefresh(0);
+
+          `<Card>
+            <:header>{=ctx.title}</:header>
+            <:body>
+              <x-slot></x-slot>
+            </:body>
+          </Card>`;
+          class SimpleCard {
+            title: string;
+            render(rf: RenderFlags, contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                componentStart(0, "card", Card);
+                {
+                  slotableStart(1, "header");
+                  {
+                    text(2);
+                  }
+                  slotableEnd(1);
+                  slotableStart(3, "body");
+                  {
+                    slot(4);
+                  }
+                  slotableEnd(3);
+                }
+                componentEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                bindText(2, this.title);
+                slotRefresh(4, contentGroup);
+                componentRefresh(0);
+              }
+            }
           }
-        }
 
-        const refreshFn = render(hostDiv, app, { titleExp: "Title", showBody: false });
-        expect(hostDiv.innerHTML).toBe(
-          `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body"><!--container 4--><!--slot 3--></div></card></simple-card>`
-        );
+          `<SimpleCard [title]="{=titleExp}">Content</SimpleCard>`;
+          function app(rf: RenderFlags, titleExp: string) {
+            if (rf & RenderFlags.Create) {
+              componentStart(0, "simple-card", SimpleCard);
+              text(1, "Content");
+              componentEnd(0);
+            }
+            if (rf & RenderFlags.Update) {
+              const cmptInstance = load<SimpleCard>(0, 0);
+              input(0, 1, titleExp) && (cmptInstance.title = titleExp);
+              componentRefresh(0);
+            }
+          }
 
-        refreshFn({ titleExp: "New Title", showBody: true });
-        expect(hostDiv.innerHTML).toBe(
-          `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body">Content<!--slot 0--><!--container 4--><!--slot 3--></div></card></simple-card>`
-        );
+          const refreshFn = render(hostDiv, app, "Title");
+          expect(hostDiv.innerHTML).toBe(
+            `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
+          );
 
-        refreshFn({ titleExp: "Old Title", showBody: false });
-        expect(hostDiv.innerHTML).toBe(
-          `<simple-card><card><div class="header">Old Title<!--slot 1--></div><div class="body"><!--container 4--><!--slot 3--></div></card></simple-card>`
-        );
+          refreshFn("New Title");
+          expect(hostDiv.innerHTML).toBe(
+            `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
+          );
+        });
+
+        it("should support re-projection of named content at the root of a slottable", () => {
+          `
+          <div class="header">
+            <x-slot name="header"></x-slot>
+          </div>
+          <div class="body">
+            <x-slot name="body"></x-slot>
+          </div>
+          `;
+          class Card {
+            render(rf: RenderFlags, contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                elementStart(0, "div", ["class", "header"]);
+                slot(1);
+                elementEnd(0);
+                elementStart(2, "div", ["class", "body"]);
+                slot(3);
+                elementEnd(2);
+              }
+              if (rf & RenderFlags.Update) {
+                slotRefresh(1, contentGroup, "header");
+                slotRefresh(3, contentGroup, "body");
+              }
+            }
+          }
+
+          `<Card>
+            <:header>{=ctx.title}</:header>
+            <:body>
+              <x-slot name="body"></x-slot>
+            </:body>
+          </Card>`;
+          class SimpleCard {
+            title: string;
+            render(rf: RenderFlags, contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                componentStart(0, "card", Card);
+                {
+                  slotableStart(1, "header");
+                  {
+                    text(2);
+                  }
+                  slotableEnd(1);
+                  slotableStart(3, "body");
+                  {
+                    slot(4);
+                  }
+                  slotableEnd(3);
+                }
+                componentEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                bindText(2, this.title);
+                slotRefresh(4, contentGroup, "body");
+                componentRefresh(0);
+              }
+            }
+          }
+
+          `<SimpleCard [title]="{=titleExp}">
+            <:body>
+              Content
+            </:body>
+          </SimpleCard>`;
+          function app(rf: RenderFlags, titleExp: string) {
+            if (rf & RenderFlags.Create) {
+              componentStart(0, "simple-card", SimpleCard);
+              {
+                slotableStart(1, "body");
+                {
+                  text(2, "Content");
+                }
+                slotableEnd(1);
+              }
+              componentEnd(0);
+            }
+            if (rf & RenderFlags.Update) {
+              const cmptInstance = load<SimpleCard>(0, 0);
+              input(0, 1, titleExp) && (cmptInstance.title = titleExp);
+              componentRefresh(0);
+            }
+          }
+
+          const refreshFn = render(hostDiv, app, "Title");
+          expect(hostDiv.innerHTML).toBe(
+            `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
+          );
+
+          refreshFn("New Title");
+          expect(hostDiv.innerHTML).toBe(
+            `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
+          );
+        });
+
+        it("should support re-projection of named content at the root of a container in slotable", () => {
+          `
+          <div class="header">
+            <x-slot name="header"></x-slot>
+          </div>
+          <div class="body">
+            <x-slot name="body"></x-slot>
+          </div>
+          `;
+          class Card {
+            render(rf: RenderFlags, contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                elementStart(0, "div", ["class", "header"]);
+                slot(1);
+                elementEnd(0);
+                elementStart(2, "div", ["class", "body"]);
+                slot(3);
+                elementEnd(2);
+              }
+              if (rf & RenderFlags.Update) {
+                slotRefresh(1, contentGroup, "header");
+                slotRefresh(3, contentGroup, "body");
+              }
+            }
+          }
+
+          `<Card>
+            <:header>{=ctx.title}</:header>
+            <:body>
+              {% if (showBody) { %}
+                <x-slot name="body"></x-slot>
+              {% } %} 
+            </:body>
+          </Card>`;
+          class SimpleCard {
+            showBody = false;
+            title: string;
+            render(rf: RenderFlags, contentGroup: VNode) {
+              if (rf & RenderFlags.Create) {
+                componentStart(0, "card", Card);
+                {
+                  slotableStart(1, "header");
+                  {
+                    text(2);
+                  }
+                  slotableEnd(1);
+                  slotableStart(3, "body");
+                  {
+                    container(4);
+                  }
+                  slotableEnd(3);
+                }
+                componentEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                bindText(2, this.title);
+                containerRefreshStart(4);
+                {
+                  if (this.showBody) {
+                    view(4, 0, function(rf: RenderFlags) {
+                      if (rf & RenderFlags.Create) {
+                        slot(0);
+                      }
+                      if (rf & RenderFlags.Update) {
+                        slotRefresh(0, contentGroup, "body");
+                      }
+                    });
+                  }
+                }
+                containerRefreshEnd(4);
+                componentRefresh(0);
+              }
+            }
+          }
+
+          `<SimpleCard [title]="{=titleExp}">
+            <:body>
+              Content
+            </:body>
+          </SimpleCard>`;
+          function app(rf: RenderFlags, ctx: { titleExp: string; showBody: boolean }) {
+            if (rf & RenderFlags.Create) {
+              componentStart(0, "simple-card", SimpleCard);
+              {
+                slotableStart(1, "body");
+                {
+                  text(2, "Content");
+                }
+                slotableEnd(1);
+              }
+              componentEnd(0);
+            }
+            if (rf & RenderFlags.Update) {
+              const cmptInstance = load<SimpleCard>(0, 0);
+              input(0, 1, ctx.titleExp) && (cmptInstance.title = ctx.titleExp);
+              input(0, 2, ctx.showBody) && (cmptInstance.showBody = ctx.showBody);
+              componentRefresh(0);
+            }
+          }
+
+          const refreshFn = render(hostDiv, app, { titleExp: "Title", showBody: false });
+          expect(hostDiv.innerHTML).toBe(
+            `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body"><!--container 4--><!--slot 3--></div></card></simple-card>`
+          );
+
+          refreshFn({ titleExp: "New Title", showBody: true });
+          expect(hostDiv.innerHTML).toBe(
+            `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body">Content<!--slot 0--><!--container 4--><!--slot 3--></div></card></simple-card>`
+          );
+
+          refreshFn({ titleExp: "Old Title", showBody: false });
+          expect(hostDiv.innerHTML).toBe(
+            `<simple-card><card><div class="header">Old Title<!--slot 1--></div><div class="body"><!--container 4--><!--slot 3--></div></card></simple-card>`
+          );
+        });
       });
     });
   });
