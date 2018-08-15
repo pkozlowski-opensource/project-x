@@ -2358,6 +2358,118 @@ describe("integration", () => {
           );
         });
       });
+
+      describe("imperative API", () => {
+        it("should insert programmatically determined slotable", () => {
+          `<% const items = findSlotables($content, "item"); %>
+           <x-slot [slotable]="items[0]"></x-slot>
+           <x-slot [slotable]="items[2]"></x-slot>
+          `;
+          class FirstAndThird {
+            render(rf: RenderFlags, $content) {
+              if (rf & RenderFlags.Create) {
+                slot(0);
+                slot(1);
+              }
+              if (rf & RenderFlags.Update) {
+                const items = findSlotables($content, "item");
+                slotRefreshImperative(0, items[0]);
+                slotRefreshImperative(1, items[2]);
+              }
+            }
+          }
+
+          `<first-and-third>
+            <:item>first</:item>
+            <:item>second</:item>
+            <:item>third</:item>
+          </first-and-third>`;
+          function app(rf: RenderFlags) {
+            if (rf & RenderFlags.Create) {
+              componentStart(0, "first-and-third", FirstAndThird);
+              {
+                slotableStart(1, "item");
+                {
+                  text(2, "first");
+                }
+                slotableEnd(1);
+                slotableStart(2, "item");
+                {
+                  text(3, "second");
+                }
+                slotableEnd(2);
+                slotableStart(3, "item");
+                {
+                  text(4, "third");
+                }
+                slotableEnd(3);
+              }
+              componentEnd(0);
+            }
+            if (rf & RenderFlags.Update) {
+              componentRefresh(0);
+            }
+          }
+
+          const refreshFn = render(hostDiv, app);
+          expect(hostDiv.innerHTML).toBe("<first-and-third>first<!--slot 0-->third<!--slot 1--></first-and-third>");
+
+          refreshFn();
+          expect(hostDiv.innerHTML).toBe("<first-and-third>first<!--slot 0-->third<!--slot 1--></first-and-third>");
+
+          refreshFn();
+          expect(hostDiv.innerHTML).toBe("<first-and-third>first<!--slot 0-->third<!--slot 1--></first-and-third>");
+        });
+
+        it("should remove programmatically determined slotable if binding flips to falsy", () => {
+          `<% const items = findSlotables($content, "item"); %>
+           <x-slot [slotable]="this.show ? items[0] : null"></x-slot>
+          `;
+          class FirstOrNothing {
+            show: boolean;
+            render(rf: RenderFlags, $content) {
+              if (rf & RenderFlags.Create) {
+                slot(0);
+              }
+              if (rf & RenderFlags.Update) {
+                const items = findSlotables($content, "item");
+                slotRefreshImperative(0, this.show ? items[0] : null);
+              }
+            }
+          }
+
+          `<first-or-nothing>
+            <:item>first</:item>
+          </first-or-nothing>`;
+          function app(rf: RenderFlags, show: boolean) {
+            if (rf & RenderFlags.Create) {
+              componentStart(0, "first-or-nothing", FirstOrNothing);
+              {
+                slotableStart(1, "item");
+                {
+                  text(2, "first");
+                }
+                slotableEnd(1);
+              }
+              componentEnd(0);
+            }
+            if (rf & RenderFlags.Update) {
+              const cmpt = load<FirstOrNothing>(0, 0);
+              input(0, 1, show) && (cmpt.show = show);
+              componentRefresh(0);
+            }
+          }
+
+          const refreshFn = render(hostDiv, app, false);
+          expect(hostDiv.innerHTML).toBe("<first-or-nothing><!--slot 0--></first-or-nothing>");
+
+          refreshFn(true);
+          expect(hostDiv.innerHTML).toBe("<first-or-nothing>first<!--slot 0--></first-or-nothing>");
+
+          refreshFn(false);
+          expect(hostDiv.innerHTML).toBe("<first-or-nothing><!--slot 0--></first-or-nothing>");
+        });
+      });
     });
   });
 

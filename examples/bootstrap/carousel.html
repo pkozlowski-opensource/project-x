@@ -21,6 +21,16 @@
         // THINK: gestures support 
 
         class NGBCarousel {
+            constructor(nativeEl, refreshFn) {
+                this.activeIdx = 0;
+
+                setInterval(() => {
+                    // TODO: I need to have access to collection of all slides here and this collection is dynamic
+                    this.activeIdx = (this.activeIdx + 1) % 2;
+                    refreshFn();    
+                }, 3000);
+            }
+
             host(rf) {
                 if (rf & 0b01 /* RenderFlags.Create */) {
                     setCSSClasses(0, ["carousel", "slide"]);
@@ -30,10 +40,12 @@
             render(rf, $content) {
                 `<x:host class="carousel slide">
                     <div class="carousel-inner">
-                        <% for (let slide of $content.getAll('slide')) { %>
-                            <div class="carousel-item [class.active]="">
-                                <x-slot slotable="slide"></x-slot>
-                            </div>
+                        <% 
+                            const slides = findSlotables('slide');
+                            for (let slide of $content.getAll('slide')) { %>
+                                <div class="carousel-item [class.active]="">
+                                    <x-slot [slotable]="slide"></x-slot>
+                                </div>
                         <% } %>
                     </div>
                 </x:host>`;
@@ -47,17 +59,20 @@
                 if (rf & 0b10 /* RenderFlags.Update */) {
                     containerRefreshStart(1);
                     {
-                        for (let i = 0; i < 5; i++) {
+                        // PERF: this look-up is not trivial and pretty "expensive" - any alternatives?
+                        const slides = findSlotables($content, 'slide');
+                        for (let i = 0; i < slides.length; i++) {
                             view(1, 0, (rf) => {
                                 if (rf & 0b01 /* RenderFlags.Create */) {
                                     elementStart(0, "div", ["class", "carousel-item"]);
                                     {
-                                        text(1, i);
+                                        slot(1);
                                     }
                                     elementEnd(0);
                                 }
                                 if (rf & 0b10 /* RenderFlags.Update */) {
-                                    bindClass(0, 0, "active", i === 0);
+                                    bindClass(0, 0, "active", i === this.activeIdx);
+                                    slotRefreshImperative(1, slides[i]);    
                                 }
                             });
                         }
@@ -68,12 +83,29 @@
         }
 
         `<NGBCarousel>
-            <:slide></:slide>
-            <:slide></:slide>
+            <:slide>
+                <img alt="Random first slide" src="https://picsum.photos/900/500?image=927">
+            </:slide>
+            <:slide>
+                <img alt="Random second slide" src="https://picsum.photos/900/500?image=929">
+            </:slide>
         </NGBCarousel>`;
         function app(rf) {
             if (rf & 0b01 /* RenderFlags.Create */) {
-                component(0, 'ngb-carousel', NGBCarousel);
+                componentStart(0, 'ngb-carousel', NGBCarousel);
+                {
+                    slotableStart(1, "slide"); 
+                    {
+                        element(2, "img", ["alt", "Random first slide", "src", "https://picsum.photos/900/500?image=927"]);
+                    }
+                    slotableEnd(1);
+                    slotableStart(3, "slide"); 
+                    {
+                        element(2, "img", ["alt", "Random second slide", "src", "https://picsum.photos/900/500?image=929"]);
+                    }
+                    slotableEnd(1);
+                }
+                componentEnd(0);
             }
             if (rf & 0b10 /* RenderFlags.Update */) {
                 const c0 = load(0, 0);

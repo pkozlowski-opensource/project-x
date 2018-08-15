@@ -22,7 +22,7 @@ interface VNode {
   /**
    * Only applies to slotables and indicates projection target of a given node.
    */
-  renderParent: VNode;
+  projectionParent: VNode;
   children: VNode[];
   native: any; // TODO(pk): type it properly
   data: any[]; // PERF(pk): storing bindings separatelly for each and every individual node might not be super-performant :-)
@@ -49,7 +49,7 @@ function createVNode(type: VNodeType, view: ViewData, parent: VNode, nativeOrNat
     type: type,
     view: view,
     parent: parent,
-    renderParent: null,
+    projectionParent: null,
     children: [], // PERF(pk): lazy-init children array => or better yet, have the exact number of children handy :-)
     native: nativeOrNativeRenderParent,
     data: [], // PERF(pk): lazy-init data array => or better yet, have the exact number of bindings handy :-)
@@ -159,7 +159,7 @@ function removeGroupOfNodesFromDOM(viewOrSlotable: VNode) {
 
   // reset render parent to indeicate that view or slotable is no longer inserted into the DOM
   viewOrSlotable.native = null;
-  viewOrSlotable.renderParent = null;
+  viewOrSlotable.projectionParent = null;
 }
 
 // =========
@@ -567,32 +567,58 @@ function findSlotables(containerVNode: VNode, slotName: string, result: VNode[] 
   return result;
 }
 
-function appendSlotable(renderParent: any, slot: VNode, slotable: VNode) {
+function attachSlotable(renderParent: any, slot: VNode, slotable: VNode) {
   slot.children.push(slotable);
-  // was is it attatched somewhere else before?
-  // THINK(pk): the logic below means that we would be "stealing" nodes if there are duplicate insertion points
-  // this is probaby fine as we should never have this situation in a properly written application
-  if (slotable.renderParent && slotable.renderParent !== slot) {
-    const previousSlot = slotable.renderParent;
-    const prevChildIdx = previousSlot.children.indexOf(slotable);
-    if (prevChildIdx > -1) {
-      previousSlot.children.splice(prevChildIdx, 1);
-    } else {
-      throw `parent points to a slot but slotable not found in the collection`;
-    }
-  }
-  slotable.renderParent = slot;
-  // slotables can be only inserted into already inserted slots
+  slotable.projectionParent = slot;
+
+  // slotables can be only inserted into the DOM only if the slot was already inserted
   if (renderParent) {
     insertGroupOfNodesIntoDOM(renderParent, slot, slotable);
   }
 }
 
-// PERF(pk): split into several functions (default, named, instance) for better tree-shaking
-function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
+function detatchSlotable(previousSlot: VNode, slotable: VNode) {
+  const prevChildIdx = previousSlot.children.indexOf(slotable);
+  if (prevChildIdx > -1) {
+    previousSlot.children.splice(prevChildIdx, 1);
+  } else {
+    // TODO: only in dev mode
+    throw `parent points to a slot but slotable not found in the collection`;
+  }
+
+  slotable.projectionParent = null;
+  removeGroupOfNodesFromDOM(slotable);
+}
+
+function appendSlotable(renderParent: any, slot: VNode, slotable: VNode) {
+  if (slotable.projectionParent !== slot) {
+    // detatch from previous slot
+    if (slotable.projectionParent) {
+      detatchSlotable(slotable.projectionParent, slotable);
+    }
+
+    // attatch to the new slot
+    attachSlotable(renderParent, slot, slotable);
+  }
+}
+
+function slotRefreshImperative(idx: number, slotable: VNode | null) {
   const slotVNode = currentView.nodes[idx];
   const renderParent = findRenderParent(slotVNode);
 
+  if (slotable) {
+    appendSlotable(renderParent, slotVNode, slotable);
+  } else {
+    if (slotVNode.children.length) {
+      detatchSlotable(slotVNode, slotVNode.children[0]);
+    }
+  }
+}
+
+// PERF(pk): split into 2 functions (default, named) for better tree-shaking
+function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
+  const slotVNode = currentView.nodes[idx];
+  const renderParent = findRenderParent(slotVNode);
   if (slotName) {
     const slotablesFound = findSlotables(defaultSlotable, slotName);
     if (slotablesFound.length > 0) {
