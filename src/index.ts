@@ -22,7 +22,7 @@ interface VNode {
   /**
    * Only applies to slotables and indicates projection target of a given node.
    */
-  projectionParent: VNode;
+  projectionParent: VNode; // PERF: move it to a separate object
   children: VNode[] | null;
   native: any; // TODO(pk): type it properly
   data: any[]; // PERF(pk): storing bindings separatelly for each and every individual node might not be super-performant :-)
@@ -35,7 +35,49 @@ interface VNode {
   /**
    * Nodes having components sitting on top of them have a pointer to a component's view
    */
-  componentView: VNode;
+  componentView: VNode; // PERF: move it to a separate object
+}
+
+interface TextVNode extends VNode {
+  type: VNodeType.Text;
+  projectionParent: null;
+  children: null;
+  componentView: null;
+}
+
+interface ElementVNode extends VNode {
+  type: VNodeType.Element;
+  projectionParent: null;
+  children: (ElementVNode | TextVNode | ContainerVNode | SlotVNode | SlotableVNode)[];
+}
+
+interface ContainerVNode extends VNode {
+  type: VNodeType.Container;
+  projectionParent: null;
+  children: ViewVNode[];
+  componentView: null;
+}
+
+interface ViewVNode extends VNode {
+  type: VNodeType.View;
+  parent: ContainerVNode;
+  projectionParent: null;
+  children: (ElementVNode | TextVNode | ContainerVNode | SlotVNode | SlotableVNode)[];
+  componentView: null;
+}
+
+interface SlotVNode extends VNode {
+  type: VNodeType.Slot;
+  projectionParent: null;
+  children: SlotableVNode[];
+  componentView: null;
+}
+
+interface SlotableVNode extends VNode {
+  type: VNodeType.Slotable;
+  projectionParent: SlotVNode;
+  children: (ElementVNode | TextVNode | ContainerVNode | SlotVNode | SlotableVNode)[];
+  componentView: null;
 }
 
 const enum RenderFlags {
@@ -84,7 +126,6 @@ function setNativeAttributesNS(domEl, nsURI: string | null, attrs?: string[] | n
 }
 
 function appendNativeNode(parent: VNode, node: VNode) {
-  // possible values: Element, View, Slotable
   if (parent.type === VNodeType.Element) {
     parent.native.appendChild(node.native);
   } else if (parent.type === VNodeType.View) {
@@ -118,7 +159,11 @@ function findRenderParent(vNode: VNode): VNode | null {
 /**
  * Inserts a view or a slotable into the DOM given position of their respective container / slot.
  */
-function insertGroupOfNodesIntoDOM(renderParent: any, groupContainer: VNode, group: VNode) {
+function insertGroupOfNodesIntoDOM(
+  renderParent: any,
+  groupContainer: ContainerVNode | SlotVNode,
+  group: ViewVNode | SlotableVNode
+) {
   // append to DOM only if not already inserted before or changing render parent
   // TODO(pk): this doesn't take into account cases where view / slotable moves inside the same render parent!
   if (!group.native || group.native !== renderParent) {
@@ -136,7 +181,7 @@ function insertGroupOfNodesIntoDOM(renderParent: any, groupContainer: VNode, gro
   }
 }
 
-function removeGroupOfNodesFromDOM(viewOrSlotable: VNode) {
+function removeGroupOfNodesFromDOM(viewOrSlotable: ViewVNode | SlotableVNode) {
   for (let node of viewOrSlotable.children) {
     if (node.type === VNodeType.Element || node.type === VNodeType.Text) {
       viewOrSlotable.native.removeChild(node.native);
@@ -152,8 +197,6 @@ function removeGroupOfNodesFromDOM(viewOrSlotable: VNode) {
       }
     } else if (node.type === VNodeType.Slotable) {
       removeGroupOfNodesFromDOM(node);
-    } else {
-      throw `Unexpected node type ${node.type} when removing nodes from the DOM`;
     }
   }
 
@@ -329,7 +372,7 @@ function replaceClass(vNodeIdx: number, bindIdx: number, className: string) {
 }
 
 function include(containerIdx: number, tplFn, ctx?) {
-  const containerVNode = currentView.nodes[containerIdx];
+  const containerVNode = currentView.nodes[containerIdx] as ContainerVNode;
 
   if (checkAndUpdateBinding(containerVNode.data, 1, tplFn)) {
     const views = containerVNode.children;
@@ -356,7 +399,7 @@ function containerRefreshStart(containerIdx: number) {
 }
 
 function containerRefreshEnd(containerIdx: number) {
-  const containerVNode = currentView.nodes[containerIdx];
+  const containerVNode = currentView.nodes[containerIdx] as ContainerVNode;
   const nextViewIdx = containerVNode.data[0];
   const views = containerVNode.children;
 
@@ -369,7 +412,7 @@ function containerRefreshEnd(containerIdx: number) {
   }
 }
 
-function findView(views: VNode[], startIdx: number, viewIdx: number): VNode | undefined {
+function findView(views: ViewVNode[], startIdx: number, viewIdx: number): VNode | undefined {
   let i = startIdx;
   while (i < views.length) {
     let viewVNode = views[i];
@@ -383,9 +426,9 @@ function findView(views: VNode[], startIdx: number, viewIdx: number): VNode | un
   }
 }
 
-function createViewVNode(viewId: number, parent: VNode, renderParent = null) {
+function createViewVNode(viewId: number, parent: VNode, renderParent = null): ViewVNode {
   const viewData = { viewId: viewId, nodes: [], refresh: parent ? parent.view.refresh : null };
-  return createVNode(VNodeType.View, viewData, parent, renderParent);
+  return createVNode(VNodeType.View, viewData, parent, renderParent) as ViewVNode;
 }
 
 function createHostBindingView(nativeEl: any): VNode {
@@ -441,7 +484,7 @@ function executeComponentRenderFn(
   parentVNode = hostElVNode.parent;
 }
 
-function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: number, viewFn, ctx?) {
+function createAndRefreshView(containerVNode: ContainerVNode, viewIdx: number, viewId: number, viewFn, ctx?) {
   const renderParent = findRenderParent(containerVNode);
   const viewVNode = (parentVNode = createViewVNode(viewId, containerVNode, renderParent));
 
@@ -456,7 +499,7 @@ function createAndRefreshView(containerVNode: VNode, viewIdx: number, viewId: nu
 
 // PERF(pk): this instruction will re-create a closure in each and every change detection cycle
 function view(containerIdx: number, viewId: number, viewFn, ctx?) {
-  const containerVNode = currentView.nodes[containerIdx];
+  const containerVNode = currentView.nodes[containerIdx] as ContainerVNode;
   const nextViewIdx = containerVNode.data[0];
   const existingVNode = findView(containerVNode.children, nextViewIdx, viewId);
 
@@ -554,19 +597,24 @@ function slot(idx: number) {
   appendNativeNode(parentVNode, vNode);
 }
 
-function findSlotables(containerVNode: VNode, slotName: string, result: VNode[] = []): VNode[] {
-  for (let vNode of containerVNode.children) {
+function findSlotables(
+  slotableOrView: SlotableVNode | ViewVNode,
+  slotName: string,
+  result: SlotableVNode[] = []
+): SlotableVNode[] {
+  for (let vNode of slotableOrView.children) {
     if (vNode.type === VNodeType.Slotable && vNode.data[0] === slotName) {
       result.push(vNode);
-    } else if (vNode.type === VNodeType.Container || vNode.type === VNodeType.View) {
-      // PERF(pk): I could avoid recurrsion here
-      findSlotables(vNode, slotName, result);
+    } else if (vNode.type === VNodeType.Container) {
+      for (let view of vNode.children) {
+        findSlotables(view, slotName, result);
+      }
     }
   }
   return result;
 }
 
-function attachSlotable(renderParent: any, slot: VNode, slotable: VNode) {
+function attachSlotable(renderParent: any, slot: SlotVNode, slotable: SlotableVNode) {
   slot.children.push(slotable);
   slotable.projectionParent = slot;
 
@@ -576,9 +624,9 @@ function attachSlotable(renderParent: any, slot: VNode, slotable: VNode) {
   }
 }
 
-function detatchSlotable(previousSlot: VNode, slotable: VNode) {
+function detatchSlotable(previousSlot: SlotVNode, slotable: SlotableVNode) {
   const prevChildIdx = previousSlot.children.indexOf(slotable);
-  
+
   if (prevChildIdx > -1) {
     previousSlot.children.splice(prevChildIdx, 1);
   } else {
@@ -589,11 +637,11 @@ function detatchSlotable(previousSlot: VNode, slotable: VNode) {
   slotable.projectionParent = null;
 
   if (slotable.native) {
-    removeGroupOfNodesFromDOM(slotable);    
+    removeGroupOfNodesFromDOM(slotable);
   }
 }
 
-function appendSlotable(renderParent: any, slot: VNode, slotable: VNode) {
+function appendSlotable(renderParent: any, slot: SlotVNode, slotable: SlotableVNode) {
   if (slotable.projectionParent !== slot) {
     // detatch from previous slot
     if (slotable.projectionParent) {
@@ -605,8 +653,8 @@ function appendSlotable(renderParent: any, slot: VNode, slotable: VNode) {
   }
 }
 
-function slotRefreshImperative(idx: number, slotable: VNode | null) {
-  const slotVNode = currentView.nodes[idx];
+function slotRefreshImperative(idx: number, slotable: SlotableVNode | null) {
+  const slotVNode = currentView.nodes[idx] as SlotVNode;
   const renderParent = findRenderParent(slotVNode);
 
   if (slotable) {
@@ -619,8 +667,8 @@ function slotRefreshImperative(idx: number, slotable: VNode | null) {
 }
 
 // PERF(pk): split into 2 functions (default, named) for better tree-shaking
-function slotRefresh(idx: number, defaultSlotable: VNode, slotName?: string) {
-  const slotVNode = currentView.nodes[idx];
+function slotRefresh(idx: number, defaultSlotable: SlotableVNode, slotName?: string) {
+  const slotVNode = currentView.nodes[idx] as SlotVNode;
   const renderParent = findRenderParent(slotVNode);
   if (slotName) {
     const slotablesFound = findSlotables(defaultSlotable, slotName);

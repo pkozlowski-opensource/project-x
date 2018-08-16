@@ -1165,7 +1165,7 @@ describe("integration", () => {
             /**
              * Hello, <x-slot></x-slot>!
              */
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 text(0, "Hello, ");
                 elementStart(1, "span");
@@ -1219,7 +1219,7 @@ describe("integration", () => {
              *   <x-slot name="content"></x-slot>
              * </div>
              */
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 elementStart(0, "h1");
                 {
@@ -1273,7 +1273,7 @@ describe("integration", () => {
         it("should support named slots at the component view root", () => {
           `<Test><:foo>foo<:/foo></Test>`;
           class Test {
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 slot(0);
               }
@@ -1317,7 +1317,7 @@ describe("integration", () => {
              *   <x-slot name="footer"></x-slot>
              * </footer>
              */
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 elementStart(0, "h1");
                 {
@@ -1383,7 +1383,7 @@ describe("integration", () => {
           <x-slot name="item"></x-slot>
           `;
           class Menu {
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 elementStart(0, "span");
                 {
@@ -1435,7 +1435,7 @@ describe("integration", () => {
           {% } %} `;
           class Test {
             show = false;
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 container(0);
               }
@@ -1494,7 +1494,7 @@ describe("integration", () => {
         it("should support conditional named slottables", () => {
           `<x-slot name="foo"></x-slot>`;
           class Test {
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 slot(0);
               }
@@ -1558,7 +1558,7 @@ describe("integration", () => {
         it("should support multiple conditional named slottables", () => {
           `<x-slot name="item"></x-slot>`;
           class Test {
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 slot(0);
               }
@@ -1628,7 +1628,7 @@ describe("integration", () => {
         it("should support multiple conditional named slottables in different containers", () => {
           `<x-slot name="item"></x-slot>`;
           class Test {
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 slot(0);
               }
@@ -1711,7 +1711,7 @@ describe("integration", () => {
         it("should support multiple conditional named slottables in nested containers", () => {
           `<x-slot name="item"></x-slot>`;
           class Test {
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 slot(0);
               }
@@ -1789,7 +1789,7 @@ describe("integration", () => {
         it("should support containers inside conditional slotables", () => {
           `<x-slot name="foobar"></x-slot>`;
           class Test {
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 slot(0);
               }
@@ -1895,7 +1895,7 @@ describe("integration", () => {
           `;
           class TestCmpt {
             inFirst;
-            render(rf: RenderFlags, $contentGroup: VNode) {
+            render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 elementStart(0, "div");
                 {
@@ -1984,7 +1984,7 @@ describe("integration", () => {
           </div>
           `;
           class Card {
-            render(rf: RenderFlags, contentGroup: VNode) {
+            render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 elementStart(0, "div", ["class", "header"]);
                 slot(1);
@@ -2010,7 +2010,7 @@ describe("integration", () => {
           </Card>`;
           class SimpleCard {
             title: string;
-            render(rf: RenderFlags, contentGroup: VNode) {
+            render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 componentStart(0, "card", Card);
                 {
@@ -2074,7 +2074,7 @@ describe("integration", () => {
           </div>
           `;
           class Card {
-            render(rf: RenderFlags, contentGroup: VNode) {
+            render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 elementStart(0, "div", ["class", "header"]);
                 slot(1);
@@ -2098,7 +2098,7 @@ describe("integration", () => {
           </Card>`;
           class SimpleCard {
             title: string;
-            render(rf: RenderFlags, contentGroup: VNode) {
+            render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 componentStart(0, "card", Card);
                 {
@@ -2158,7 +2158,7 @@ describe("integration", () => {
           </div>
           `;
           class Card {
-            render(rf: RenderFlags, contentGroup: VNode) {
+            render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 elementStart(0, "div", ["class", "header"]);
                 slot(1);
@@ -2182,7 +2182,7 @@ describe("integration", () => {
           </Card>`;
           class SimpleCard {
             title: string;
-            render(rf: RenderFlags, contentGroup: VNode) {
+            render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 componentStart(0, "card", Card);
                 {
@@ -2252,7 +2252,7 @@ describe("integration", () => {
           </div>
           `;
           class Card {
-            render(rf: RenderFlags, contentGroup: VNode) {
+            render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 elementStart(0, "div", ["class", "header"]);
                 slot(1);
@@ -2279,7 +2279,7 @@ describe("integration", () => {
           class SimpleCard {
             showBody = false;
             title: string;
-            render(rf: RenderFlags, contentGroup: VNode) {
+            render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
                 componentStart(0, "card", Card);
                 {
