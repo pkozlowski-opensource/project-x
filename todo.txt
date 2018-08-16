@@ -154,6 +154,8 @@
             - other directives ?
         + listeners / outputs
         - lifecycle and lifecycle hooks
+            - destroy (for cleanup)
+            - delayed destroy (for animations?)
         - refs
             + single
             - multiple
