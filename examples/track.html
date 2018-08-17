@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="../src/index.js"></script>
+    <title>Track by example</title>
+</head>
+
+<body>
+    <div id="app"></div>
+    <script>
+
+        let values = new Array(10);
+
+        `<% for (let i = 0; i < 10; i++) { %>
+            <input type="text" [value]="values[i] || ''" (input)="values[i] = $event.target.value"><br>
+        <% } %>`;
+
+        function app(rf, ctx, refresh) {
+            if (rf & 0b01 /* RenderFlags.Create */) {
+                container(0);
+            }
+            if (rf & 0b10 /* RenderFlags.Update */) {
+                containerRefreshStart(0);
+                {
+                    for (let i = 0; i < 10; i++) {
+                        view(0, 0, function (rf) {
+                            if (rf & 0b01 /* RenderFlags.Create */) {
+                                elementStart(0, 'input', ['type', 'text']);
+                                {
+                                    listener(0, 0, 'input');
+                                }
+                                elementEnd(0);
+                                element(1, 'br');
+                            }
+                            if (rf & 0b10 /* RenderFlags.Update */) {
+                                listenerRefresh(0, 0, ($event) => {
+                                    values[i] = $event.target.value;
+                                    refresh();
+                                });
+                                bindProperty(0, 1, 'value', values[i] || '');
+                            }
+                        });
+                    }
+                }
+                containerRefreshEnd(0);
+                console.log(values);
+            }
+        }
+
+        render(document.getElementById('app'), app);
+    </script>
+</body>
+
+</html>
