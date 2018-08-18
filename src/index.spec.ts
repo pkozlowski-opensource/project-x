@@ -1,40 +1,40 @@
-describe("integration", () => {
+describe('integration', () => {
   let hostDiv: HTMLDivElement;
   beforeEach(() => {
-    hostDiv = document.getElementById("host") as HTMLDivElement;
+    hostDiv = document.getElementById('host') as HTMLDivElement;
   });
 
   afterEach(() => {
-    hostDiv.innerHTML = "";
+    hostDiv.innerHTML = '';
   });
 
-  describe("static html", () => {
-    it("should render static HTML", () => {
+  describe('static html', () => {
+    it('should render static HTML', () => {
       render(hostDiv, (rf: RenderFlags, ctx) => {
         if (rf & RenderFlags.Create) {
-          element(0, "div", ["id", "test_id"]);
-          text(2, "some text");
-          elementStart(3, "span");
+          element(0, 'div', ['id', 'test_id']);
+          text(2, 'some text');
+          elementStart(3, 'span');
           {
-            elementStart(4, "i");
+            elementStart(4, 'i');
             {
-              text(5, "double-nested");
+              text(5, 'double-nested');
             }
             elementEnd(4);
           }
-          text(6, "nested");
+          text(6, 'nested');
           elementEnd(3);
         }
       });
       expect(hostDiv.innerHTML).toBe('<div id="test_id"></div>some text<span><i>double-nested</i>nested</span>');
     });
 
-    it("should support multiple applications in parallel", () => {
-      const app1Host = document.createElement("div");
-      const app2Host = document.createElement("div");
+    it('should support multiple applications in parallel', () => {
+      const app1Host = document.createElement('div');
+      const app2Host = document.createElement('div');
 
       hostDiv.appendChild(app1Host);
-      hostDiv.appendChild(document.createElement("hr"));
+      hostDiv.appendChild(document.createElement('hr'));
       hostDiv.appendChild(app2Host);
 
       function app(rf: RenderFlags, name: string) {
@@ -46,21 +46,21 @@ describe("integration", () => {
         }
       }
 
-      let app1Refresh = render(app1Host, app, "1");
-      let app2Refresh = render(app2Host, app, "2");
+      let app1Refresh = render(app1Host, app, '1');
+      let app2Refresh = render(app2Host, app, '2');
 
-      expect(hostDiv.innerHTML).toBe("<div>1</div><hr><div>2</div>");
+      expect(hostDiv.innerHTML).toBe('<div>1</div><hr><div>2</div>');
 
-      app1Refresh("1 updated");
-      expect(hostDiv.innerHTML).toBe("<div>1 updated</div><hr><div>2</div>");
+      app1Refresh('1 updated');
+      expect(hostDiv.innerHTML).toBe('<div>1 updated</div><hr><div>2</div>');
 
-      app2Refresh("2 updated");
-      expect(hostDiv.innerHTML).toBe("<div>1 updated</div><hr><div>2 updated</div>");
+      app2Refresh('2 updated');
+      expect(hostDiv.innerHTML).toBe('<div>1 updated</div><hr><div>2 updated</div>');
     });
   });
 
-  describe("bindings", () => {
-    it("should evaluate and update bindings on text nodes", () => {
+  describe('bindings', () => {
+    it('should evaluate and update bindings on text nodes', () => {
       const refreshFn = render(
         hostDiv,
         (rf: RenderFlags, ctx) => {
@@ -71,71 +71,71 @@ describe("integration", () => {
             bindText(0, `Hello, ${ctx}`);
           }
         },
-        "World"
+        'World'
       );
 
-      expect(hostDiv.innerHTML).toBe("Hello, World");
+      expect(hostDiv.innerHTML).toBe('Hello, World');
 
-      refreshFn("New World");
-      expect(hostDiv.innerHTML).toBe("Hello, New World");
+      refreshFn('New World');
+      expect(hostDiv.innerHTML).toBe('Hello, New World');
     });
 
-    it("should evaluate and update binding to properties", () => {
+    it('should evaluate and update binding to properties', () => {
       const refreshFn = render(
         hostDiv,
         (rf: RenderFlags, ctx) => {
           if (rf & RenderFlags.Create) {
-            element(0, "div");
+            element(0, 'div');
           }
           if (rf & RenderFlags.Update) {
-            bindProperty(0, 0, "id", ctx);
+            bindProperty(0, 0, 'id', ctx);
           }
         },
-        "initial"
+        'initial'
       );
 
       expect(hostDiv.innerHTML).toBe('<div id="initial"></div>');
 
-      refreshFn("changed");
+      refreshFn('changed');
       expect(hostDiv.innerHTML).toBe('<div id="changed"></div>');
     });
 
-    it("should evaluate and update binding to attributes", () => {
+    it('should evaluate and update binding to attributes', () => {
       const refreshFn = render(
         hostDiv,
         (rf: RenderFlags, ctx) => {
           if (rf & RenderFlags.Create) {
-            element(0, "div");
+            element(0, 'div');
           }
           if (rf & RenderFlags.Update) {
-            bindAttribute(0, 0, "aria-label", ctx);
+            bindAttribute(0, 0, 'aria-label', ctx);
           }
         },
-        "initial"
+        'initial'
       );
 
       expect(hostDiv.innerHTML).toBe('<div aria-label="initial"></div>');
 
-      refreshFn("changed");
+      refreshFn('changed');
       expect(hostDiv.innerHTML).toBe('<div aria-label="changed"></div>');
     });
 
-    it("should toggle CSS class", () => {
+    it('should toggle CSS class', () => {
       `<div [class.show]="shouldShow">`;
       const refreshFn = render(
         hostDiv,
         (rf: RenderFlags, shouldShow: boolean) => {
           if (rf & RenderFlags.Create) {
-            element(0, "div");
+            element(0, 'div');
           }
           if (rf & RenderFlags.Update) {
-            bindClass(0, 0, "show", shouldShow);
+            bindClass(0, 0, 'show', shouldShow);
           }
         },
         false
       );
 
-      expect(hostDiv.innerHTML).toBe("<div></div>");
+      expect(hostDiv.innerHTML).toBe('<div></div>');
 
       refreshFn(true);
       expect(hostDiv.innerHTML).toBe('<div class="show"></div>');
@@ -144,55 +144,55 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe('<div class=""></div>');
     });
 
-    it("should replace CSS class", () => {
+    it('should replace CSS class', () => {
       `<div [class.{}]="cssReplace">`;
       const refreshFn = render(hostDiv, (rf: RenderFlags, className?: string) => {
         if (rf & RenderFlags.Create) {
-          element(0, "div");
+          element(0, 'div');
         }
         if (rf & RenderFlags.Update) {
           replaceClass(0, 0, className);
         }
       });
 
-      expect(hostDiv.innerHTML).toBe("<div></div>");
+      expect(hostDiv.innerHTML).toBe('<div></div>');
 
-      refreshFn("foo");
+      refreshFn('foo');
       expect(hostDiv.innerHTML).toBe('<div class="foo"></div>');
 
-      refreshFn("bar");
+      refreshFn('bar');
       expect(hostDiv.innerHTML).toBe('<div class="bar"></div>');
 
       refreshFn(null);
       expect(hostDiv.innerHTML).toBe('<div class=""></div>');
     });
 
-    it("should properly support binding on nested elements", () => {
+    it('should properly support binding on nested elements', () => {
       const refreshFn = render(
         hostDiv,
         (rf: RenderFlags, ctx) => {
           if (rf & RenderFlags.Create) {
-            elementStart(0, "div");
-            element(1, "span");
+            elementStart(0, 'div');
+            element(1, 'span');
             elementEnd(0);
           }
           if (rf & RenderFlags.Update) {
-            bindProperty(0, 0, "id", ctx + "_for_div");
-            bindProperty(1, 0, "id", ctx + "_for_span");
+            bindProperty(0, 0, 'id', ctx + '_for_div');
+            bindProperty(1, 0, 'id', ctx + '_for_span');
           }
         },
-        "initial"
+        'initial'
       );
 
       expect(hostDiv.innerHTML).toBe('<div id="initial_for_div"><span id="initial_for_span"></span></div>');
 
-      refreshFn("changed");
+      refreshFn('changed');
       expect(hostDiv.innerHTML).toBe('<div id="changed_for_div"><span id="changed_for_span"></span></div>');
     });
   });
 
-  describe("listeners", () => {
-    it("should add DOM event listeners", () => {
+  describe('listeners', () => {
+    it('should add DOM event listeners', () => {
       /**
        * <button (click)="counter++">
        *   Increment
@@ -201,10 +201,10 @@ describe("integration", () => {
        */
       function tpl(rf: RenderFlags, ctx: { counter: number }) {
         if (rf & RenderFlags.Create) {
-          elementStart(0, "button");
+          elementStart(0, 'button');
           {
-            listener(0, 0, "click");
-            text(1, "Increment");
+            listener(0, 0, 'click');
+            text(1, 'Increment');
           }
           elementEnd(0);
           text(2);
@@ -219,15 +219,15 @@ describe("integration", () => {
 
       const ctx = { counter: 0 };
       const refreshFn = render(hostDiv, tpl, ctx);
-      expect(hostDiv.innerHTML).toBe("<button>Increment</button>Counter: 0");
+      expect(hostDiv.innerHTML).toBe('<button>Increment</button>Counter: 0');
 
-      hostDiv.querySelector("button").click();
+      hostDiv.querySelector('button').click();
       expect(ctx.counter).toBe(1);
       refreshFn(ctx);
-      expect(hostDiv.innerHTML).toBe("<button>Increment</button>Counter: 1");
+      expect(hostDiv.innerHTML).toBe('<button>Increment</button>Counter: 1');
     });
 
-    it("should be able to access closure data and event in the event handler", () => {
+    it('should be able to access closure data and event in the event handler', () => {
       let moduleCtx: string;
 
       `
@@ -236,11 +236,11 @@ describe("integration", () => {
       `;
       function tpl(rf: RenderFlags) {
         if (rf & RenderFlags.Create) {
-          element(0, "button");
-          listener(0, 0, "click");
+          element(0, 'button');
+          listener(0, 0, 'click');
         }
         if (rf & RenderFlags.Update) {
-          let foo = "bar";
+          let foo = 'bar';
           listenerRefresh(0, 0, function($event) {
             moduleCtx = foo;
             expect($event.target).toBeDefined();
@@ -250,14 +250,14 @@ describe("integration", () => {
 
       const refreshFn = render(hostDiv, tpl);
 
-      hostDiv.querySelector("button").click();
-      expect(moduleCtx).toBe("bar");
+      hostDiv.querySelector('button').click();
+      expect(moduleCtx).toBe('bar');
     });
   });
 
-  describe("containers", () => {
-    describe("function calls", () => {
-      it("should include result of other functions", () => {
+  describe('containers', () => {
+    describe('function calls', () => {
+      it('should include result of other functions', () => {
         function externalTpl(rf: RenderFlags, ctx: { name: string }) {
           if (rf & RenderFlags.Create) {
             text(0);
@@ -277,16 +277,16 @@ describe("integration", () => {
               include(0, externalTpl, { name: `New ${ctx.name}` });
             }
           },
-          { name: "World" }
+          { name: 'World' }
         );
 
-        expect(hostDiv.innerHTML).toBe("Hello, New World!<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('Hello, New World!<!--container 0-->');
 
-        refreshFn({ name: "Context" });
-        expect(hostDiv.innerHTML).toBe("Hello, New Context!<!--container 0-->");
+        refreshFn({ name: 'Context' });
+        expect(hostDiv.innerHTML).toBe('Hello, New Context!<!--container 0-->');
       });
 
-      it("should allow nodes around function calls", () => {
+      it('should allow nodes around function calls', () => {
         function externalTpl(rf: RenderFlags, ctx: { name: string }) {
           if (rf & RenderFlags.Create) {
             text(0);
@@ -298,13 +298,13 @@ describe("integration", () => {
 
         const refreshFn = render(hostDiv, (rf: RenderFlags, ctx: { name: string }) => {
           if (rf & RenderFlags.Create) {
-            element(0, "div", ["id", "before"]);
-            elementStart(1, "span");
+            element(0, 'div', ['id', 'before']);
+            elementStart(1, 'span');
             {
               container(2);
             }
             elementEnd(1);
-            element(3, "div", ["id", "after"]);
+            element(3, 'div', ['id', 'after']);
           }
           if (rf & RenderFlags.Update) {
             include(2, externalTpl, { name: `World` });
@@ -316,10 +316,10 @@ describe("integration", () => {
         );
       });
 
-      it("should remove nodes when function reference flips to falsy", () => {
+      it('should remove nodes when function reference flips to falsy', () => {
         function externalTpl(rf: RenderFlags) {
           if (rf & RenderFlags.Create) {
-            text(0, "from fn");
+            text(0, 'from fn');
           }
         }
 
@@ -336,18 +336,18 @@ describe("integration", () => {
           false
         );
 
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
 
         refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("from fn<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('from fn<!--container 0-->');
 
         refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
       });
     });
 
-    describe("conditionals", () => {
-      it("should support if", () => {
+    describe('conditionals', () => {
+      it('should support if', () => {
         const refreshFn = render(
           hostDiv,
           (rf: RenderFlags, show: boolean) => {
@@ -359,7 +359,7 @@ describe("integration", () => {
               if (show) {
                 view(0, 0, function f(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {
-                    text(0, "Shown conditionally");
+                    text(0, 'Shown conditionally');
                   }
                 });
               }
@@ -369,16 +369,16 @@ describe("integration", () => {
           false
         );
 
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
 
         refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("Shown conditionally<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('Shown conditionally<!--container 0-->');
 
         refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
       });
 
-      it("should support if / else", () => {
+      it('should support if / else', () => {
         /**
          * % if (show) {
          *  shown
@@ -397,13 +397,13 @@ describe("integration", () => {
               if (show) {
                 view(0, 0, function f(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {
-                    text(0, "shown");
+                    text(0, 'shown');
                   }
                 });
               } else {
                 view(0, 1, function f(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {
-                    text(0, "hidden");
+                    text(0, 'hidden');
                   }
                 });
               }
@@ -413,16 +413,16 @@ describe("integration", () => {
           false
         );
 
-        expect(hostDiv.innerHTML).toBe("hidden<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('hidden<!--container 0-->');
 
         refreshFn(true);
-        expect(hostDiv.innerHTML).toBe("shown<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('shown<!--container 0-->');
 
         refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("hidden<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('hidden<!--container 0-->');
       });
 
-      it("should support nested ifs", () => {
+      it('should support nested ifs', () => {
         const ctx = {
           outer: false,
           inner: false
@@ -447,16 +447,16 @@ describe("integration", () => {
               if (ctx.outer) {
                 view(0, 0, function f(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {
-                    text(0, "outer shown|");
+                    text(0, 'outer shown|');
                     container(1);
-                    text(2, "|");
+                    text(2, '|');
                   }
                   if (rf & RenderFlags.Update) {
                     containerRefreshStart(1);
                     if (ctx.inner) {
                       view(1, 0, function f(rf: RenderFlags) {
                         if (rf & RenderFlags.Create) {
-                          text(0, "inner shown");
+                          text(0, 'inner shown');
                         }
                       });
                     }
@@ -470,30 +470,30 @@ describe("integration", () => {
           ctx
         );
 
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
 
         ctx.inner = true;
         refreshFn();
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
 
         ctx.outer = true;
         refreshFn();
-        expect(hostDiv.innerHTML).toBe("outer shown|inner shown<!--container 1-->|<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('outer shown|inner shown<!--container 1-->|<!--container 0-->');
 
         ctx.inner = false;
         refreshFn();
-        expect(hostDiv.innerHTML).toBe("outer shown|<!--container 1-->|<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('outer shown|<!--container 1-->|<!--container 0-->');
 
         ctx.inner = true;
         refreshFn();
-        expect(hostDiv.innerHTML).toBe("outer shown|inner shown<!--container 1-->|<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('outer shown|inner shown<!--container 1-->|<!--container 0-->');
 
         ctx.outer = false;
         refreshFn();
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
       });
 
-      it("should support sibling ifs", () => {
+      it('should support sibling ifs', () => {
         const ctx = {
           first: false,
           second: false
@@ -513,7 +513,7 @@ describe("integration", () => {
           (rf: RenderFlags, ctx: { first: boolean; second: boolean }) => {
             if (rf & RenderFlags.Create) {
               container(0);
-              text(1, "|");
+              text(1, '|');
               container(2);
             }
             if (rf & RenderFlags.Update) {
@@ -521,7 +521,7 @@ describe("integration", () => {
               if (ctx.first) {
                 view(0, 0, function f(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {
-                    text(0, "first");
+                    text(0, 'first');
                   }
                 });
               }
@@ -530,7 +530,7 @@ describe("integration", () => {
               if (ctx.second) {
                 view(2, 0, function f(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {
-                    text(0, "second");
+                    text(0, 'second');
                   }
                 });
               }
@@ -540,22 +540,22 @@ describe("integration", () => {
           ctx
         );
 
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->|<!--container 2-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->|<!--container 2-->');
 
         ctx.second = true;
         refreshFn();
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->|second<!--container 2-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->|second<!--container 2-->');
 
         ctx.first = true;
         refreshFn();
-        expect(hostDiv.innerHTML).toBe("first<!--container 0-->|second<!--container 2-->");
+        expect(hostDiv.innerHTML).toBe('first<!--container 0-->|second<!--container 2-->');
 
         ctx.second = false;
         refreshFn();
-        expect(hostDiv.innerHTML).toBe("first<!--container 0-->|<!--container 2-->");
+        expect(hostDiv.innerHTML).toBe('first<!--container 0-->|<!--container 2-->');
       });
 
-      it("should support refreshing conditionally inserted views", () => {
+      it('should support refreshing conditionally inserted views', () => {
         const refreshFn = render(
           hostDiv,
           (rf: RenderFlags, name: string) => {
@@ -579,19 +579,19 @@ describe("integration", () => {
               containerRefreshEnd(0);
             }
           },
-          "World"
+          'World'
         );
 
-        expect(hostDiv.innerHTML).toBe("Hello, World!<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('Hello, World!<!--container 0-->');
 
-        refreshFn("New World");
-        expect(hostDiv.innerHTML).toBe("Hello, New World!<!--container 0-->");
+        refreshFn('New World');
+        expect(hostDiv.innerHTML).toBe('Hello, New World!<!--container 0-->');
       });
     });
 
-    describe("loops", () => {
-      it("should support for loops with index", () => {
-        const ctx = ["one", "two", "three"];
+    describe('loops', () => {
+      it('should support for loops with index', () => {
+        const ctx = ['one', 'two', 'three'];
 
         /**
          *  for (let i = 0; i < items.length; i++) {
@@ -610,9 +610,9 @@ describe("integration", () => {
                 view(0, 0, function f(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {
                     text(0);
-                    text(1, "-");
+                    text(1, '-');
                     text(2);
-                    text(3, "-");
+                    text(3, '-');
                   }
                   if (rf & RenderFlags.Update) {
                     bindText(0, `${i}`);
@@ -626,15 +626,15 @@ describe("integration", () => {
           ctx
         );
 
-        expect(hostDiv.innerHTML).toBe("0-one-1-two-2-three-<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('0-one-1-two-2-three-<!--container 0-->');
 
         ctx.splice(1, 1);
         refreshFn();
-        expect(hostDiv.innerHTML).toBe("0-one-1-three-<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('0-one-1-three-<!--container 0-->');
       });
 
-      it("should support for-of loops", () => {
-        const ctx = ["one", "two", "three"];
+      it('should support for-of loops', () => {
+        const ctx = ['one', 'two', 'three'];
 
         /**
          *  for (let item of items) {
@@ -653,7 +653,7 @@ describe("integration", () => {
                 view(0, 0, function f(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {
                     text(0);
-                    text(1, "-");
+                    text(1, '-');
                   }
                   if (rf & RenderFlags.Update) {
                     bindText(0, item);
@@ -666,15 +666,15 @@ describe("integration", () => {
           ctx
         );
 
-        expect(hostDiv.innerHTML).toBe("one-two-three-<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('one-two-three-<!--container 0-->');
 
         ctx.splice(1, 1);
         refreshFn();
-        expect(hostDiv.innerHTML).toBe("one-three-<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('one-three-<!--container 0-->');
       });
 
-      it("should support while loops", () => {
-        const fruits = ["apple", "banana", "orange"];
+      it('should support while loops', () => {
+        const fruits = ['apple', 'banana', 'orange'];
 
         `
         {%
@@ -698,7 +698,7 @@ describe("integration", () => {
                 view(0, 0, function f(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {
                     text(0);
-                    text(1, "-");
+                    text(1, '-');
                   }
                   if (rf & RenderFlags.Update) {
                     bindText(0, fruits[i]);
@@ -712,17 +712,17 @@ describe("integration", () => {
           fruits
         );
 
-        expect(hostDiv.innerHTML).toBe("apple-banana-orange-<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('apple-banana-orange-<!--container 0-->');
 
         fruits.splice(1, 1);
         refreshFn();
-        expect(hostDiv.innerHTML).toBe("apple-orange-<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('apple-orange-<!--container 0-->');
       });
 
-      it("should support nested loops", () => {
+      it('should support nested loops', () => {
         const ctx = {
-          outter: ["1", "2"],
-          inner: ["a", "b", "c"]
+          outter: ['1', '2'],
+          inner: ['a', 'b', 'c']
         };
 
         `
@@ -769,18 +769,18 @@ describe("integration", () => {
         );
 
         expect(hostDiv.innerHTML).toBe(
-          "1:a-1:b-1:c-<!--container 0-->2:a-2:b-2:c-<!--container 0--><!--container 0-->"
+          '1:a-1:b-1:c-<!--container 0-->2:a-2:b-2:c-<!--container 0--><!--container 0-->'
         );
 
         refreshFn();
         expect(hostDiv.innerHTML).toBe(
-          "1:a-1:b-1:c-<!--container 0-->2:a-2:b-2:c-<!--container 0--><!--container 0-->"
+          '1:a-1:b-1:c-<!--container 0-->2:a-2:b-2:c-<!--container 0--><!--container 0-->'
         );
       });
     });
 
-    describe("switch", () => {
-      it("should support switch", () => {
+    describe('switch', () => {
+      it('should support switch', () => {
         `
         {% switch(fruit) {
           case 'apple': { %}
@@ -804,18 +804,18 @@ describe("integration", () => {
             if (rf & RenderFlags.Update) {
               containerRefreshStart(0);
               switch (fruit) {
-                case "apple": {
+                case 'apple': {
                   view(0, 0, function(rf: RenderFlags) {
                     if (rf & RenderFlags.Create) {
-                      text(0, "Ripe apple");
+                      text(0, 'Ripe apple');
                     }
                   });
                   break;
                 }
-                case "banana": {
+                case 'banana': {
                   view(0, 1, function(rf: RenderFlags) {
                     if (rf & RenderFlags.Create) {
-                      text(0, "Yellow banana");
+                      text(0, 'Yellow banana');
                     }
                   });
                   break;
@@ -824,32 +824,32 @@ describe("integration", () => {
               containerRefreshEnd(0);
             }
           },
-          "apple"
+          'apple'
         );
 
-        expect(hostDiv.innerHTML).toBe("Ripe apple<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('Ripe apple<!--container 0-->');
 
-        refreshFn("banana");
-        expect(hostDiv.innerHTML).toBe("Yellow banana<!--container 0-->");
+        refreshFn('banana');
+        expect(hostDiv.innerHTML).toBe('Yellow banana<!--container 0-->');
 
-        refreshFn("exotic");
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        refreshFn('exotic');
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
 
-        refreshFn("banana");
-        expect(hostDiv.innerHTML).toBe("Yellow banana<!--container 0-->");
+        refreshFn('banana');
+        expect(hostDiv.innerHTML).toBe('Yellow banana<!--container 0-->');
       });
     });
   });
 
-  describe("components", () => {
-    it("should support components", () => {
+  describe('components', () => {
+    it('should support components', () => {
       class TestComponent {
         /**
          * Hello, Component!
          */
         render(rf: RenderFlags) {
           if (rf & RenderFlags.Create) {
-            text(0, "Hello, Component!");
+            text(0, 'Hello, Component!');
           }
         }
       }
@@ -861,9 +861,9 @@ describe("integration", () => {
        */
       render(hostDiv, (rf: RenderFlags) => {
         if (rf & RenderFlags.Create) {
-          component(0, "test-component", TestComponent);
-          element(1, "hr");
-          component(2, "test-component", TestComponent);
+          component(0, 'test-component', TestComponent);
+          element(1, 'hr');
+          component(2, 'test-component', TestComponent);
         }
         if (rf & RenderFlags.Update) {
           componentRefresh(0);
@@ -872,14 +872,14 @@ describe("integration", () => {
       });
 
       expect(hostDiv.innerHTML).toBe(
-        "<test-component>Hello, Component!</test-component><hr><test-component>Hello, Component!</test-component>"
+        '<test-component>Hello, Component!</test-component><hr><test-component>Hello, Component!</test-component>'
       );
     });
 
-    it("should inject native node in components constructor", () => {
+    it('should inject native node in components constructor', () => {
       class TestComponent {
         constructor(nativeEl) {
-          nativeEl.classList.add("from_cmpt");
+          nativeEl.classList.add('from_cmpt');
         }
 
         render(rf: RenderFlags) {
@@ -890,7 +890,7 @@ describe("integration", () => {
       `<test-cmpt></test-cmpt>`;
       render(hostDiv, (rf: RenderFlags) => {
         if (rf & RenderFlags.Create) {
-          component(0, "test-cmpt", TestComponent);
+          component(0, 'test-cmpt', TestComponent);
         }
         if (rf & RenderFlags.Update) {
           componentRefresh(0);
@@ -900,7 +900,7 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe('<test-cmpt class="from_cmpt"></test-cmpt>');
     });
 
-    it("should support components with containers at the root", () => {
+    it('should support components with containers at the root', () => {
       `
       {% if (this.show) { %}
         Showing
@@ -917,7 +917,7 @@ describe("integration", () => {
             if (this.show) {
               view(0, 0, function(rf: RenderFlags) {
                 if (rf & RenderFlags.Create) {
-                  text(0, "Showing");
+                  text(0, 'Showing');
                 }
               });
             }
@@ -928,7 +928,7 @@ describe("integration", () => {
 
       const refreshFn = render(hostDiv, (rf: RenderFlags, show: boolean) => {
         if (rf & RenderFlags.Create) {
-          component(0, "test-component", TestComponent);
+          component(0, 'test-component', TestComponent);
         }
         if (rf & RenderFlags.Update) {
           const cmptInstance = load<TestComponent>(0, 0);
@@ -937,26 +937,26 @@ describe("integration", () => {
         }
       });
 
-      expect(hostDiv.innerHTML).toBe("<test-component><!--container 0--></test-component>");
+      expect(hostDiv.innerHTML).toBe('<test-component><!--container 0--></test-component>');
 
       refreshFn(true);
-      expect(hostDiv.innerHTML).toBe("<test-component>Showing<!--container 0--></test-component>");
+      expect(hostDiv.innerHTML).toBe('<test-component>Showing<!--container 0--></test-component>');
 
       refreshFn(true);
-      expect(hostDiv.innerHTML).toBe("<test-component>Showing<!--container 0--></test-component>");
+      expect(hostDiv.innerHTML).toBe('<test-component>Showing<!--container 0--></test-component>');
 
       refreshFn(false);
-      expect(hostDiv.innerHTML).toBe("<test-component><!--container 0--></test-component>");
+      expect(hostDiv.innerHTML).toBe('<test-component><!--container 0--></test-component>');
 
       refreshFn(true);
-      expect(hostDiv.innerHTML).toBe("<test-component>Showing<!--container 0--></test-component>");
+      expect(hostDiv.innerHTML).toBe('<test-component>Showing<!--container 0--></test-component>');
     });
 
-    it("should support components at the root of a view", () => {
+    it('should support components at the root of a view', () => {
       class Test {
         render(rf: RenderFlags) {
           if (rf & RenderFlags.Create) {
-            text(0, "test");
+            text(0, 'test');
           }
         }
       }
@@ -978,7 +978,7 @@ describe("integration", () => {
               if (show) {
                 view(0, 0, function(rf: RenderFlags) {
                   if (rf & RenderFlags.Create) {
-                    component(0, "test", Test);
+                    component(0, 'test', Test);
                   }
                   if (rf & RenderFlags.Update) {
                     componentRefresh(0);
@@ -992,23 +992,23 @@ describe("integration", () => {
         false
       );
 
-      expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+      expect(hostDiv.innerHTML).toBe('<!--container 0-->');
 
       refreshFn(true);
-      expect(hostDiv.innerHTML).toBe("<test>test</test><!--container 0-->");
+      expect(hostDiv.innerHTML).toBe('<test>test</test><!--container 0-->');
 
       refreshFn(false);
-      expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+      expect(hostDiv.innerHTML).toBe('<!--container 0-->');
 
       refreshFn(true);
-      expect(hostDiv.innerHTML).toBe("<test>test</test><!--container 0-->");
+      expect(hostDiv.innerHTML).toBe('<test>test</test><!--container 0-->');
     });
 
-    it("should support components with inputs", () => {
-      const ctx = { name: "World" };
+    it('should support components with inputs', () => {
+      const ctx = { name: 'World' };
 
       class TestComponent {
-        name = "Anonymous";
+        name = 'Anonymous';
 
         /**
          * Hello, {{name}}!
@@ -1030,7 +1030,7 @@ describe("integration", () => {
         hostDiv,
         (rf: RenderFlags, ctx: { name: string }) => {
           if (rf & RenderFlags.Create) {
-            component(0, "test-component", TestComponent);
+            component(0, 'test-component', TestComponent);
           }
           if (rf & RenderFlags.Update) {
             const componentInstance = load<TestComponent>(0, 0);
@@ -1041,22 +1041,22 @@ describe("integration", () => {
         ctx
       );
 
-      expect(hostDiv.innerHTML).toBe("<test-component>Hello, World!</test-component>");
+      expect(hostDiv.innerHTML).toBe('<test-component>Hello, World!</test-component>');
 
-      ctx.name = "New World";
+      ctx.name = 'New World';
       refreshFn();
-      expect(hostDiv.innerHTML).toBe("<test-component>Hello, New World!</test-component>");
+      expect(hostDiv.innerHTML).toBe('<test-component>Hello, New World!</test-component>');
     });
 
-    describe("host", () => {
-      it("should support hostless components", () => {
+    describe('host', () => {
+      it('should support hostless components', () => {
         class TdComponent {
           /**
            * <td>I'm a cell!</td>
            */
           render(rf: RenderFlags) {
             if (rf & RenderFlags.Create) {
-              elementStart(0, "td");
+              elementStart(0, 'td');
               text(1, "I'm a cell!");
               elementEnd(0);
             }
@@ -1068,9 +1068,9 @@ describe("integration", () => {
          */
         render(hostDiv, (rf: RenderFlags) => {
           if (rf & RenderFlags.Create) {
-            elementStart(0, "table");
+            elementStart(0, 'table');
             {
-              component(1, "tr", TdComponent);
+              component(1, 'tr', TdComponent);
             }
             elementEnd(0);
           }
@@ -1082,7 +1082,7 @@ describe("integration", () => {
         expect(hostDiv.innerHTML).toBe("<table><tr><td>I'm a cell!</td></tr></table>");
       });
 
-      it("should support components with host bindings", () => {
+      it('should support components with host bindings', () => {
         class CSSSettingComponent {
           setOnHost: boolean;
           /**
@@ -1096,14 +1096,14 @@ describe("integration", () => {
 
           host() {
             `[class.foo]="setOnHost"`;
-            bindClass(0, 0, "foo", this.setOnHost);
+            bindClass(0, 0, 'foo', this.setOnHost);
           }
         }
 
         `<CSSSettingComponent [classExp]="setOrNot"></CSSSettingComponent>`;
         const refreshFn = render(hostDiv, (rf: RenderFlags, setOrNot: boolean) => {
           if (rf & RenderFlags.Create) {
-            component(0, "CSSSettingComponent", CSSSettingComponent);
+            component(0, 'CSSSettingComponent', CSSSettingComponent);
           }
           if (rf & RenderFlags.Update) {
             const cmptInstance = load<CSSSettingComponent>(0, 0);
@@ -1120,7 +1120,7 @@ describe("integration", () => {
         );
       });
 
-      it("should support components with static host attributes and bindings", () => {
+      it('should support components with static host attributes and bindings', () => {
         class CSSSettingComponent {
           setOnHost: boolean;
           render(rf: RenderFlags) {}
@@ -1128,10 +1128,10 @@ describe("integration", () => {
           host(rf: RenderFlags) {
             `id="static" [class.foo]="setOnHost"`;
             if (rf & RenderFlags.Create) {
-              setAttribute(0, "id", "static");
+              setAttribute(0, 'id', 'static');
             }
             if (rf & RenderFlags.Update) {
-              bindClass(0, 0, "foo", this.setOnHost);
+              bindClass(0, 0, 'foo', this.setOnHost);
             }
           }
         }
@@ -1139,7 +1139,7 @@ describe("integration", () => {
         `<CSSSettingComponent [classExp]="setOrNot"></CSSSettingComponent>`;
         const refreshFn = render(hostDiv, (rf: RenderFlags, setOrNot: boolean) => {
           if (rf & RenderFlags.Create) {
-            component(0, "cmpt", CSSSettingComponent);
+            component(0, 'cmpt', CSSSettingComponent);
           }
           if (rf & RenderFlags.Update) {
             const cmptInstance = load<CSSSettingComponent>(0, 0);
@@ -1158,22 +1158,22 @@ describe("integration", () => {
       });
     });
 
-    describe("content projection", () => {
-      describe("declarative API", () => {
-        it("should support default slot", () => {
+    describe('content projection', () => {
+      describe('declarative API', () => {
+        it('should support default slot', () => {
           class TestComponent {
             /**
              * Hello, <x-slot></x-slot>!
              */
             render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                text(0, "Hello, ");
-                elementStart(1, "span");
+                text(0, 'Hello, ');
+                elementStart(1, 'span');
                 {
                   slot(2);
                 }
                 elementEnd(1);
-                text(3, "!");
+                text(3, '!');
               }
               if (rf & RenderFlags.Update) {
                 slotRefresh(2, $contentGroup);
@@ -1189,7 +1189,7 @@ describe("integration", () => {
             (rf: RenderFlags, name: string) => {
               if (rf & RenderFlags.Create) {
                 // TODO(pk): element creation could be probably in-lined into component() instruction
-                componentStart(0, "test-component", TestComponent);
+                componentStart(0, 'test-component', TestComponent);
                 text(1);
                 componentEnd(0);
               }
@@ -1198,18 +1198,18 @@ describe("integration", () => {
                 componentRefresh(0);
               }
             },
-            "World"
+            'World'
           );
 
-          expect(hostDiv.innerHTML).toBe("<test-component>Hello, <span>World<!--slot 2--></span>!</test-component>");
+          expect(hostDiv.innerHTML).toBe('<test-component>Hello, <span>World<!--slot 2--></span>!</test-component>');
 
-          refreshFn("New World");
+          refreshFn('New World');
           expect(hostDiv.innerHTML).toBe(
-            "<test-component>Hello, <span>New World<!--slot 2--></span>!</test-component>"
+            '<test-component>Hello, <span>New World<!--slot 2--></span>!</test-component>'
           );
         });
 
-        it("should support named slots", () => {
+        it('should support named slots', () => {
           class Card {
             /**
              * <h1>
@@ -1221,20 +1221,20 @@ describe("integration", () => {
              */
             render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                elementStart(0, "h1");
+                elementStart(0, 'h1');
                 {
                   slot(1);
                 }
                 elementEnd(0);
-                elementStart(2, "div");
+                elementStart(2, 'div');
                 {
                   slot(3);
                 }
                 elementEnd(2);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(1, $contentGroup, "header");
-                slotRefresh(3, $contentGroup, "content");
+                slotRefresh(1, $contentGroup, 'header');
+                slotRefresh(3, $contentGroup, 'content');
               }
             }
           }
@@ -1247,16 +1247,16 @@ describe("integration", () => {
            */
           render(hostDiv, (rf: RenderFlags) => {
             if (rf & RenderFlags.Create) {
-              componentStart(0, "card", Card);
+              componentStart(0, 'card', Card);
               {
-                slotableStart(1, "header");
+                slotableStart(1, 'header');
                 {
-                  text(2, "Title");
+                  text(2, 'Title');
                 }
                 slotableEnd(1);
-                slotableStart(3, "content");
+                slotableStart(3, 'content');
                 {
-                  text(4, "Content");
+                  text(4, 'Content');
                 }
                 slotableEnd(3);
               }
@@ -1267,10 +1267,10 @@ describe("integration", () => {
             }
           });
 
-          expect(hostDiv.innerHTML).toBe("<card><h1>Title<!--slot 1--></h1><div>Content<!--slot 3--></div></card>");
+          expect(hostDiv.innerHTML).toBe('<card><h1>Title<!--slot 1--></h1><div>Content<!--slot 3--></div></card>');
         });
 
-        it("should support named slots at the component view root", () => {
+        it('should support named slots at the component view root', () => {
           `<Test><:foo>foo<:/foo></Test>`;
           class Test {
             render(rf: RenderFlags, $contentGroup: SlotableVNode) {
@@ -1278,7 +1278,7 @@ describe("integration", () => {
                 slot(0);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(0, $contentGroup, "foo");
+                slotRefresh(0, $contentGroup, 'foo');
               }
             }
           }
@@ -1286,11 +1286,11 @@ describe("integration", () => {
           `<x-slot name="foo"></x-slot>`;
           const refreshFn = render(hostDiv, (rf: RenderFlags, name: string) => {
             if (rf & RenderFlags.Create) {
-              componentStart(0, "test", Test);
+              componentStart(0, 'test', Test);
               {
-                slotableStart(1, "foo");
+                slotableStart(1, 'foo');
                 {
-                  text(2, "foo");
+                  text(2, 'foo');
                 }
                 slotableEnd(1);
               }
@@ -1301,10 +1301,10 @@ describe("integration", () => {
             }
           });
 
-          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foo<!--slot 0--></test>');
         });
 
-        it("should support mix of named and default slots", () => {
+        it('should support mix of named and default slots', () => {
           class Card {
             /**
              * <h1>
@@ -1319,26 +1319,26 @@ describe("integration", () => {
              */
             render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                elementStart(0, "h1");
+                elementStart(0, 'h1');
                 {
                   slot(1);
                 }
                 elementEnd(0);
-                elementStart(2, "div");
+                elementStart(2, 'div');
                 {
                   slot(3);
                 }
                 elementEnd(2);
-                elementStart(4, "footer");
+                elementStart(4, 'footer');
                 {
                   slot(5);
                 }
                 elementEnd(4);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(1, $contentGroup, "header");
+                slotRefresh(1, $contentGroup, 'header');
                 slotRefresh(3, $contentGroup);
-                slotRefresh(5, $contentGroup, "footer");
+                slotRefresh(5, $contentGroup, 'footer');
               }
             }
           }
@@ -1352,17 +1352,17 @@ describe("integration", () => {
            */
           render(hostDiv, (rf: RenderFlags) => {
             if (rf & RenderFlags.Create) {
-              componentStart(0, "card", Card);
+              componentStart(0, 'card', Card);
               {
-                slotableStart(1, "header");
+                slotableStart(1, 'header');
                 {
-                  text(2, "Title");
+                  text(2, 'Title');
                 }
                 slotableEnd(1);
-                text(3, "Content");
-                slotableStart(4, "footer");
+                text(3, 'Content');
+                slotableStart(4, 'footer');
                 {
-                  text(5, "Bottom");
+                  text(5, 'Bottom');
                 }
                 slotableEnd(4);
               }
@@ -1373,26 +1373,26 @@ describe("integration", () => {
             }
 
             expect(hostDiv.innerHTML).toBe(
-              "<card><h1>Title<!--slot 1--></h1><div>Content<!--slot 3--></div><footer>Bottom<!--slot 5--></footer></card>"
+              '<card><h1>Title<!--slot 1--></h1><div>Content<!--slot 3--></div><footer>Bottom<!--slot 5--></footer></card>'
             );
           });
         });
 
-        it("should support multiple slottables with the same name (static)", () => {
+        it('should support multiple slottables with the same name (static)', () => {
           `
           <x-slot name="item"></x-slot>
           `;
           class Menu {
             render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                elementStart(0, "span");
+                elementStart(0, 'span');
                 {
                   slot(1);
                 }
                 elementEnd(0);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(1, $contentGroup, "item");
+                slotRefresh(1, $contentGroup, 'item');
               }
             }
           }
@@ -1405,16 +1405,16 @@ describe("integration", () => {
           `;
           render(hostDiv, (rf: RenderFlags) => {
             if (rf & RenderFlags.Create) {
-              componentStart(0, "menu", Menu);
+              componentStart(0, 'menu', Menu);
               {
-                slotableStart(1, "item");
+                slotableStart(1, 'item');
                 {
-                  text(2, "one");
+                  text(2, 'one');
                 }
                 slotableEnd(1);
-                slotableStart(3, "item");
+                slotableStart(3, 'item');
                 {
-                  text(4, "two");
+                  text(4, 'two');
                 }
                 slotableEnd(3);
               }
@@ -1425,10 +1425,10 @@ describe("integration", () => {
             }
           });
 
-          expect(hostDiv.innerHTML).toBe("<menu><span>onetwo<!--slot 1--></span></menu>");
+          expect(hostDiv.innerHTML).toBe('<menu><span>onetwo<!--slot 1--></span></menu>');
         });
 
-        it("should support conditional named slots", () => {
+        it('should support conditional named slots', () => {
           `
           {% if (show) { %}
             <x-slot name="foo"></x-slot>
@@ -1448,7 +1448,7 @@ describe("integration", () => {
                         slot(0);
                       }
                       if (rf & RenderFlags.Update) {
-                        slotRefresh(0, $contentGroup, "foo");
+                        slotRefresh(0, $contentGroup, 'foo');
                       }
                     });
                   }
@@ -1463,11 +1463,11 @@ describe("integration", () => {
             hostDiv,
             (rf: RenderFlags, show: boolean) => {
               if (rf & RenderFlags.Create) {
-                componentStart(0, "test", Test);
+                componentStart(0, 'test', Test);
                 {
-                  slotableStart(1, "foo");
+                  slotableStart(1, 'foo');
                   {
-                    text(2, "foo");
+                    text(2, 'foo');
                   }
                   slotableEnd(1);
                 }
@@ -1482,16 +1482,16 @@ describe("integration", () => {
             false
           );
 
-          expect(hostDiv.innerHTML).toBe("<test><!--container 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--container 0--></test>');
 
           refreshFn(true);
-          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--><!--container 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foo<!--slot 0--><!--container 0--></test>');
 
           refreshFn(false);
-          expect(hostDiv.innerHTML).toBe("<test><!--container 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--container 0--></test>');
         });
 
-        it("should support conditional named slottables", () => {
+        it('should support conditional named slottables', () => {
           `<x-slot name="foo"></x-slot>`;
           class Test {
             render(rf: RenderFlags, $contentGroup: SlotableVNode) {
@@ -1499,7 +1499,7 @@ describe("integration", () => {
                 slot(0);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(0, $contentGroup, "foo");
+                slotRefresh(0, $contentGroup, 'foo');
               }
             }
           }
@@ -1515,7 +1515,7 @@ describe("integration", () => {
             hostDiv,
             (rf: RenderFlags, includeContent: boolean) => {
               if (rf & RenderFlags.Create) {
-                componentStart(0, "test", Test);
+                componentStart(0, 'test', Test);
                 {
                   container(1);
                 }
@@ -1527,9 +1527,9 @@ describe("integration", () => {
                   if (includeContent) {
                     view(1, 0, (rf: RenderFlags) => {
                       if (rf & RenderFlags.Create) {
-                        slotableStart(0, "foo");
+                        slotableStart(0, 'foo');
                         {
-                          text(1, "foo");
+                          text(1, 'foo');
                         }
                         slotableEnd(0);
                       }
@@ -1543,19 +1543,19 @@ describe("integration", () => {
             false
           );
 
-          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--slot 0--></test>');
 
           refreshFn(true);
-          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foo<!--slot 0--></test>');
 
           refreshFn(true);
-          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foo<!--slot 0--></test>');
 
           refreshFn(false);
-          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--slot 0--></test>');
         });
 
-        it("should support multiple conditional named slottables", () => {
+        it('should support multiple conditional named slottables', () => {
           `<x-slot name="item"></x-slot>`;
           class Test {
             render(rf: RenderFlags, $contentGroup: SlotableVNode) {
@@ -1563,7 +1563,7 @@ describe("integration", () => {
                 slot(0);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(0, $contentGroup, "item");
+                slotRefresh(0, $contentGroup, 'item');
               }
             }
           }
@@ -1580,7 +1580,7 @@ describe("integration", () => {
             hostDiv,
             (rf: RenderFlags, includeContent: boolean) => {
               if (rf & RenderFlags.Create) {
-                componentStart(0, "test", Test);
+                componentStart(0, 'test', Test);
                 {
                   container(1);
                 }
@@ -1592,14 +1592,14 @@ describe("integration", () => {
                   if (includeContent) {
                     view(1, 0, (rf: RenderFlags) => {
                       if (rf & RenderFlags.Create) {
-                        slotableStart(0, "item");
+                        slotableStart(0, 'item');
                         {
-                          text(1, "foo");
+                          text(1, 'foo');
                         }
                         slotableEnd(0);
-                        slotableStart(2, "item");
+                        slotableStart(2, 'item');
                         {
-                          text(3, "bar");
+                          text(3, 'bar');
                         }
                         slotableEnd(2);
                       }
@@ -1613,19 +1613,19 @@ describe("integration", () => {
             false
           );
 
-          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--slot 0--></test>');
 
           refreshFn(true);
-          expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foobar<!--slot 0--></test>');
 
           refreshFn(true);
-          expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foobar<!--slot 0--></test>');
 
           refreshFn(false);
-          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--slot 0--></test>');
         });
 
-        it("should support multiple conditional named slottables in different containers", () => {
+        it('should support multiple conditional named slottables in different containers', () => {
           `<x-slot name="item"></x-slot>`;
           class Test {
             render(rf: RenderFlags, $contentGroup: SlotableVNode) {
@@ -1633,7 +1633,7 @@ describe("integration", () => {
                 slot(0);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(0, $contentGroup, "item");
+                slotRefresh(0, $contentGroup, 'item');
               }
             }
           }
@@ -1652,7 +1652,7 @@ describe("integration", () => {
             hostDiv,
             (rf: RenderFlags, includeContent: boolean) => {
               if (rf & RenderFlags.Create) {
-                componentStart(0, "test", Test);
+                componentStart(0, 'test', Test);
                 {
                   container(1);
                   container(2);
@@ -1665,9 +1665,9 @@ describe("integration", () => {
                   if (includeContent) {
                     view(1, 0, (rf: RenderFlags) => {
                       if (rf & RenderFlags.Create) {
-                        slotableStart(0, "item");
+                        slotableStart(0, 'item');
                         {
-                          text(1, "foo");
+                          text(1, 'foo');
                         }
                         slotableEnd(0);
                       }
@@ -1680,9 +1680,9 @@ describe("integration", () => {
                   if (includeContent) {
                     view(2, 0, (rf: RenderFlags) => {
                       if (rf & RenderFlags.Create) {
-                        slotableStart(0, "item");
+                        slotableStart(0, 'item');
                         {
-                          text(1, "bar");
+                          text(1, 'bar');
                         }
                         slotableEnd(0);
                       }
@@ -1696,19 +1696,19 @@ describe("integration", () => {
             false
           );
 
-          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--slot 0--></test>');
 
           refreshFn(true);
-          expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foobar<!--slot 0--></test>');
 
           refreshFn(true);
-          expect(hostDiv.innerHTML).toBe("<test>foobar<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foobar<!--slot 0--></test>');
 
           refreshFn(false);
-          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--slot 0--></test>');
         });
 
-        it("should support multiple conditional named slottables in nested containers", () => {
+        it('should support multiple conditional named slottables in nested containers', () => {
           `<x-slot name="item"></x-slot>`;
           class Test {
             render(rf: RenderFlags, $contentGroup: SlotableVNode) {
@@ -1716,7 +1716,7 @@ describe("integration", () => {
                 slot(0);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(0, $contentGroup, "item");
+                slotRefresh(0, $contentGroup, 'item');
               }
             }
           }
@@ -1735,7 +1735,7 @@ describe("integration", () => {
             hostDiv,
             (rf: RenderFlags, includeContent: boolean) => {
               if (rf & RenderFlags.Create) {
-                componentStart(0, "test", Test);
+                componentStart(0, 'test', Test);
                 {
                   container(1);
                 }
@@ -1754,9 +1754,9 @@ describe("integration", () => {
                         if (includeContent) {
                           view(0, 0, (rf: RenderFlags) => {
                             if (rf & RenderFlags.Create) {
-                              slotableStart(0, "item");
+                              slotableStart(0, 'item');
                               {
-                                text(1, "foo");
+                                text(1, 'foo');
                               }
                               slotableEnd(0);
                             }
@@ -1774,19 +1774,19 @@ describe("integration", () => {
             false
           );
 
-          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--slot 0--></test>');
 
           refreshFn(true);
-          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foo<!--slot 0--></test>');
 
           refreshFn(true);
-          expect(hostDiv.innerHTML).toBe("<test>foo<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foo<!--slot 0--></test>');
 
           refreshFn(false);
-          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--slot 0--></test>');
         });
 
-        it("should support containers inside conditional slotables", () => {
+        it('should support containers inside conditional slotables', () => {
           `<x-slot name="foobar"></x-slot>`;
           class Test {
             render(rf: RenderFlags, $contentGroup: SlotableVNode) {
@@ -1794,7 +1794,7 @@ describe("integration", () => {
                 slot(0);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(0, $contentGroup, "foobar");
+                slotRefresh(0, $contentGroup, 'foobar');
               }
             }
           }
@@ -1819,7 +1819,7 @@ describe("integration", () => {
             hostDiv,
             (rf: RenderFlags, ctx: { includeSlotable: boolean; includeContent: boolean }) => {
               if (rf & RenderFlags.Create) {
-                componentStart(0, "test", Test);
+                componentStart(0, 'test', Test);
                 {
                   container(1);
                 }
@@ -1831,14 +1831,14 @@ describe("integration", () => {
                   if (ctx.includeSlotable) {
                     view(1, 0, (rf: RenderFlags) => {
                       if (rf & RenderFlags.Create) {
-                        slotableStart(0, "foobar");
+                        slotableStart(0, 'foobar');
                         {
                           container(1);
                         }
                         slotableEnd(0);
-                        slotableStart(2, "foobar");
+                        slotableStart(2, 'foobar');
                         {
-                          text(3, "bar");
+                          text(3, 'bar');
                         }
                         slotableEnd(2);
                       }
@@ -1846,7 +1846,7 @@ describe("integration", () => {
                         containerRefreshStart(1);
                         if (ctx.includeContent) {
                           view(1, 0, (rf: RenderFlags) => {
-                            text(1, "foo");
+                            text(1, 'foo');
                           });
                         }
                         containerRefreshEnd(1);
@@ -1861,26 +1861,26 @@ describe("integration", () => {
             ctx
           );
 
-          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--slot 0--></test>');
 
           ctx.includeSlotable = true;
           refreshFn();
-          expect(hostDiv.innerHTML).toBe("<test><!--container 1-->bar<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--container 1-->bar<!--slot 0--></test>');
 
           ctx.includeContent = true;
           refreshFn();
-          expect(hostDiv.innerHTML).toBe("<test>foo<!--container 1-->bar<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foo<!--container 1-->bar<!--slot 0--></test>');
 
           ctx.includeSlotable = false;
           refreshFn();
-          expect(hostDiv.innerHTML).toBe("<test><!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test><!--slot 0--></test>');
 
           ctx.includeSlotable = true;
           refreshFn();
-          expect(hostDiv.innerHTML).toBe("<test>foo<!--container 1-->bar<!--slot 0--></test>");
+          expect(hostDiv.innerHTML).toBe('<test>foo<!--container 1-->bar<!--slot 0--></test>');
         });
 
-        it("should conditionally move slotables between slots", () => {
+        it('should conditionally move slotables between slots', () => {
           `
           <div>
             {% if (this.inFirst) { %}
@@ -1897,12 +1897,12 @@ describe("integration", () => {
             inFirst;
             render(rf: RenderFlags, $contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                elementStart(0, "div");
+                elementStart(0, 'div');
                 {
                   container(1);
                 }
                 elementEnd(0);
-                elementStart(2, "div");
+                elementStart(2, 'div');
                 {
                   container(3);
                 }
@@ -1942,9 +1942,9 @@ describe("integration", () => {
             hostDiv,
             function(rf: RenderFlags, inFirst: boolean) {
               if (rf & RenderFlags.Create) {
-                componentStart(0, "TestCmpt", TestCmpt);
+                componentStart(0, 'TestCmpt', TestCmpt);
                 {
-                  text(1, "content");
+                  text(1, 'content');
                 }
                 componentEnd(0);
               }
@@ -1958,9 +1958,9 @@ describe("integration", () => {
           );
 
           const inFirstHtml =
-            "<testcmpt><div>content<!--slot 0--><!--container 1--></div><div><!--container 3--></div></testcmpt>";
+            '<testcmpt><div>content<!--slot 0--><!--container 1--></div><div><!--container 3--></div></testcmpt>';
           const inSecondHtml =
-            "<testcmpt><div><!--container 1--></div><div>content<!--slot 0--><!--container 3--></div></testcmpt>";
+            '<testcmpt><div><!--container 1--></div><div>content<!--slot 0--><!--container 3--></div></testcmpt>';
 
           expect(hostDiv.innerHTML).toBe(inFirstHtml);
 
@@ -1974,7 +1974,7 @@ describe("integration", () => {
           expect(hostDiv.innerHTML).toBe(inSecondHtml);
         });
 
-        it("should support re-projection of default content", () => {
+        it('should support re-projection of default content', () => {
           `
           <div class="header">
             <x-slot name="header"></x-slot>
@@ -1986,16 +1986,16 @@ describe("integration", () => {
           class Card {
             render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                elementStart(0, "div", ["class", "header"]);
+                elementStart(0, 'div', ['class', 'header']);
                 slot(1);
                 elementEnd(0);
-                elementStart(2, "div", ["class", "body"]);
+                elementStart(2, 'div', ['class', 'body']);
                 slot(3);
                 elementEnd(2);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(1, contentGroup, "header");
-                slotRefresh(3, contentGroup, "body");
+                slotRefresh(1, contentGroup, 'header');
+                slotRefresh(3, contentGroup, 'body');
               }
             }
           }
@@ -2012,16 +2012,16 @@ describe("integration", () => {
             title: string;
             render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                componentStart(0, "card", Card);
+                componentStart(0, 'card', Card);
                 {
-                  slotableStart(1, "header");
+                  slotableStart(1, 'header');
                   {
                     text(2);
                   }
                   slotableEnd(1);
-                  slotableStart(3, "body");
+                  slotableStart(3, 'body');
                   {
-                    elementStart(4, "div");
+                    elementStart(4, 'div');
                     {
                       slot(5);
                     }
@@ -2042,8 +2042,8 @@ describe("integration", () => {
           `<SimpleCard [title]="{=titleExp}">Content</SimpleCard>`;
           function app(rf: RenderFlags, titleExp: string) {
             if (rf & RenderFlags.Create) {
-              componentStart(0, "simple-card", SimpleCard);
-              text(1, "Content");
+              componentStart(0, 'simple-card', SimpleCard);
+              text(1, 'Content');
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
@@ -2053,18 +2053,18 @@ describe("integration", () => {
             }
           }
 
-          const refreshFn = render(hostDiv, app, "Title");
+          const refreshFn = render(hostDiv, app, 'Title');
           expect(hostDiv.innerHTML).toBe(
             `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body"><div>Content<!--slot 5--></div><!--slot 3--></div></card></simple-card>`
           );
 
-          refreshFn("New Title");
+          refreshFn('New Title');
           expect(hostDiv.innerHTML).toBe(
             `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body"><div>Content<!--slot 5--></div><!--slot 3--></div></card></simple-card>`
           );
         });
 
-        it("should support re-projection of default content at the root of a slottable", () => {
+        it('should support re-projection of default content at the root of a slottable', () => {
           `
           <div class="header">
             <x-slot name="header"></x-slot>
@@ -2076,16 +2076,16 @@ describe("integration", () => {
           class Card {
             render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                elementStart(0, "div", ["class", "header"]);
+                elementStart(0, 'div', ['class', 'header']);
                 slot(1);
                 elementEnd(0);
-                elementStart(2, "div", ["class", "body"]);
+                elementStart(2, 'div', ['class', 'body']);
                 slot(3);
                 elementEnd(2);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(1, contentGroup, "header");
-                slotRefresh(3, contentGroup, "body");
+                slotRefresh(1, contentGroup, 'header');
+                slotRefresh(3, contentGroup, 'body');
               }
             }
           }
@@ -2100,14 +2100,14 @@ describe("integration", () => {
             title: string;
             render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                componentStart(0, "card", Card);
+                componentStart(0, 'card', Card);
                 {
-                  slotableStart(1, "header");
+                  slotableStart(1, 'header');
                   {
                     text(2);
                   }
                   slotableEnd(1);
-                  slotableStart(3, "body");
+                  slotableStart(3, 'body');
                   {
                     slot(4);
                   }
@@ -2126,8 +2126,8 @@ describe("integration", () => {
           `<SimpleCard [title]="{=titleExp}">Content</SimpleCard>`;
           function app(rf: RenderFlags, titleExp: string) {
             if (rf & RenderFlags.Create) {
-              componentStart(0, "simple-card", SimpleCard);
-              text(1, "Content");
+              componentStart(0, 'simple-card', SimpleCard);
+              text(1, 'Content');
               componentEnd(0);
             }
             if (rf & RenderFlags.Update) {
@@ -2137,18 +2137,18 @@ describe("integration", () => {
             }
           }
 
-          const refreshFn = render(hostDiv, app, "Title");
+          const refreshFn = render(hostDiv, app, 'Title');
           expect(hostDiv.innerHTML).toBe(
             `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
           );
 
-          refreshFn("New Title");
+          refreshFn('New Title');
           expect(hostDiv.innerHTML).toBe(
             `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
           );
         });
 
-        it("should support re-projection of named content at the root of a slottable", () => {
+        it('should support re-projection of named content at the root of a slottable', () => {
           `
           <div class="header">
             <x-slot name="header"></x-slot>
@@ -2160,16 +2160,16 @@ describe("integration", () => {
           class Card {
             render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                elementStart(0, "div", ["class", "header"]);
+                elementStart(0, 'div', ['class', 'header']);
                 slot(1);
                 elementEnd(0);
-                elementStart(2, "div", ["class", "body"]);
+                elementStart(2, 'div', ['class', 'body']);
                 slot(3);
                 elementEnd(2);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(1, contentGroup, "header");
-                slotRefresh(3, contentGroup, "body");
+                slotRefresh(1, contentGroup, 'header');
+                slotRefresh(3, contentGroup, 'body');
               }
             }
           }
@@ -2184,14 +2184,14 @@ describe("integration", () => {
             title: string;
             render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                componentStart(0, "card", Card);
+                componentStart(0, 'card', Card);
                 {
-                  slotableStart(1, "header");
+                  slotableStart(1, 'header');
                   {
                     text(2);
                   }
                   slotableEnd(1);
-                  slotableStart(3, "body");
+                  slotableStart(3, 'body');
                   {
                     slot(4);
                   }
@@ -2201,7 +2201,7 @@ describe("integration", () => {
               }
               if (rf & RenderFlags.Update) {
                 bindText(2, this.title);
-                slotRefresh(4, contentGroup, "body");
+                slotRefresh(4, contentGroup, 'body');
                 componentRefresh(0);
               }
             }
@@ -2214,11 +2214,11 @@ describe("integration", () => {
           </SimpleCard>`;
           function app(rf: RenderFlags, titleExp: string) {
             if (rf & RenderFlags.Create) {
-              componentStart(0, "simple-card", SimpleCard);
+              componentStart(0, 'simple-card', SimpleCard);
               {
-                slotableStart(1, "body");
+                slotableStart(1, 'body');
                 {
-                  text(2, "Content");
+                  text(2, 'Content');
                 }
                 slotableEnd(1);
               }
@@ -2231,18 +2231,18 @@ describe("integration", () => {
             }
           }
 
-          const refreshFn = render(hostDiv, app, "Title");
+          const refreshFn = render(hostDiv, app, 'Title');
           expect(hostDiv.innerHTML).toBe(
             `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
           );
 
-          refreshFn("New Title");
+          refreshFn('New Title');
           expect(hostDiv.innerHTML).toBe(
             `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body">Content<!--slot 4--><!--slot 3--></div></card></simple-card>`
           );
         });
 
-        it("should support re-projection of named content at the root of a container in slotable", () => {
+        it('should support re-projection of named content at the root of a container in slotable', () => {
           `
           <div class="header">
             <x-slot name="header"></x-slot>
@@ -2254,16 +2254,16 @@ describe("integration", () => {
           class Card {
             render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                elementStart(0, "div", ["class", "header"]);
+                elementStart(0, 'div', ['class', 'header']);
                 slot(1);
                 elementEnd(0);
-                elementStart(2, "div", ["class", "body"]);
+                elementStart(2, 'div', ['class', 'body']);
                 slot(3);
                 elementEnd(2);
               }
               if (rf & RenderFlags.Update) {
-                slotRefresh(1, contentGroup, "header");
-                slotRefresh(3, contentGroup, "body");
+                slotRefresh(1, contentGroup, 'header');
+                slotRefresh(3, contentGroup, 'body');
               }
             }
           }
@@ -2281,14 +2281,14 @@ describe("integration", () => {
             title: string;
             render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                componentStart(0, "card", Card);
+                componentStart(0, 'card', Card);
                 {
-                  slotableStart(1, "header");
+                  slotableStart(1, 'header');
                   {
                     text(2);
                   }
                   slotableEnd(1);
-                  slotableStart(3, "body");
+                  slotableStart(3, 'body');
                   {
                     container(4);
                   }
@@ -2306,7 +2306,7 @@ describe("integration", () => {
                         slot(0);
                       }
                       if (rf & RenderFlags.Update) {
-                        slotRefresh(0, contentGroup, "body");
+                        slotRefresh(0, contentGroup, 'body');
                       }
                     });
                   }
@@ -2324,11 +2324,11 @@ describe("integration", () => {
           </SimpleCard>`;
           function app(rf: RenderFlags, ctx: { titleExp: string; showBody: boolean }) {
             if (rf & RenderFlags.Create) {
-              componentStart(0, "simple-card", SimpleCard);
+              componentStart(0, 'simple-card', SimpleCard);
               {
-                slotableStart(1, "body");
+                slotableStart(1, 'body');
                 {
-                  text(2, "Content");
+                  text(2, 'Content');
                 }
                 slotableEnd(1);
               }
@@ -2342,25 +2342,25 @@ describe("integration", () => {
             }
           }
 
-          const refreshFn = render(hostDiv, app, { titleExp: "Title", showBody: false });
+          const refreshFn = render(hostDiv, app, { titleExp: 'Title', showBody: false });
           expect(hostDiv.innerHTML).toBe(
             `<simple-card><card><div class="header">Title<!--slot 1--></div><div class="body"><!--container 4--><!--slot 3--></div></card></simple-card>`
           );
 
-          refreshFn({ titleExp: "New Title", showBody: true });
+          refreshFn({ titleExp: 'New Title', showBody: true });
           expect(hostDiv.innerHTML).toBe(
             `<simple-card><card><div class="header">New Title<!--slot 1--></div><div class="body">Content<!--slot 0--><!--container 4--><!--slot 3--></div></card></simple-card>`
           );
 
-          refreshFn({ titleExp: "Old Title", showBody: false });
+          refreshFn({ titleExp: 'Old Title', showBody: false });
           expect(hostDiv.innerHTML).toBe(
             `<simple-card><card><div class="header">Old Title<!--slot 1--></div><div class="body"><!--container 4--><!--slot 3--></div></card></simple-card>`
           );
         });
       });
 
-      describe("imperative API", () => {
-        it("should insert programmatically determined slotable", () => {
+      describe('imperative API', () => {
+        it('should insert programmatically determined slotable', () => {
           `<% const items = findSlotables($content, "item"); %>
            <x-slot [slotable]="items[0]"></x-slot>
            <x-slot [slotable]="items[2]"></x-slot>
@@ -2372,7 +2372,7 @@ describe("integration", () => {
                 slot(1);
               }
               if (rf & RenderFlags.Update) {
-                const items = findSlotables($content, "item");
+                const items = findSlotables($content, 'item');
                 slotRefreshImperative(0, items[0]);
                 slotRefreshImperative(1, items[2]);
               }
@@ -2386,21 +2386,21 @@ describe("integration", () => {
           </first-and-third>`;
           function app(rf: RenderFlags) {
             if (rf & RenderFlags.Create) {
-              componentStart(0, "first-and-third", FirstAndThird);
+              componentStart(0, 'first-and-third', FirstAndThird);
               {
-                slotableStart(1, "item");
+                slotableStart(1, 'item');
                 {
-                  text(2, "first");
+                  text(2, 'first');
                 }
                 slotableEnd(1);
-                slotableStart(2, "item");
+                slotableStart(2, 'item');
                 {
-                  text(3, "second");
+                  text(3, 'second');
                 }
                 slotableEnd(2);
-                slotableStart(3, "item");
+                slotableStart(3, 'item');
                 {
-                  text(4, "third");
+                  text(4, 'third');
                 }
                 slotableEnd(3);
               }
@@ -2412,16 +2412,16 @@ describe("integration", () => {
           }
 
           const refreshFn = render(hostDiv, app);
-          expect(hostDiv.innerHTML).toBe("<first-and-third>first<!--slot 0-->third<!--slot 1--></first-and-third>");
+          expect(hostDiv.innerHTML).toBe('<first-and-third>first<!--slot 0-->third<!--slot 1--></first-and-third>');
 
           refreshFn();
-          expect(hostDiv.innerHTML).toBe("<first-and-third>first<!--slot 0-->third<!--slot 1--></first-and-third>");
+          expect(hostDiv.innerHTML).toBe('<first-and-third>first<!--slot 0-->third<!--slot 1--></first-and-third>');
 
           refreshFn();
-          expect(hostDiv.innerHTML).toBe("<first-and-third>first<!--slot 0-->third<!--slot 1--></first-and-third>");
+          expect(hostDiv.innerHTML).toBe('<first-and-third>first<!--slot 0-->third<!--slot 1--></first-and-third>');
         });
 
-        it("should remove programmatically determined slotable if binding flips to falsy", () => {
+        it('should remove programmatically determined slotable if binding flips to falsy', () => {
           `<% const items = findSlotables($content, "item"); %>
            <x-slot [slotable]="this.show ? items[0] : null"></x-slot>
           `;
@@ -2432,7 +2432,7 @@ describe("integration", () => {
                 slot(0);
               }
               if (rf & RenderFlags.Update) {
-                const items = findSlotables($content, "item");
+                const items = findSlotables($content, 'item');
                 slotRefreshImperative(0, this.show ? items[0] : null);
               }
             }
@@ -2443,11 +2443,11 @@ describe("integration", () => {
           </first-or-nothing>`;
           function app(rf: RenderFlags, show: boolean) {
             if (rf & RenderFlags.Create) {
-              componentStart(0, "first-or-nothing", FirstOrNothing);
+              componentStart(0, 'first-or-nothing', FirstOrNothing);
               {
-                slotableStart(1, "item");
+                slotableStart(1, 'item');
                 {
-                  text(2, "first");
+                  text(2, 'first');
                 }
                 slotableEnd(1);
               }
@@ -2461,16 +2461,16 @@ describe("integration", () => {
           }
 
           const refreshFn = render(hostDiv, app, false);
-          expect(hostDiv.innerHTML).toBe("<first-or-nothing><!--slot 0--></first-or-nothing>");
+          expect(hostDiv.innerHTML).toBe('<first-or-nothing><!--slot 0--></first-or-nothing>');
 
           refreshFn(true);
-          expect(hostDiv.innerHTML).toBe("<first-or-nothing>first<!--slot 0--></first-or-nothing>");
+          expect(hostDiv.innerHTML).toBe('<first-or-nothing>first<!--slot 0--></first-or-nothing>');
 
           refreshFn(false);
-          expect(hostDiv.innerHTML).toBe("<first-or-nothing><!--slot 0--></first-or-nothing>");
+          expect(hostDiv.innerHTML).toBe('<first-or-nothing><!--slot 0--></first-or-nothing>');
         });
 
-        fit("should support bindings on slotables", () => {
+        it('should support bindings on slotables', () => {
           class MenuItem {
             id: string;
           }
@@ -2485,19 +2485,19 @@ describe("integration", () => {
           class MenuCmpt {
             render(rf: RenderFlags, contentGroup: SlotableVNode) {
               if (rf & RenderFlags.Create) {
-                elementStart(0, "ul");
+                elementStart(0, 'ul');
                 {
                   container(1);
                 }
                 elementEnd(0);
               }
               if (rf & RenderFlags.Update) {
-                const items = findSlotables(contentGroup, "item");
+                const items = findSlotables(contentGroup, 'item');
                 containerRefreshStart(1);
                 for (let item of items) {
                   view(1, 0, (rf: RenderFlags) => {
                     if (rf & RenderFlags.Create) {
-                      elementStart(0, "li");
+                      elementStart(0, 'li');
                       {
                         slot(1);
                       }
@@ -2505,7 +2505,7 @@ describe("integration", () => {
                     }
                     if (rf & RenderFlags.Update) {
                       console.log(item);
-                      bindProperty(0, 0, "id", item.data[1].id);
+                      bindProperty(0, 0, 'id', item.data[1].id);
                       slotRefreshImperative(1, item);
                     }
                   });
@@ -2526,16 +2526,16 @@ describe("integration", () => {
           </Menu>`;
           function app(rf: RenderFlags) {
             if (rf & RenderFlags.Create) {
-              componentStart(0, "menu", MenuCmpt);
+              componentStart(0, 'menu', MenuCmpt);
               {
-                slotableStart(1, "item", MenuItem);
+                slotableStart(1, 'item', MenuItem);
                 {
-                  text(2, "one");
+                  text(2, 'one');
                 }
                 slotableEnd(1);
-                slotableStart(3, "item", MenuItem);
+                slotableStart(3, 'item', MenuItem);
                 {
-                  text(4, "two");
+                  text(4, 'two');
                 }
                 slotableEnd(3);
               }
@@ -2544,8 +2544,8 @@ describe("integration", () => {
             if (rf & RenderFlags.Update) {
               const slotable_1 = load<MenuItem>(1, 1);
               const slotable_2 = load<MenuItem>(3, 1);
-              input(1, 2, "id1") && (slotable_1.id = "id1");
-              input(3, 2, "id2") && (slotable_2.id = "id2");
+              input(1, 2, 'id1') && (slotable_1.id = 'id1');
+              input(3, 2, 'id2') && (slotable_2.id = 'id2');
               componentRefresh(0);
             }
           }
@@ -2558,8 +2558,8 @@ describe("integration", () => {
       });
     });
 
-    describe("lifecycle hooks", () => {
-      it("should support destroy hook on components", () => {
+    describe('lifecycle hooks', () => {
+      it('should support destroy hook on components', () => {
         let destroyed = false;
 
         class TestCmpt {
@@ -2583,7 +2583,7 @@ describe("integration", () => {
             if (show) {
               view(0, 0, () => {
                 if (rf & RenderFlags.Create) {
-                  component(0, "test-cmpt", TestCmpt);
+                  component(0, 'test-cmpt', TestCmpt);
                 }
                 if (rf & RenderFlags.Update) {
                   componentRefresh(0);
@@ -2595,15 +2595,15 @@ describe("integration", () => {
         }
 
         const refreshFn = render(hostDiv, app, true);
-        expect(hostDiv.innerHTML).toBe("<test-cmpt></test-cmpt><!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<test-cmpt></test-cmpt><!--container 0-->');
         expect(destroyed).toBeFalsy();
 
         refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
         expect(destroyed).toBeTruthy();
       });
 
-      it("should support destroy hook on components in nested views", () => {
+      it('should support destroy hook on components in nested views', () => {
         let destroyed = false;
 
         class TestCmpt {
@@ -2638,7 +2638,7 @@ describe("integration", () => {
                   if (show) {
                     view(0, 0, () => {
                       if (rf & RenderFlags.Create) {
-                        component(0, "test-cmpt", TestCmpt);
+                        component(0, 'test-cmpt', TestCmpt);
                       }
                       if (rf & RenderFlags.Update) {
                         componentRefresh(0);
@@ -2654,29 +2654,29 @@ describe("integration", () => {
         }
 
         const refreshFn = render(hostDiv, app, true);
-        expect(hostDiv.innerHTML).toBe("<test-cmpt></test-cmpt><!--container 0--><!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<test-cmpt></test-cmpt><!--container 0--><!--container 0-->');
         expect(destroyed).toBeFalsy();
 
         refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
         expect(destroyed).toBeTruthy();
       });
     });
   });
 
-  describe("directives", () => {
-    it("should support directives", () => {
+  describe('directives', () => {
+    it('should support directives', () => {
       class IdDirective {
         constructor(private _nativeHost) {}
 
         refresh() {
-          this._nativeHost.id = "id from directive";
+          this._nativeHost.id = 'id from directive';
         }
       }
 
       render(hostDiv, (rf: RenderFlags, ctx) => {
         if (rf & RenderFlags.Create) {
-          element(0, "div");
+          element(0, 'div');
           directive(0, 0, IdDirective);
         }
         if (rf & RenderFlags.Update) {
@@ -2687,7 +2687,7 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe('<div id="id from directive"></div>');
     });
 
-    it("should support directives with inputs", () => {
+    it('should support directives with inputs', () => {
       class IdDirective {
         name: string;
 
@@ -2702,7 +2702,7 @@ describe("integration", () => {
         hostDiv,
         (rf: RenderFlags, name: string) => {
           if (rf & RenderFlags.Create) {
-            element(0, "div");
+            element(0, 'div');
             directive(0, 0, IdDirective);
           }
           if (rf & RenderFlags.Update) {
@@ -2711,13 +2711,13 @@ describe("integration", () => {
             directiveRefresh(0, 0);
           }
         },
-        "test directive"
+        'test directive'
       );
 
       expect(hostDiv.innerHTML).toBe('<div id="id from test directive"></div>');
     });
 
-    it("should support directives with outputs", () => {
+    it('should support directives with outputs', () => {
       class Ticker {
         counter = 0;
         out: ($event: any) => void;
@@ -2743,7 +2743,7 @@ describe("integration", () => {
         hostDiv,
         (rf: RenderFlags, ctx: { count: number }) => {
           if (rf & RenderFlags.Create) {
-            element(0, "div");
+            element(0, 'div');
             directive(0, 0, Ticker);
             text(1);
           }
@@ -2760,20 +2760,20 @@ describe("integration", () => {
         model
       );
 
-      expect(hostDiv.innerHTML).toBe("<div></div>0");
+      expect(hostDiv.innerHTML).toBe('<div></div>0');
 
       ticker.tick();
       refreshFn();
-      expect(hostDiv.innerHTML).toBe("<div></div>1");
+      expect(hostDiv.innerHTML).toBe('<div></div>1');
 
       ticker.tick();
       ticker.tick();
       refreshFn();
-      expect(hostDiv.innerHTML).toBe("<div></div>3");
+      expect(hostDiv.innerHTML).toBe('<div></div>3');
     });
 
-    describe("host", () => {
-      it("should support directives with static host attributes", () => {
+    describe('host', () => {
+      it('should support directives with static host attributes', () => {
         class IdDirective {
           constructor() {}
           id;
@@ -2781,7 +2781,7 @@ describe("integration", () => {
           host(rf: RenderFlags) {
             `id="static"`;
             if (rf & RenderFlags.Create) {
-              setAttribute(0, "id", "static");
+              setAttribute(0, 'id', 'static');
             }
           }
         }
@@ -2789,7 +2789,7 @@ describe("integration", () => {
         `<div @IdDirective></div>`;
         const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
           if (rf & RenderFlags.Create) {
-            element(0, "div");
+            element(0, 'div');
             directive(0, 0, IdDirective);
           }
           if (rf & RenderFlags.Update) {
@@ -2800,7 +2800,7 @@ describe("integration", () => {
         expect(hostDiv.innerHTML).toBe('<div id="static"></div>');
       });
 
-      it("should support directives with host bindings", () => {
+      it('should support directives with host bindings', () => {
         class IdDirective {
           constructor() {}
           id;
@@ -2808,7 +2808,7 @@ describe("integration", () => {
           host(rf: RenderFlags) {
             `[id]="this.id"`;
             if (rf & RenderFlags.Update) {
-              bindProperty(0, 0, "id", this.id);
+              bindProperty(0, 0, 'id', this.id);
             }
           }
         }
@@ -2818,7 +2818,7 @@ describe("integration", () => {
           hostDiv,
           (rf: RenderFlags, ctx) => {
             if (rf & RenderFlags.Create) {
-              element(0, "div");
+              element(0, 'div');
               directive(0, 0, IdDirective);
             }
             if (rf & RenderFlags.Update) {
@@ -2827,26 +2827,26 @@ describe("integration", () => {
               directiveRefresh(0, 0);
             }
           },
-          "id from ctx"
+          'id from ctx'
         );
 
         expect(hostDiv.innerHTML).toBe('<div id="id from ctx"></div>');
 
-        refreshFn("changed id");
+        refreshFn('changed id');
         expect(hostDiv.innerHTML).toBe('<div id="changed id"></div>');
       });
 
-      it("should support listeners in host", () => {
+      it('should support listeners in host', () => {
         class OnClickDirective {
           constructor() {}
           host(rf: RenderFlags) {
             `(click)="$event.target.id = 'clicked'"`;
             if (rf & RenderFlags.Create) {
-              listener(0, 0, "click");
+              listener(0, 0, 'click');
             }
             if (rf & RenderFlags.Update) {
               listenerRefresh(0, 0, function($event) {
-                $event.target.id = "clicked";
+                $event.target.id = 'clicked';
               });
             }
           }
@@ -2855,7 +2855,7 @@ describe("integration", () => {
         `<div @OnClickDirective></div>`;
         const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
           if (rf & RenderFlags.Create) {
-            element(0, "div");
+            element(0, 'div');
             directive(0, 0, OnClickDirective);
           }
           if (rf & RenderFlags.Update) {
@@ -2863,24 +2863,24 @@ describe("integration", () => {
           }
         });
 
-        expect(hostDiv.innerHTML).toBe("<div></div>");
+        expect(hostDiv.innerHTML).toBe('<div></div>');
 
         const divWithDirective = hostDiv.firstChild as HTMLDivElement;
         divWithDirective.click();
         expect(hostDiv.innerHTML).toBe('<div id="clicked"></div>');
       });
 
-      it("should set CSS classes in non-destructive way", () => {
+      it('should set CSS classes in non-destructive way', () => {
         class Directive {
           flip = true;
 
           host(rf: RenderFlags) {
-            `class="foo" [class.{}]="${this.flip ? "bar" : "bar2"}"`;
+            `class="foo" [class.{}]="${this.flip ? 'bar' : 'bar2'}"`;
             if (rf & RenderFlags.Create) {
-              setCSSClass(0, "bar");
+              setCSSClass(0, 'bar');
             }
             if (rf & RenderFlags.Update) {
-              replaceClass(0, 0, this.flip ? "baz" : "baz2");
+              replaceClass(0, 0, this.flip ? 'baz' : 'baz2');
             }
           }
 
@@ -2892,7 +2892,7 @@ describe("integration", () => {
         `<div @Directive class="foo"></div>`;
         const refreshFn = render(hostDiv, (rf: RenderFlags, ctx) => {
           if (rf & RenderFlags.Create) {
-            element(0, "div", ["class", "foo"]);
+            element(0, 'div', ['class', 'foo']);
             directive(0, 0, Directive);
           }
           if (rf & RenderFlags.Update) {
@@ -2907,8 +2907,8 @@ describe("integration", () => {
       });
     });
 
-    describe("lifecycle hooks", () => {
-      it("should support destroy hook on directives", () => {
+    describe('lifecycle hooks', () => {
+      it('should support destroy hook on directives', () => {
         let destroyed = false;
 
         class TestDir {
@@ -2929,7 +2929,7 @@ describe("integration", () => {
             if (show) {
               view(0, 0, () => {
                 if (rf & RenderFlags.Create) {
-                  element(0, "div");
+                  element(0, 'div');
                   directive(0, 0, TestDir);
                 }
                 if (rf & RenderFlags.Update) {
@@ -2942,15 +2942,15 @@ describe("integration", () => {
         }
 
         const refreshFn = render(hostDiv, app, true);
-        expect(hostDiv.innerHTML).toBe("<div></div><!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<div></div><!--container 0-->');
         expect(destroyed).toBeFalsy();
 
         refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
         expect(destroyed).toBeTruthy();
       });
 
-      it("should support destroy hook on directives in nested views", () => {
+      it('should support destroy hook on directives in nested views', () => {
         let destroyed = false;
 
         class TestDir {
@@ -2982,7 +2982,7 @@ describe("integration", () => {
                   if (show) {
                     view(0, 0, () => {
                       if (rf & RenderFlags.Create) {
-                        element(0, "div");
+                        element(0, 'div');
                         directive(0, 0, TestDir);
                       }
                       if (rf & RenderFlags.Update) {
@@ -2999,15 +2999,15 @@ describe("integration", () => {
         }
 
         const refreshFn = render(hostDiv, app, true);
-        expect(hostDiv.innerHTML).toBe("<div></div><!--container 0--><!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<div></div><!--container 0--><!--container 0-->');
         expect(destroyed).toBeFalsy();
 
         refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
         expect(destroyed).toBeTruthy();
       });
 
-      it("should support destroy hook on directives in component views", () => {
+      it('should support destroy hook on directives in component views', () => {
         let destroyed = false;
 
         class TestDir {
@@ -3020,7 +3020,7 @@ describe("integration", () => {
         class TestCmpt {
           render(rf: RenderFlags, contentGroup: SlotableVNode) {
             if (rf & RenderFlags.Create) {
-              element(0, "div");
+              element(0, 'div');
               directive(0, 0, TestDir);
             }
             if (rf & RenderFlags.Update) {
@@ -3041,7 +3041,7 @@ describe("integration", () => {
             if (show) {
               view(0, 0, () => {
                 if (rf & RenderFlags.Create) {
-                  component(0, "test-cmpt", TestCmpt);
+                  component(0, 'test-cmpt', TestCmpt);
                 }
                 if (rf & RenderFlags.Update) {
                   componentRefresh(0);
@@ -3053,25 +3053,25 @@ describe("integration", () => {
         }
 
         const refreshFn = render(hostDiv, app, true);
-        expect(hostDiv.innerHTML).toBe("<test-cmpt><div></div></test-cmpt><!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<test-cmpt><div></div></test-cmpt><!--container 0-->');
         expect(destroyed).toBeFalsy();
 
         refreshFn(false);
-        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(hostDiv.innerHTML).toBe('<!--container 0-->');
         expect(destroyed).toBeTruthy();
       });
     });
   });
 
-  describe("refs", () => {
-    it("should support single reference to an element", () => {
+  describe('refs', () => {
+    it('should support single reference to an element', () => {
       `
       <input #i value="World">
       Hello, {=i.value}!
       `;
       function tpl(rf: RenderFlags) {
         if (rf & RenderFlags.Create) {
-          element(0, "input", ["value", "World"]);
+          element(0, 'input', ['value', 'World']);
           text(1);
         }
         if (rf & RenderFlags.Update) {
@@ -3087,12 +3087,12 @@ describe("integration", () => {
       expect(hostDiv.innerHTML).toBe('<input value="World">Hello, World!');
     });
 
-    it("should support single reference to a directive", () => {
+    it('should support single reference to a directive', () => {
       class Lorem {
         constructor(private _element) {}
 
         generate() {
-          this._element.textContent = "Lorem ipsum";
+          this._element.textContent = 'Lorem ipsum';
         }
       }
 
@@ -3102,11 +3102,11 @@ describe("integration", () => {
       `;
       function tpl(rf: RenderFlags) {
         if (rf & RenderFlags.Create) {
-          element(0, "div");
+          element(0, 'div');
           directive(0, 0, Lorem);
 
-          element(1, "button");
-          listener(1, 0, "click");
+          element(1, 'button');
+          listener(1, 0, 'click');
         }
         if (rf & RenderFlags.Update) {
           const l = load<Lorem>(0, 0);
@@ -3118,24 +3118,24 @@ describe("integration", () => {
       }
 
       const refreshFn = render(hostDiv, tpl);
-      expect(hostDiv.innerHTML).toBe("<div></div><button></button>");
+      expect(hostDiv.innerHTML).toBe('<div></div><button></button>');
 
-      hostDiv.querySelector("button").click();
+      hostDiv.querySelector('button').click();
       refreshFn();
-      expect(hostDiv.innerHTML).toBe("<div>Lorem ipsum</div><button></button>");
+      expect(hostDiv.innerHTML).toBe('<div>Lorem ipsum</div><button></button>');
     });
   });
 
-  describe("change detection", () => {
-    it("should expose refresh all functionality to the root view", () => {
+  describe('change detection', () => {
+    it('should expose refresh all functionality to the root view', () => {
       `<button (click)="model.counter++; refreshMe()">Increment</button>
       {{model.counter}}`;
       function counter(rf: RenderFlags, model: { counter: number }, refreshMe) {
         if (rf & RenderFlags.Create) {
-          elementStart(0, "button");
+          elementStart(0, 'button');
           {
-            listener(0, 0, "click");
-            text(1, "Increment");
+            listener(0, 0, 'click');
+            text(1, 'Increment');
           }
           elementEnd(0);
           text(2);
@@ -3152,17 +3152,17 @@ describe("integration", () => {
       const extenrnalRefresh = render(hostDiv, counter, { counter: 0 });
       expect(hostDiv.innerHTML).toBe(`<button>Increment</button>0`);
 
-      hostDiv.querySelector("button").click();
+      hostDiv.querySelector('button').click();
       expect(hostDiv.innerHTML).toBe(`<button>Increment</button>1`);
 
       extenrnalRefresh();
       expect(hostDiv.innerHTML).toBe(`<button>Increment</button>1`);
 
-      hostDiv.querySelector("button").click();
+      hostDiv.querySelector('button').click();
       expect(hostDiv.innerHTML).toBe(`<button>Increment</button>2`);
     });
 
-    it("should expose refresh all functionality to all child views", () => {
+    it('should expose refresh all functionality to all child views', () => {
       `<{ if(true) { }>
         <button (click)="model.counter++; refreshMe()">Increment</button>
       <{ } }>
@@ -3177,10 +3177,10 @@ describe("integration", () => {
           if (true) {
             view(0, 0, (rf: RenderFlags, ctx: any, refreshSub) => {
               if (rf & RenderFlags.Create) {
-                elementStart(0, "button");
+                elementStart(0, 'button');
                 {
-                  listener(0, 0, "click");
-                  text(1, "Increment");
+                  listener(0, 0, 'click');
+                  text(1, 'Increment');
                 }
                 elementEnd(0);
               }
@@ -3200,17 +3200,17 @@ describe("integration", () => {
       const extenrnalRefresh = render(hostDiv, counter, { counter: 0 });
       expect(hostDiv.innerHTML).toBe(`<button>Increment</button><!--container 0-->0`);
 
-      hostDiv.querySelector("button").click();
+      hostDiv.querySelector('button').click();
       expect(hostDiv.innerHTML).toBe(`<button>Increment</button><!--container 0-->1`);
 
       extenrnalRefresh();
       expect(hostDiv.innerHTML).toBe(`<button>Increment</button><!--container 0-->1`);
 
-      hostDiv.querySelector("button").click();
+      hostDiv.querySelector('button').click();
       expect(hostDiv.innerHTML).toBe(`<button>Increment</button><!--container 0-->2`);
     });
 
-    it("should expose refresh all functionality to components", () => {
+    it('should expose refresh all functionality to components', () => {
       class Counter {
         counter = 0;
 
@@ -3220,10 +3220,10 @@ describe("integration", () => {
           `<button (click)="model.counter++; this._refresh()">Increment</button>
           {{model.counter}}`;
           if (rf & RenderFlags.Create) {
-            elementStart(0, "button");
+            elementStart(0, 'button');
             {
-              listener(0, 0, "click");
-              text(1, "Increment");
+              listener(0, 0, 'click');
+              text(1, 'Increment');
             }
             elementEnd(0);
             text(2);
@@ -3240,7 +3240,7 @@ describe("integration", () => {
 
       function app(rf: RenderFlags) {
         if (rf & RenderFlags.Create) {
-          component(0, "counter", Counter);
+          component(0, 'counter', Counter);
         }
         if (rf & RenderFlags.Update) {
           componentRefresh(0);
@@ -3250,11 +3250,11 @@ describe("integration", () => {
       const extenrnalRefresh = render(hostDiv, app);
       expect(hostDiv.innerHTML).toBe(`<counter><button>Increment</button>0</counter>`);
 
-      hostDiv.querySelector("button").click();
+      hostDiv.querySelector('button').click();
       expect(hostDiv.innerHTML).toBe(`<counter><button>Increment</button>1</counter>`);
     });
 
-    it("should expose refresh all functionality to host listeners", () => {
+    it('should expose refresh all functionality to host listeners', () => {
       class Counter {
         current = 0;
 
@@ -3263,7 +3263,7 @@ describe("integration", () => {
         host(rf: RenderFlags) {
           `(click)="this.current++; this._refresh()"`;
           if (rf & RenderFlags.Create) {
-            listener(0, 0, "click");
+            listener(0, 0, 'click');
           }
           if (rf & RenderFlags.Update) {
             listenerRefresh(0, 0, $event => {
@@ -3279,10 +3279,10 @@ describe("integration", () => {
       `;
       function app(rf: RenderFlags) {
         if (rf & RenderFlags.Create) {
-          elementStart(0, "button");
+          elementStart(0, 'button');
           {
             directive(0, 0, Counter);
-            text(1, "Increment");
+            text(1, 'Increment');
           }
           elementEnd(0);
           text(2);
@@ -3297,7 +3297,7 @@ describe("integration", () => {
       const extenrnalRefresh = render(hostDiv, app);
       expect(hostDiv.innerHTML).toBe(`<button>Increment</button>0`);
 
-      hostDiv.querySelector("button").click();
+      hostDiv.querySelector('button').click();
       expect(hostDiv.innerHTML).toBe(`<button>Increment</button>1`);
     });
   });

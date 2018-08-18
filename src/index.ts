@@ -117,7 +117,7 @@ let currentView: ViewData;
 
 // ========= dom.ts
 const NS = {
-  SVG: "http://www.w3.org/2000/svg"
+  SVG: 'http://www.w3.org/2000/svg'
 };
 
 function setNativeAttributes(domEl, attrs?: string[] | null) {
@@ -295,7 +295,7 @@ function listenerRefresh(elIdx: number, bindIdx: number, handlerFn) {
 }
 
 function text(idx: number, value?: string) {
-  const domEl = document.createTextNode(value != null ? value : "");
+  const domEl = document.createTextNode(value != null ? value : '');
   const vNode = (currentView.nodes[idx] = createVNode(VNodeType.Text, currentView, parentVNode, domEl));
 
   parentVNode.children.push(vNode);

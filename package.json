@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc -w --sourceMap src/index.ts src/index.spec.ts",
-    "format": "prettier --print-width 120 --write src/index.ts src/index.spec.ts"
+    "format": "prettier --write src/index.ts src/index.spec.ts"
   },
   "repository": {
     "type": "git",
