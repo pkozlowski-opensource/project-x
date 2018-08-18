@@ -14,7 +14,6 @@
     <div id="app"></div>
     <script>
         // TODO: bindings / directives on slotables  
-        // TODO: destroy lifecycle hook
         
         // THINK: find a way of passing indicators component / function (or true / false to toggle defaults)
         // THINK: gestures support 
@@ -23,11 +22,15 @@
             constructor(nativeEl, refreshFn) {
                 this.activeIdx = 0;
 
-                setInterval(() => {
+                this.intervalDestroyFn = setInterval(() => {
                     // TODO: I need to have access to collection of all slides here and this collection is dynamic
                     this.activeIdx = (this.activeIdx + 1) % 2;
                     refreshFn();    
                 }, 3000);
+            }
+
+            destroy() {
+                this.intervalDestroyFn(); 
             }
 
             host(rf) {

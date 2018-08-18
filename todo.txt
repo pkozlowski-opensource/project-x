@@ -159,7 +159,7 @@
             - destroy (for cleanup)
                 + in views
                 + in sub-views
-                - in component views
+                + in component views
             - delayed destroy (for animations?)
         - refs
             + single

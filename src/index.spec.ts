@@ -2920,6 +2920,60 @@ describe("integration", () => {
         expect(hostDiv.innerHTML).toBe("<!--container 0-->");
         expect(destroyed).toBeTruthy();
       });
+
+      it("should support destroy hook on directives in component views", () => {
+        let destroyed = false;
+
+        class TestDir {
+          destroy() {
+            destroyed = true;
+          }
+        }
+
+        `<div @TestDir></div>`;
+        class TestCmpt {
+          render(rf: RenderFlags, contentGroup: SlotableVNode) {
+            if (rf & RenderFlags.Create) {
+              element(0, "div");
+              directive(0, 0, TestDir);
+            }
+            if (rf & RenderFlags.Update) {
+              directiveRefresh(0, 0);
+            }
+          }
+        }
+
+        `<% if (show) { %>
+          <test-cmpt></test-cmpt>
+        <% } %>`;
+        function app(rf: RenderFlags, show: boolean) {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            if (show) {
+              view(0, 0, () => {
+                if (rf & RenderFlags.Create) {
+                  component(0, "test-cmpt", TestCmpt);
+                }
+                if (rf & RenderFlags.Update) {
+                  componentRefresh(0);
+                }
+              });
+            }
+            containerRefreshEnd(0);
+          }
+        }
+
+        const refreshFn = render(hostDiv, app, true);
+        expect(hostDiv.innerHTML).toBe("<test-cmpt><div></div></test-cmpt><!--container 0-->");
+        expect(destroyed).toBeFalsy();
+
+        refreshFn(false);
+        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(destroyed).toBeTruthy();
+      });
     });
   });
 

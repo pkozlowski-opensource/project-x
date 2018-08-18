@@ -3,12 +3,18 @@
  */
 interface ViewData {
   viewId: number;
+  /**
+   * All the virtual nodes that are part of a given view/
+   */
   nodes: VNode[];
   /**
-   * Stores pointers to containers present in this view so we can easily traverse views tree.
+   * Stores pointers to containers and component views present in this view so we can easily traverse views tree.
    * Currently this is only used for running lifecycle hooks.
    */
-  subViews: (ContainerVNode)[];
+  subViews: (ContainerVNode | ViewVNode)[];
+  /**
+   * Pre-bound destroy functions that need to be called when destroying a given view.
+   */
   destroyFns: (() => void)[];
   refresh: (ctx?: any) => void | null;
 }
@@ -25,10 +31,6 @@ const enum VNodeType {
 interface VNode {
   readonly type: VNodeType;
   parent: VNode;
-  /**
-   * Only applies to slotables and indicates projection target of a given node.
-   */
-  projectionParent: VNode; // PERF: move it to a separate object
   children: VNode[] | null;
   native: any; // TODO(pk): type it properly
   data: any[]; // PERF(pk): storing bindings separatelly for each and every individual node might not be super-performant :-)
@@ -39,9 +41,13 @@ interface VNode {
   view: ViewData;
 
   /**
+   * Only applies to slotables and indicates projection target of a given node.
+   */
+  projectionParent: SlotVNode | null; // PERF: move it to a separate object
+  /**
    * Nodes having components sitting on top of them have a pointer to a component's view
    */
-  componentView: VNode; // PERF: move it to a separate object
+  componentView: ViewVNode | null; // PERF: move it to a separate object
 }
 
 interface TextVNode extends VNode {
@@ -81,7 +87,6 @@ interface SlotVNode extends VNode {
 
 interface SlotableVNode extends VNode {
   type: VNodeType.Slotable;
-  projectionParent: SlotVNode;
   children: (ElementVNode | TextVNode | ContainerVNode | SlotVNode | SlotableVNode)[];
   componentView: null;
 }
@@ -406,9 +411,13 @@ function containerRefreshStart(containerIdx: number) {
 }
 
 function destroyView(viewVNode: ViewVNode) {
-  for (let subContainer of viewVNode.view.subViews) {
-    for (let subViewVnode of subContainer.children) {
-      destroyView(subViewVnode);
+  for (let viewOrContainer of viewVNode.view.subViews) {
+    if (viewOrContainer.type === VNodeType.Container) {
+      for (let subViewVnode of viewOrContainer.children) {
+        destroyView(subViewVnode);
+      }
+    } else {
+      destroyView(viewOrContainer);
     }
   }
   for (let destroyFn of viewVNode.view.destroyFns) {
@@ -557,6 +566,9 @@ function componentEnd(hostElIdx: number) {
   const componentViewNode = (hostElVNode.componentView = createViewVNode(-1, hostElVNode, hostElVNode.native));
   const cmptInstance = (hostElVNode.data[0] = new constructorFn(hostElVNode.native, componentViewNode.view.refresh));
 
+  // register new component view so we can descend into it while calling destroy lifecycle hooks
+  currentView.subViews.push(componentViewNode);
+  // register destroy lifecycle hook of the component itself
   if (cmptInstance.destroy) {
     currentView.destroyFns.push(cmptInstance.destroy.bind(cmptInstance));
   }
