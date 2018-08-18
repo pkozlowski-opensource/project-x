@@ -4,6 +4,12 @@
 interface ViewData {
   viewId: number;
   nodes: VNode[];
+  /**
+   * Stores pointers to containers present in this view so we can easily traverse views tree.
+   * Currently this is only used for running lifecycle hooks.
+   */
+  subViews: (ContainerVNode)[];
+  destroyFns: (() => void)[];
   refresh: (ctx?: any) => void | null;
 }
 
@@ -258,6 +264,7 @@ function container(idx: number) {
 
   // nextViewIdx
   vNode.data[0] = 0;
+  currentView.subViews.push(vNode as ContainerVNode);
 
   parentVNode.children.push(vNode);
   appendNativeNode(parentVNode, vNode);
@@ -398,6 +405,17 @@ function containerRefreshStart(containerIdx: number) {
   containerVNode.data[0] = 0;
 }
 
+function destroyView(viewVNode: ViewVNode) {
+  for (let subContainer of viewVNode.view.subViews) {
+    for (let subViewVnode of subContainer.children) {
+      destroyView(subViewVnode);
+    }
+  }
+  for (let destroyFn of viewVNode.view.destroyFns) {
+    destroyFn();
+  }
+}
+
 function containerRefreshEnd(containerIdx: number) {
   const containerVNode = currentView.nodes[containerIdx] as ContainerVNode;
   const nextViewIdx = containerVNode.data[0];
@@ -407,6 +425,7 @@ function containerRefreshEnd(containerIdx: number) {
   if (remainingViewsCount > 0) {
     const removedViews = views.splice(nextViewIdx, remainingViewsCount);
     for (let removedView of removedViews) {
+      destroyView(removedView);
       removeGroupOfNodesFromDOM(removedView);
     }
   }
@@ -420,6 +439,7 @@ function findView(views: ViewVNode[], startIdx: number, viewIdx: number): VNode 
       return viewVNode;
     } else if (viewVNode.view.viewId < viewIdx) {
       views.splice(i, 1);
+      destroyView(viewVNode);
       removeGroupOfNodesFromDOM(viewVNode);
     }
     i++;
@@ -427,7 +447,13 @@ function findView(views: ViewVNode[], startIdx: number, viewIdx: number): VNode 
 }
 
 function createViewVNode(viewId: number, parent: VNode, renderParent = null): ViewVNode {
-  const viewData = { viewId: viewId, nodes: [], refresh: parent ? parent.view.refresh : null };
+  const viewData = {
+    viewId: viewId,
+    nodes: [],
+    subViews: [],
+    destroyFns: [],
+    refresh: parent ? parent.view.refresh : null
+  };
   return createVNode(VNodeType.View, viewData, parent, renderParent) as ViewVNode;
 }
 
@@ -530,6 +556,10 @@ function componentEnd(hostElIdx: number) {
   const constructorFn = hostElVNode.data[0];
   const componentViewNode = (hostElVNode.componentView = createViewVNode(-1, hostElVNode, hostElVNode.native));
   const cmptInstance = (hostElVNode.data[0] = new constructorFn(hostElVNode.native, componentViewNode.view.refresh));
+
+  if (cmptInstance.destroy) {
+    currentView.destroyFns.push(cmptInstance.destroy.bind(cmptInstance));
+  }
 
   if (cmptInstance.host) {
     hostElVNode.data[1] = createHostBindingView(hostElVNode.native);
@@ -685,6 +715,10 @@ function slotRefresh(idx: number, defaultSlotable: SlotableVNode, slotName?: str
 function directive(hostIdx: number, directiveIdx: number, constructorFn) {
   const hostVNode = currentView.nodes[hostIdx];
   const directiveInstance = (hostVNode.data[directiveIdx] = new constructorFn(hostVNode.native, currentView.refresh));
+
+  if (directiveInstance.destroy) {
+    currentView.destroyFns.push(directiveInstance.destroy.bind(directiveInstance));
+  }
 
   // PERF(pk): split into 2 instructions so I don't have to do this checking at runtime and have smaller generated code?
   if (directiveInstance.host) {

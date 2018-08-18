@@ -2471,6 +2471,111 @@ describe("integration", () => {
         });
       });
     });
+
+    describe("lifecycle hooks", () => {
+      it("should support destroy hook on components", () => {
+        let destroyed = false;
+
+        class TestCmpt {
+          render() {}
+          //THINK(pk): how should I distinguish lh from regular methods?
+          //TALK(bl): lifecycle hooks support in ivy?
+          destroy() {
+            destroyed = true;
+          }
+        }
+
+        `<% if (show) { %>
+          <test-cmpt></test-cmpt>
+        <% } %>`;
+        function app(rf: RenderFlags, show: boolean) {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            if (show) {
+              view(0, 0, () => {
+                if (rf & RenderFlags.Create) {
+                  component(0, "test-cmpt", TestCmpt);
+                }
+                if (rf & RenderFlags.Update) {
+                  componentRefresh(0);
+                }
+              });
+            }
+            containerRefreshEnd(0);
+          }
+        }
+
+        const refreshFn = render(hostDiv, app, true);
+        expect(hostDiv.innerHTML).toBe("<test-cmpt></test-cmpt><!--container 0-->");
+        expect(destroyed).toBeFalsy();
+
+        refreshFn(false);
+        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(destroyed).toBeTruthy();
+      });
+
+      it("should support destroy hook on components in nested views", () => {
+        let destroyed = false;
+
+        class TestCmpt {
+          render() {}
+          //THINK(pk): how should I distinguish lh from regular methods?
+          //TALK(bl): lifecycle hooks support in ivy?
+          destroy() {
+            destroyed = true;
+          }
+        }
+
+        `<% if (show) { 
+              if (show) { 
+        %>
+                <test-cmpt></test-cmpt>
+        <%    } 
+            } 
+        %>`;
+        function app(rf: RenderFlags, show: boolean) {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            if (show) {
+              view(0, 0, () => {
+                if (rf & RenderFlags.Create) {
+                  container(0);
+                }
+                if (rf & RenderFlags.Update) {
+                  containerRefreshStart(0);
+                  if (show) {
+                    view(0, 0, () => {
+                      if (rf & RenderFlags.Create) {
+                        component(0, "test-cmpt", TestCmpt);
+                      }
+                      if (rf & RenderFlags.Update) {
+                        componentRefresh(0);
+                      }
+                    });
+                  }
+                  containerRefreshEnd(0);
+                }
+              });
+            }
+            containerRefreshEnd(0);
+          }
+        }
+
+        const refreshFn = render(hostDiv, app, true);
+        expect(hostDiv.innerHTML).toBe("<test-cmpt></test-cmpt><!--container 0--><!--container 0-->");
+        expect(destroyed).toBeFalsy();
+
+        refreshFn(false);
+        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(destroyed).toBeTruthy();
+      });
+    });
   });
 
   describe("directives", () => {
@@ -2713,6 +2818,107 @@ describe("integration", () => {
 
         refreshFn();
         expect(hostDiv.innerHTML).toBe(`<div class="foo bar baz2"></div>`);
+      });
+    });
+
+    describe("lifecycle hooks", () => {
+      it("should support destroy hook on directives", () => {
+        let destroyed = false;
+
+        class TestDir {
+          destroy() {
+            destroyed = true;
+          }
+        }
+
+        `<% if (show) { %>
+          <div @TestDir></div>
+        <% } %>`;
+        function app(rf: RenderFlags, show: boolean) {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            if (show) {
+              view(0, 0, () => {
+                if (rf & RenderFlags.Create) {
+                  element(0, "div");
+                  directive(0, 0, TestDir);
+                }
+                if (rf & RenderFlags.Update) {
+                  directiveRefresh(0, 0);
+                }
+              });
+            }
+            containerRefreshEnd(0);
+          }
+        }
+
+        const refreshFn = render(hostDiv, app, true);
+        expect(hostDiv.innerHTML).toBe("<div></div><!--container 0-->");
+        expect(destroyed).toBeFalsy();
+
+        refreshFn(false);
+        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(destroyed).toBeTruthy();
+      });
+
+      it("should support destroy hook on directives in nested views", () => {
+        let destroyed = false;
+
+        class TestDir {
+          destroy() {
+            destroyed = true;
+          }
+        }
+
+        `<% if (show) { 
+              if (show) { 
+        %>
+                <div @TestDir></div>
+        <%    } 
+            } 
+        %>`;
+        function app(rf: RenderFlags, show: boolean) {
+          if (rf & RenderFlags.Create) {
+            container(0);
+          }
+          if (rf & RenderFlags.Update) {
+            containerRefreshStart(0);
+            if (show) {
+              view(0, 0, () => {
+                if (rf & RenderFlags.Create) {
+                  container(0);
+                }
+                if (rf & RenderFlags.Update) {
+                  containerRefreshStart(0);
+                  if (show) {
+                    view(0, 0, () => {
+                      if (rf & RenderFlags.Create) {
+                        element(0, "div");
+                        directive(0, 0, TestDir);
+                      }
+                      if (rf & RenderFlags.Update) {
+                        directiveRefresh(0, 0);
+                      }
+                    });
+                  }
+                  containerRefreshEnd(0);
+                }
+              });
+            }
+            containerRefreshEnd(0);
+          }
+        }
+
+        const refreshFn = render(hostDiv, app, true);
+        expect(hostDiv.innerHTML).toBe("<div></div><!--container 0--><!--container 0-->");
+        expect(destroyed).toBeFalsy();
+
+        refreshFn(false);
+        expect(hostDiv.innerHTML).toBe("<!--container 0-->");
+        expect(destroyed).toBeTruthy();
       });
     });
   });

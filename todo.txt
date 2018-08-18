@@ -33,6 +33,7 @@
     - name / logo / domain
 - comparing to Renderer2 / Renderer3:
     - code is generated in the existing function so I can use private members in template bindings
+    - having .this prefix means that I can easily use static members and any other JS goodies
 - compiler / syntax
     - render(...) function signature
         - single vs. multiple arguments for context
@@ -79,7 +80,8 @@
         - <MyComponent #el #cmpt="@MyComponent"></MyComponent>
         - <div @tooltip="Great tip!" #t="@tooltip">
 - runtime impl
-    - devMode to remove assert / debug code      
+    - devMode to remove assert / debug code   
+    - application destroy   
     - basic template syntax
         + static elements
         + namespaced elements / attributes (SVG)
@@ -155,6 +157,9 @@
         + listeners / outputs
         - lifecycle and lifecycle hooks
             - destroy (for cleanup)
+                + in views
+                + in sub-views
+                - in component views
             - delayed destroy (for animations?)
         - refs
             + single
