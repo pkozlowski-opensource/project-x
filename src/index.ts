@@ -616,12 +616,15 @@ function input(hostElIdx: number, bindIdx: number, newValue: any): boolean {
   return checkAndUpdateBinding(vNode.data, bindIdx, newValue);
 }
 
-function slotableStart(idx: number, name: string) {
+function slotableStart(idx: number, name: string, ConstructorFn?) {
   const groupVNode = (currentView.nodes[idx] = createVNode(VNodeType.Slotable, currentView, parentVNode, null));
   parentVNode.children.push(groupVNode);
 
   // PERF(pk): this is static data, no need to store in bindings...
   groupVNode.data[0] = name;
+  if (ConstructorFn) {
+    groupVNode.data[1] = new ConstructorFn();
+  }
 
   parentVNode = groupVNode;
 }

@@ -134,7 +134,7 @@
                 + remove (falsy passed to slot)
                 + move between slots
                 - think again about the API exposed to users 
-            - properties binding on slottables / directives on slottables    
+            + properties binding on slottables / directives on slottables    
             - nested slottables (ex.: tabs)
             - "lazy" slottables (ex. delayed tabs / panels) 
             - corner cases:
@@ -156,7 +156,7 @@
             - other directives ?
         + listeners / outputs
         - lifecycle and lifecycle hooks
-            - destroy (for cleanup)
+            + destroy (for cleanup)
                 + in views
                 + in sub-views
                 + in component views
@@ -185,3 +185,4 @@
         - instruction for static HTML blocks (this would imply web only)
 - chore / project organization
     - split into multiple files (src and tests)
+    - setup Karma tests for unit tests and examples

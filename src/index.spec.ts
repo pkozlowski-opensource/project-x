@@ -2469,6 +2469,92 @@ describe("integration", () => {
           refreshFn(false);
           expect(hostDiv.innerHTML).toBe("<first-or-nothing><!--slot 0--></first-or-nothing>");
         });
+
+        fit("should support bindings on slotables", () => {
+          class MenuItem {
+            id: string;
+          }
+
+          `<ul>
+            <% for (let item of items) { %>
+              <li [id]="{{item.data[1].id}}">
+                <x-slot [slotable]="item"></x-slot>
+              </li>
+            <% } %>  
+          </ul>`;
+          class MenuCmpt {
+            render(rf: RenderFlags, contentGroup: SlotableVNode) {
+              if (rf & RenderFlags.Create) {
+                elementStart(0, "ul");
+                {
+                  container(1);
+                }
+                elementEnd(0);
+              }
+              if (rf & RenderFlags.Update) {
+                const items = findSlotables(contentGroup, "item");
+                containerRefreshStart(1);
+                for (let item of items) {
+                  view(1, 0, (rf: RenderFlags) => {
+                    if (rf & RenderFlags.Create) {
+                      elementStart(0, "li");
+                      {
+                        slot(1);
+                      }
+                      elementEnd(0);
+                    }
+                    if (rf & RenderFlags.Update) {
+                      console.log(item);
+                      bindProperty(0, 0, "id", item.data[1].id);
+                      slotRefreshImperative(1, item);
+                    }
+                  });
+                }
+                containerRefreshEnd(1);
+              }
+            }
+          }
+
+          `<menu>
+            <:item @x-slotable="MenuItem" [id]="'id1'">one</:item>
+            <:item @x-slotable="MenuItem" [id]="'id2'">two</:item>
+          </menu>`;
+          // or
+          `<Menu>
+            <MenuItem [id]="'id1'">one</MenuItem>
+            <MenuItem [id]="'id2'">two</MenuItem>
+          </Menu>`;
+          function app(rf: RenderFlags) {
+            if (rf & RenderFlags.Create) {
+              componentStart(0, "menu", MenuCmpt);
+              {
+                slotableStart(1, "item", MenuItem);
+                {
+                  text(2, "one");
+                }
+                slotableEnd(1);
+                slotableStart(3, "item", MenuItem);
+                {
+                  text(4, "two");
+                }
+                slotableEnd(3);
+              }
+              componentEnd(0);
+            }
+            if (rf & RenderFlags.Update) {
+              const slotable_1 = load<MenuItem>(1, 1);
+              const slotable_2 = load<MenuItem>(3, 1);
+              input(1, 2, "id1") && (slotable_1.id = "id1");
+              input(3, 2, "id2") && (slotable_2.id = "id2");
+              componentRefresh(0);
+            }
+          }
+
+          const refreshFn = render(hostDiv, app);
+          expect(hostDiv.innerHTML).toBe(
+            '<menu><ul><li id="id1">one<!--slot 1--></li><li id="id2">two<!--slot 1--></li><!--container 1--></ul></menu>'
+          );
+        });
       });
     });
 

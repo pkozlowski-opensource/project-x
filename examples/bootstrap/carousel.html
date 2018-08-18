@@ -13,18 +13,19 @@
 <body>
     <div id="app"></div>
     <script>
-        // TODO: bindings / directives on slotables  
+        // TODO: sort out API for accessing slotables
         
         // THINK: find a way of passing indicators component / function (or true / false to toggle defaults)
-        // THINK: gestures support 
+        // THINK: gestures support
+
+        class NgbSlide {
+        }
 
         class NGBCarousel {
             constructor(nativeEl, refreshFn) {
-                this.activeIdx = 0;
-
+                this.activeId = 's1';
                 this.intervalDestroyFn = setInterval(() => {
-                    // TODO: I need to have access to collection of all slides here and this collection is dynamic
-                    this.activeIdx = (this.activeIdx + 1) % 2;
+                    this.activeId = this.activeId === 's1' ? 's2' : 's1';
                     refreshFn();    
                 }, 3000);
             }
@@ -45,7 +46,7 @@
                         <% 
                             const slides = findSlotables('slide');
                             for (let slide of $content.getAll('slide')) { %>
-                                <div class="carousel-item [class.active]="">
+                                <div class="carousel-item [class.active]="this.activeId === slide.data[1].id">
                                     <x-slot [slotable]="slide"></x-slot>
                                 </div>
                         <% } %>
@@ -73,7 +74,7 @@
                                     elementEnd(0);
                                 }
                                 if (rf & 0b10 /* RenderFlags.Update */) {
-                                    bindClass(0, 0, "active", i === this.activeIdx);
+                                    bindClass(0, 0, "active", slides[i].data[1].id === this.activeId);
                                     slotRefreshImperative(1, slides[i]);    
                                 }
                             });
@@ -85,10 +86,10 @@
         }
 
         `<NGBCarousel>
-            <:slide>
+            <:slide @slotable="NgbSlide" [id]="s1">
                 <img alt="Random first slide" src="https://picsum.photos/900/500?image=927">
             </:slide>
-            <:slide>
+            <:slide @slotable="NgbSlide" [id]="s2">
                 <img alt="Random second slide" src="https://picsum.photos/900/500?image=929">
             </:slide>
         </NGBCarousel>`;
@@ -96,12 +97,12 @@
             if (rf & 0b01 /* RenderFlags.Create */) {
                 componentStart(0, 'ngb-carousel', NGBCarousel);
                 {
-                    slotableStart(1, "slide"); 
+                    slotableStart(1, "slide", NgbSlide); 
                     {
                         element(2, "img", ["alt", "Random first slide", "src", "https://picsum.photos/900/500?image=927"]);
                     }
                     slotableEnd(1);
-                    slotableStart(3, "slide"); 
+                    slotableStart(3, "slide", NgbSlide); 
                     {
                         element(2, "img", ["alt", "Random second slide", "src", "https://picsum.photos/900/500?image=929"]);
                     }
@@ -110,7 +111,10 @@
                 componentEnd(0);
             }
             if (rf & 0b10 /* RenderFlags.Update */) {
-                const c0 = load(0, 0);
+                const slotable_1 = load(1, 1);
+                const slotable_2 = load(3, 1);
+                input(1, 2, "s1") && (slotable_1.id = "s1");
+                input(3, 2, "s2") && (slotable_2.id = "s2");
                 componentRefresh(0);
             }
         }
