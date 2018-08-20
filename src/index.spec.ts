@@ -2504,7 +2504,6 @@ describe('integration', () => {
                       elementEnd(0);
                     }
                     if (rf & RenderFlags.Update) {
-                      console.log(item);
                       bindProperty(0, 0, 'id', item.data[1].id);
                       slotRefreshImperative(1, item);
                     }

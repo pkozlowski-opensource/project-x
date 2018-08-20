@@ -158,9 +158,7 @@ function appendNativeNode(parent: VNode, node: VNode) {
 
 function findRenderParent(vNode: VNode): VNode | null {
   while ((vNode = vNode.parent)) {
-    if (vNode.type === VNodeType.Element) {
-      return vNode.native;
-    } else if (vNode.type === VNodeType.View || vNode.type === VNodeType.Slotable) {
+    if (vNode.type === VNodeType.Element || vNode.type === VNodeType.View || vNode.type === VNodeType.Slotable) {
       return vNode.native;
     }
   }
