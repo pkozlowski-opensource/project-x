@@ -464,14 +464,13 @@ function createViewVNode(viewId: number, parent: VNode, renderParent = null): Vi
   return createVNode(VNodeType.View, viewData, parent, renderParent) as ViewVNode;
 }
 
-function createHostBindingView(nativeEl: any): VNode {
+function createHostBindingView(nativeEl: any): ViewVNode {
   const lView = createViewVNode(-1, null!, nativeEl);
-  // TODO(pk): do I need a dedicated VNode?
   lView.view.nodes[0] = createVNode(VNodeType.Element, lView.view, lView, nativeEl);
   return lView;
 }
 
-function refreshView(viewVNode: VNode, viewFn, ctx?) {
+function refreshView(viewVNode: VNode, viewFn, ctx?): void {
   executeViewFn(viewVNode, viewFn, RenderFlags.Update, ctx);
 }
 
