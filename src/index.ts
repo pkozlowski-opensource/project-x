@@ -544,7 +544,7 @@ function view(containerIdx: number, viewId: number, viewFn, ctx?) {
   containerVNode.data[0]++;
 }
 
-function componentStart(idx: number, tagName: string, constructorFn, attrs?: string[] | null) {
+function componentStart(idx: number, tagName: string, constructorFn, attrs?: string[]) {
   const domEl = document.createElement(tagName);
   const hostElVNode = (currentView.nodes[idx] = createVNode(VNodeType.Element, currentView, parentVNode, domEl));
   parentVNode.children.push(hostElVNode);
@@ -552,7 +552,7 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
   setNativeAttributes(domEl, attrs);
   appendNativeNode(parentVNode, hostElVNode);
 
-  // TODO(pk): think of moving constructorFn argument to componentEnd
+  // TODO(pk): think of moving constructorFn argument to componentEnd so I don't have to store it
   hostElVNode.data[0] = constructorFn;
   hostElVNode.children[0] = parentVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, null);
 }
@@ -577,7 +577,7 @@ function componentEnd(hostElIdx: number) {
   executeComponentRenderFn(hostElVNode, componentViewNode, cmptInstance, RenderFlags.Create, hostElVNode.children[0]);
 }
 
-function component(idx: number, tagName: string, constructorFn, attrs?: string[] | null) {
+function component(idx: number, tagName: string, constructorFn, attrs?: string[]) {
   componentStart(idx, tagName, constructorFn, attrs);
   componentEnd(idx);
 }

@@ -38,7 +38,7 @@
             }
 
             render(rf, $content) {
-                `<x:host class="alert [class.alert-dismissible]="${this.close}" [class.alert-{}]="${this.type}" role="alert">
+                `<x:host class="alert [class.alert-dismissible]="${this.close}" [class!type]="alert-${this.type}" role="alert">
                     <% if (this.close) { %>
                         <button type="button" class="close" aria-label="Close" (click)="this.close()">
                             <span aria-hidden="true"&times;</span>
@@ -60,7 +60,9 @@
                                     {
                                         listener(0, 0, "click");
                                         elementStart(1, "span", ["aria-hidden", "true"]);
-                                        text(2, '\u00D7');
+                                        {
+                                            text(2, '\u00D7');
+                                        }
                                         elementEnd(1);
                                     }
                                     elementEnd(0);
