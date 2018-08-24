@@ -21,12 +21,24 @@
 
         class NGBCarousel {
             constructor(nativeEl, refreshFn, slotablesApi) {
-                this.activeId = 's1';
+                this.slotablesApi = slotablesApi;
                 this.intervalDestroyFn = setInterval(() => {
-                    this.activeId = this.activeId === 's1' ? 's2' : 's1';
+                    this.activeId = this.getNextActiveId(this.activeId);
                     refreshFn();    
                 }, 3000);
-                this.slotablesApi = slotablesApi;
+            }
+
+            adjustActiveId(slotables, requestedActiveId) {
+                const slideIds = slotables.map(slide => slide.data[1].id);
+                const slideIdx = slideIds.indexOf(requestedActiveId);
+                return slideIdx === -1 ? slideIds[0] : slideIds[slideIdx];
+            }
+
+            getNextActiveId(currentActiveId) {
+                const slideIds = this.slotablesApi.getSlotables('slide').map(slide => slide.data[1].id);
+                const slideIdx = slideIds.indexOf(currentActiveId);
+                const nextSlideIdx = (slideIdx + 1) % slideIds.length;
+                return slideIds[nextSlideIdx];
             }
 
             destroy() {
@@ -59,10 +71,11 @@
                     elementEnd(0);
                 }
                 if (rf & 0b10 /* RenderFlags.Update */) {
+                    const slides = this.slotablesApi.getSlotables('slide');
+                    this.activeId = this.adjustActiveId(slides, this.activeId);
                     containerRefreshStart(1);
                     {
                         // PERF: this look-up is not trivial and pretty "expensive" - any alternatives?
-                        const slides = this.slotablesApi.getSlotables('slide');
                         for (let i = 0; i < slides.length; i++) {
                             view(1, 0, (rf) => {
                                 if (rf & 0b01 /* RenderFlags.Create */) {
@@ -89,7 +102,10 @@
                 <img alt="Random first slide" src="https://picsum.photos/900/500?image=927">
             </:slide>
             <:slide @slotable="NgbSlide" [id]="s2">
-                <img alt="Random second slide" src="https://picsum.photos/900/500?image=929">
+                <img alt="Random second slide" src="https://picsum.photos/900/500?image=928">
+            </:slide>
+            <:slide @slotable="NgbSlide" [id]="s2">
+                <img alt="Random third slide" src="https://picsum.photos/900/500?image=929">
             </:slide>
         </NGBCarousel>`;
         function app(rf) {
@@ -103,17 +119,24 @@
                     slotableEnd(1);
                     slotableStart(3, "slide", NgbSlide); 
                     {
-                        element(2, "img", ["alt", "Random second slide", "src", "https://picsum.photos/900/500?image=929"]);
+                        element(4, "img", ["alt", "Random second slide", "src", "https://picsum.photos/900/500?image=928"]);
                     }
-                    slotableEnd(1);
+                    slotableEnd(3);
+                    slotableStart(5, "slide", NgbSlide); 
+                    {
+                        element(6, "img", ["alt", "Random third slide", "src", "https://picsum.photos/900/500?image=929"]);
+                    }
+                    slotableEnd(5);
                 }
                 componentEnd(0);
             }
             if (rf & 0b10 /* RenderFlags.Update */) {
                 const slotable_1 = load(1, 1);
                 const slotable_2 = load(3, 1);
+                const slotable_3 = load(5, 1);
                 input(1, 2, "s1") && (slotable_1.id = "s1");
                 input(3, 2, "s2") && (slotable_2.id = "s2");
+                input(3, 2, "s3") && (slotable_3.id = "s3");
                 componentRefresh(0);
             }
         }
