@@ -134,6 +134,8 @@
                 + remove (falsy passed to slot)
                 + move between slots
                 - think again about the API exposed to users 
+                    + inject in a constructor
+                    - wrap so raw SlotableVNode is not exposed
             + properties binding on slottables / directives on slottables    
             - nested slottables (ex.: tabs)
             - "lazy" slottables (ex. delayed tabs / panels) 

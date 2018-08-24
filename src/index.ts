@@ -13,6 +13,10 @@ interface ViewData {
    */
   subViews: (ContainerVNode | ViewVNode)[];
   /**
+   * Pointer to an element that host a component creating this view hierarchy.
+   */
+  host: ElementVNode;
+  /**
    * Pre-bound destroy functions that need to be called when destroying a given view.
    */
   destroyFns: (() => void)[];
@@ -33,7 +37,7 @@ interface VNode {
   parent: VNode;
   children: VNode[] | null;
   native: any; // TODO(pk): type it properly
-  data: any[]; // PERF(pk): storing bindings separatelly for each and every individual node might not be super-performant :-)
+  data: any[]; // PERF(pk): storing bindings separately for each and every individual node might not be super-performant :-)
 
   /**
    * Each node is part of a view
@@ -453,11 +457,12 @@ function findView(views: ViewVNode[], startIdx: number, viewIdx: number): VNode 
   }
 }
 
-function createViewVNode(viewId: number, parent: VNode, renderParent = null): ViewVNode {
+function createViewVNode(viewId: number, parent: VNode, host: ElementVNode, renderParent = null): ViewVNode {
   const viewData = {
     viewId: viewId,
     nodes: [],
     subViews: [],
+    host: host,
     destroyFns: [],
     refresh: parent ? parent.view.refresh : null
   };
@@ -501,16 +506,10 @@ function executeDirectiveHostFn(hostElVNode: VNode, directiveHostViewVnode: VNod
   parentVNode = hostElVNode;
 }
 
-function executeComponentRenderFn(
-  hostElVNode: VNode,
-  cmptViewVNode: VNode,
-  cmptInstance,
-  flags: RenderFlags,
-  content?
-) {
+function executeComponentRenderFn(hostElVNode: VNode, cmptViewVNode: VNode, cmptInstance, flags: RenderFlags) {
   const oldView = enterView(cmptViewVNode);
 
-  cmptInstance.render(flags, content);
+  cmptInstance.render(flags);
 
   currentView = oldView;
   parentVNode = hostElVNode.parent;
@@ -518,7 +517,7 @@ function executeComponentRenderFn(
 
 function createAndRefreshView(containerVNode: ContainerVNode, viewIdx: number, viewId: number, viewFn, ctx?) {
   const renderParent = findRenderParent(containerVNode);
-  const viewVNode = (parentVNode = createViewVNode(viewId, containerVNode, renderParent));
+  const viewVNode = (parentVNode = createViewVNode(viewId, containerVNode, containerVNode.view.host, renderParent));
 
   containerVNode.children.splice(viewIdx, 0, viewVNode);
 
@@ -557,11 +556,38 @@ function componentStart(idx: number, tagName: string, constructorFn, attrs?: str
   hostElVNode.children[0] = parentVNode = createVNode(VNodeType.Slotable, currentView, hostElVNode, null);
 }
 
+interface SlotablesApi {
+  getDefaultSlotable(): SlotableVNode;
+  getSlotables(name: string): SlotableVNode[];
+}
+
+class SlotablesApiImpl implements SlotablesApi {
+  constructor(private _defaultSlotable: SlotableVNode) {}
+
+  getDefaultSlotable(): SlotableVNode {
+    return this._defaultSlotable;
+  }
+
+  getSlotables(name: string): SlotableVNode[] {
+    return findSlotables(this._defaultSlotable, name, []);
+  }
+}
+
 function componentEnd(hostElIdx: number) {
-  const hostElVNode = currentView.nodes[hostElIdx];
+  const hostElVNode = currentView.nodes[hostElIdx] as ElementVNode;
   const constructorFn = hostElVNode.data[0];
-  const componentViewNode = (hostElVNode.componentView = createViewVNode(-1, hostElVNode, hostElVNode.native));
-  const cmptInstance = (hostElVNode.data[0] = new constructorFn(hostElVNode.native, componentViewNode.view.refresh));
+  const componentViewNode = (hostElVNode.componentView = createViewVNode(
+    -1,
+    hostElVNode,
+    hostElVNode,
+    hostElVNode.native
+  ));
+  const defaultSlotable = hostElVNode.children[0] as SlotableVNode;
+  const cmptInstance = (hostElVNode.data[0] = new constructorFn(
+    hostElVNode.native,
+    componentViewNode.view.refresh,
+    new SlotablesApiImpl(defaultSlotable)
+  ));
 
   // register new component view so we can descend into it while calling destroy lifecycle hooks
   currentView.subViews.push(componentViewNode);
@@ -574,7 +600,7 @@ function componentEnd(hostElIdx: number) {
     hostElVNode.data[1] = createHostBindingView(hostElVNode.native);
     executeDirectiveHostFn(hostElVNode, hostElVNode.data[1], cmptInstance, RenderFlags.Create);
   }
-  executeComponentRenderFn(hostElVNode, componentViewNode, cmptInstance, RenderFlags.Create, hostElVNode.children[0]);
+  executeComponentRenderFn(hostElVNode, componentViewNode, cmptInstance, RenderFlags.Create);
 }
 
 function component(idx: number, tagName: string, constructorFn, attrs?: string[]) {
@@ -589,13 +615,7 @@ function componentRefresh(hostElIdx: number) {
   if (cmptInstance.host) {
     executeDirectiveHostFn(hostElVNode, hostElVNode.data[0 + 1], cmptInstance, RenderFlags.Update);
   }
-  executeComponentRenderFn(
-    hostElVNode,
-    hostElVNode.componentView,
-    cmptInstance,
-    RenderFlags.Update,
-    hostElVNode.children[0]
-  );
+  executeComponentRenderFn(hostElVNode, hostElVNode.componentView, cmptInstance, RenderFlags.Update);
 }
 
 function load<T>(nodeIdx: number, dataIdx: number): T {
@@ -690,7 +710,7 @@ function appendSlotable(renderParent: any, slot: SlotVNode, slotable: SlotableVN
       detachSlotable(slotable.projectionParent, slotable);
     }
 
-    // attatch to the new slot
+    // attach to the new slot
     attachSlotable(renderParent, slot, slotable);
   }
 }
@@ -709,8 +729,9 @@ function slotRefreshImperative(idx: number, slotable: SlotableVNode | null) {
 }
 
 // PERF(pk): split into 2 functions (default, named) for better tree-shaking
-function slotRefresh(idx: number, defaultSlotable: SlotableVNode, slotName?: string) {
+function slotRefresh(idx: number, slotName?: string) {
   const slotVNode = currentView.nodes[idx] as SlotVNode;
+  const defaultSlotable = currentView.host.children[0] as SlotableVNode;
   const renderParent = findRenderParent(slotVNode);
   if (slotName) {
     const slotablesFound = findSlotables(defaultSlotable, slotName);
@@ -752,7 +773,7 @@ function directiveRefresh(hostIdx: number, directiveIdx: number) {
 }
 
 function render(nativeHost, tplFn, ctx?) {
-  const viewVNode = createViewVNode(-1, null!, nativeHost);
+  const viewVNode = createViewVNode(-1, null!, null!, nativeHost);
   viewVNode.view.refresh = function refreshFromRoot(refreshCtx?) {
     refreshView(viewVNode, tplFn, refreshCtx !== undefined ? refreshCtx : ctx);
   };

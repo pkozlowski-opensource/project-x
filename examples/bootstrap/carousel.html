@@ -13,8 +13,6 @@
 <body>
     <div id="app"></div>
     <script>
-        // TODO: sort out API for accessing slotables
-        
         // THINK: find a way of passing indicators component / function (or true / false to toggle defaults)
         // THINK: gestures support
 
@@ -22,12 +20,13 @@
         }
 
         class NGBCarousel {
-            constructor(nativeEl, refreshFn) {
+            constructor(nativeEl, refreshFn, slotablesApi) {
                 this.activeId = 's1';
                 this.intervalDestroyFn = setInterval(() => {
                     this.activeId = this.activeId === 's1' ? 's2' : 's1';
                     refreshFn();    
                 }, 3000);
+                this.slotablesApi = slotablesApi;
             }
 
             destroy() {
@@ -40,12 +39,12 @@
                 }
             }
 
-            render(rf, $content) {
+            render(rf) {
                 `<x:host class="carousel slide">
                     <div class="carousel-inner">
                         <% 
-                            const slides = findSlotables('slide');
-                            for (let slide of $content.getAll('slide')) { %>
+                            const slides = this.slotablesApi.getSlotables('slide');
+                            for (let slide of slides) { %>
                                 <div class="carousel-item [class.active]="this.activeId === slide.data[1].id">
                                     <x-slot [slotable]="slide"></x-slot>
                                 </div>
@@ -63,7 +62,7 @@
                     containerRefreshStart(1);
                     {
                         // PERF: this look-up is not trivial and pretty "expensive" - any alternatives?
-                        const slides = findSlotables($content, 'slide');
+                        const slides = this.slotablesApi.getSlotables('slide');
                         for (let i = 0; i < slides.length; i++) {
                             view(1, 0, (rf) => {
                                 if (rf & 0b01 /* RenderFlags.Create */) {
