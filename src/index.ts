@@ -666,7 +666,7 @@ function attachSlotable(renderParent: any, slot: SlotVNode, slotable: SlotableVN
   }
 }
 
-function detatchSlotable(previousSlot: SlotVNode, slotable: SlotableVNode) {
+function detachSlotable(previousSlot: SlotVNode, slotable: SlotableVNode) {
   const prevChildIdx = previousSlot.children.indexOf(slotable);
 
   if (prevChildIdx > -1) {
@@ -685,9 +685,9 @@ function detatchSlotable(previousSlot: SlotVNode, slotable: SlotableVNode) {
 
 function appendSlotable(renderParent: any, slot: SlotVNode, slotable: SlotableVNode) {
   if (slotable.projectionParent !== slot) {
-    // detatch from previous slot
+    // detach from previous slot
     if (slotable.projectionParent) {
-      detatchSlotable(slotable.projectionParent, slotable);
+      detachSlotable(slotable.projectionParent, slotable);
     }
 
     // attatch to the new slot
@@ -703,7 +703,7 @@ function slotRefreshImperative(idx: number, slotable: SlotableVNode | null) {
     appendSlotable(renderParent, slotVNode, slotable);
   } else {
     if (slotVNode.children.length) {
-      detatchSlotable(slotVNode, slotVNode.children[0]);
+      detachSlotable(slotVNode, slotVNode.children[0]);
     }
   }
 }
