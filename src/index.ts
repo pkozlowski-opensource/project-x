@@ -583,6 +583,9 @@ function componentEnd(hostElIdx: number) {
     hostElVNode.native
   ));
   const defaultSlotable = hostElVNode.children[0] as SlotableVNode;
+  // TALK(bl): should we support change of component's constructor function?
+  // what would be the impact of this on the host and its name / type?
+  // also type of supported children could be different...
   const cmptInstance = (hostElVNode.data[0] = new constructorFn(
     hostElVNode.native,
     componentViewNode.view.refresh,

@@ -29,12 +29,15 @@
         - web-worker?
     - testing story
         - unit
+            - through-DOM testing
+            - async tests (promise etc.)
+            - fake timers (setTimout / setInterval) => would be hard without DI
         - e2e
     - name / logo / domain
 - comparing to Renderer2 / Renderer3:
     - code is generated in the existing function so I can use private members in template bindings
     - having .this prefix means that I can easily use static members and any other JS goodies
-- compiler / syntax
+- syntax
     - render(...) function signature
         - single vs. multiple arguments for context
         - standalone function vs. render in a component (differences / similarities)
@@ -136,7 +139,10 @@
                 - think again about the API exposed to users 
                     + inject in a constructor
                     - wrap so raw SlotableVNode is not exposed
-            + properties binding on slottables / directives on slottables    
+            - properties binding on slottables
+                + basic bindig support
+                - binding to props or attrs???
+                - who should specify a class name (carousel or slide)?    
             - nested slottables (ex.: tabs)
             - "lazy" slottables (ex. delayed tabs / panels) 
             - corner cases:
@@ -174,6 +180,11 @@
         - scheduling (call to refresh should not trigger it automatically)
         - automatic / implicit refresh in an event handlers?
     - dynamic compilation (give a string, get a function, a la AngularJS $compile)
+- compiler impl
+    - TS transform to find components / directives / render functions
+    - "HTML" parsing
+    - code generation
+    - transform named entities to unicode
 - perf
     - extract "renderer" interface so I can swap one for unit tests and sniff DOM manipulation
     - setup benchmarks
