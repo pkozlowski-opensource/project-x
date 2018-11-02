@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc -w --sourceMap src/index.ts src/index.spec.ts",
-    "format": "prettier --write src/index.ts src/index.spec.ts"
+    "format": "prettier --write src/*.ts"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,7 @@
     "@types/jasmine": "^2.8.8",
     "jasmine": "^3.3.0",
     "jasmine-core": "^3.1.0",
+    "jasmine-ts-console-reporter": "^3.1.1",
     "prettier": "1.13.7",
     "typescript": "^2.9.2"
   }

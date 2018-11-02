@@ -28,8 +28,10 @@ function watchMain() {
     // Note that there is another overload for `createWatchCompilerHost` that takes
     // a set of root files.
     const host = ts.createWatchCompilerHost(
-        ['src/compiler.ts', 'src/compiler.spec.ts', 'src/lexer.ts', 'src/lexer.spec.ts'], //TODO(pk): this should be parametrised
-        {},
+        ['src/markup_parser.ts', 'src/markup_parser.spec.ts'], //TODO(pk): this should be parametrised
+        {
+            sourceMap: true
+        },
         ts.sys,
         createProgram,
         reportDiagnostic,
@@ -63,19 +65,11 @@ function watchMain() {
 }
 
 function reportDiagnostic(diagnostic) {
-    console.error(
-        "Error",
-        diagnostic.code,
-        ":",
-        ts.flattenDiagnosticMessageText(
-            diagnostic.messageText,
-            formatHost.getNewLine()
-        )
-    );
+    console.error(ts.formatDiagnosticsWithColorAndContext([diagnostic], formatHost));
 }
 
-function isCompileDone(diagnostic) {
-    return diagnostic.code === 6194;
+function isCompileDoneWithoutErrors(diagnostic) {
+    return diagnostic.code === 6194 && diagnostic.messageText.startsWith('Found 0 errors');
 }
 
 /**
@@ -87,21 +81,13 @@ function reportWatchStatusChanged(diagnostic) {
 
     console.info(ts.formatDiagnostic(diagnostic, formatHost));
 
-    if (isCompileDone(diagnostic)) {
+    if (isCompileDoneWithoutErrors(diagnostic)) {
         // TODO(pk): kill in-progress Jasmine runs if any
-
         console.clear();
 
-        const jasmine = spawn('yarn', ['jasmine', 'src/compiler.spec.js', 'src/lexer.spec.js']);
-
-        // TODO(pk): we are loosing colors in Jasmine's output
-        jasmine.stdout.on('data', (data) => {
-            process.stdout.write(data);
-        });
-
-        // TODO(pk): do I need anything here?
-        jasmine.on('close', (code) => {
-        });
+        // TODO(pk): I should have some kind of timeout in place in case a test goes into an infinite loop
+        // add '--inspect-brk', to debug
+        const jasmine = spawn('node', ['./node_modules/.bin/jasmine', '--reporter=jasmine-ts-console-reporter', 'src/markup_parser.spec.js'], { stdio: "inherit" });
     }
 }
 
