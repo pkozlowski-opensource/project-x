@@ -8,7 +8,7 @@ import {
   ElementEndParser,
   MarkupNode,
   MarkupParser
-} from './lexer';
+} from './markup_parser';
 
 describe('markup parser', () => {
   describe('attribute', () => {
