@@ -25,6 +25,14 @@ describe('markup parser', () => {
       expect(token.value).toBeNull();
     });
 
+    it('should parse single boolean attribute with mixed casing', () => {
+      const token = parseAttribute('ReadonlY');
+
+      expect(token.type).toBe(NodeType.ATTRIBUTE);
+      expect(token.name).toBe('ReadonlY');
+      expect(token.value).toBeNull();
+    });
+
     it('should parse an attribute with a quoted string value', () => {
       const token = parseAttribute('id="foo"');
 
@@ -91,6 +99,12 @@ describe('markup parser', () => {
 
       expect(token.type).toBe(NodeType.ELEMENT_START);
       expect(token.value).toBe('input');
+      expect(token.attributes.length).toBe(1);
+    });
+
+    it('should parse element with string-quoted attributes where name has mixed case', () => {
+      const token = parseElementStart('<input TYpe="checkbox">');
+
       expect(token.attributes.length).toBe(1);
     });
 

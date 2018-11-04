@@ -74,8 +74,16 @@ function isGreaerSign(charCode: number): boolean {
   return charCode === 62; // >
 }
 
+function isLargeLetter(charCode: number): boolean {
+  return charCode >= 65 && charCode <= 90; // A - Z
+}
+
 function isSmallLetter(charCode: number): boolean {
-  return charCode >= 97 && charCode <= 122;
+  return charCode >= 97 && charCode <= 122; // a - z
+}
+
+function isLetter(charCode: number): boolean {
+  return isSmallLetter(charCode) || isLargeLetter(charCode);
 }
 
 function not(conditionFn: CharCodeConditionFn): CharCodeConditionFn {
@@ -156,7 +164,7 @@ export class AtrtibuteValueParser extends Parser {
 
 export class AttributeParser extends Parser {
   parse(): AttributeNode {
-    const attrName = this.consume(isSmallLetter);
+    const attrName = this.consume(isLetter);
     this.skipWhitSpace();
     if (this.peekAndSkip(isEqualSign)) {
       this.skipWhitSpace();
@@ -180,8 +188,10 @@ export class ElementStartParser extends Parser {
     this.skipWhitSpace();
 
     while (this.isNotEOF() && !this.peek(isGreaerSign)) {
-      if (this.peek(isSmallLetter)) {
+      if (this.peek(isLetter)) {
         attributes.push(this.delegate(AttributeParser));
+      } else {
+        throw `Unexpected attribute name start: ${String.fromCharCode(this.peekCharCode())}`;
       }
       this.skipWhitSpace();
     }
