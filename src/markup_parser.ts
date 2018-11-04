@@ -31,7 +31,7 @@ export class TextNode extends Node {
   }
 }
 
-abstract class AttributeNode extends Node {
+export abstract class AttributeNode extends Node {
   constructor(type: NodeType, public name: string, value: string | null) {
     super(type, value);
   }
@@ -44,8 +44,8 @@ export class StaticAttributeNode extends AttributeNode {
 }
 
 export class BoundAttributeNode extends AttributeNode {
-  constructor(name: string, value: string | null) {
-    super(NodeType.ATTRIBUTE_BOUND, name, value);
+  constructor(name: string, expression: string) {
+    super(NodeType.ATTRIBUTE_BOUND, name, expression);
   }
 }
 
@@ -78,11 +78,19 @@ function isDoubleQuote(charCode: number): boolean {
   return charCode === 34; // ""
 }
 
+function isBracketOpen(charCode: number): boolean {
+  return charCode === 40; // (
+}
+
+function isBracketClose(charCode: number): boolean {
+  return charCode === 41; // )
+}
+
 function isSlash(charCode: number): boolean {
   return charCode === 47; // /
 }
 
-function isSmallerSign(charCode: number): boolean {
+function isAngleBracketOpen(charCode: number): boolean {
   return charCode === 60; // <
 }
 
@@ -90,7 +98,7 @@ function isEqualSign(charCode: number): boolean {
   return charCode === 61; // =
 }
 
-function isGreaerSign(charCode: number): boolean {
+function isAngleBracketClose(charCode: number): boolean {
   return charCode === 62; // >
 }
 
@@ -112,6 +120,14 @@ function isCurlyBracketClose(charCode: number): boolean {
 
 function isLetter(charCode: number): boolean {
   return isSmallLetter(charCode) || isLargeLetter(charCode);
+}
+
+function isAttributeNameStart(charCode: number): boolean {
+  return isLetter(charCode) || isBracketOpen(charCode);
+}
+
+function isAttributeNamePart(charCode: number): boolean {
+  return isLetter(charCode) || isBracketOpen(charCode) || isBracketClose(charCode);
 }
 
 function not(conditionFn: CharCodeConditionFn): CharCodeConditionFn {
@@ -196,6 +212,7 @@ export class BindingParser extends Parser {
     this.requireAndSkip(isCurlyBracketOpen);
     this.requireAndSkip(isCurlyBracketOpen);
 
+    // TODO: this would fail for {{ {a: {b: 5}} }} - i need to count opening / closing brackets!
     const boundExpr = this.consume(not(isCurlyBracketClose));
 
     this.requireAndSkip(isCurlyBracketClose);
@@ -207,7 +224,7 @@ export class BindingParser extends Parser {
 
 export class AttributeParser extends Parser {
   parse(): AttributeNode {
-    const attrName = this.consume(isLetter);
+    const attrName = this.consume(isAttributeNamePart);
     this.skipWhitSpace();
     if (this.peekAndSkip(isEqualSign)) {
       this.skipWhitSpace();
@@ -230,16 +247,16 @@ export class ElementStartParser extends Parser {
   parse(): ElementStartNode {
     const attributes: StaticAttributeNode[] = [];
 
-    this.requireAndSkip(isSmallerSign); // <
+    this.requireAndSkip(isAngleBracketOpen); // <
 
     const tagName = this.consume((charCode: number) => {
-      return !isWhitespace(charCode) && !isGreaerSign(charCode);
+      return !isWhitespace(charCode) && !isAngleBracketClose(charCode);
     });
 
     this.skipWhitSpace();
 
-    while (this.isNotEOF() && !this.peek(isGreaerSign)) {
-      if (this.peek(isLetter)) {
+    while (this.isNotEOF() && !this.peek(isAngleBracketClose)) {
+      if (this.peek(isAttributeNameStart)) {
         attributes.push(this.delegate(AttributeParser));
       } else {
         throw `Unexpected attribute name start: ${String.fromCharCode(this.peekCharCode())}`;
@@ -247,7 +264,7 @@ export class ElementStartParser extends Parser {
       this.skipWhitSpace();
     }
 
-    this.requireAndSkip(isGreaerSign); // >
+    this.requireAndSkip(isAngleBracketClose); // >
 
     return new ElementStartNode(tagName, attributes);
   }
@@ -255,16 +272,16 @@ export class ElementStartParser extends Parser {
 
 export class ElementEndParser extends Parser {
   parse(): ElementEndNode {
-    this.requireAndSkip(isSmallerSign); // <
+    this.requireAndSkip(isAngleBracketOpen); // <
     this.requireAndSkip(isSlash); // /
 
     const tagName = this.consume((charCode: number) => {
-      return !isWhitespace(charCode) && !isGreaerSign(charCode);
+      return !isWhitespace(charCode) && !isAngleBracketClose(charCode);
     });
 
     this.skipWhitSpace();
 
-    this.requireAndSkip(isGreaerSign); // >
+    this.requireAndSkip(isAngleBracketClose); // >
 
     return new ElementEndNode(tagName);
   }
@@ -275,7 +292,7 @@ export class MarkupParser extends Parser {
     const nodes: Node[] = [];
 
     while (this.isNotEOF()) {
-      if (this.peek(isSmallerSign)) {
+      if (this.peek(isAngleBracketOpen)) {
         if (this.peek(isSmallLetter, 1)) {
           nodes.push(this.delegate(ElementStartParser));
         } else if (this.peek(isSlash, 1)) {
@@ -284,7 +301,8 @@ export class MarkupParser extends Parser {
           throw '< in text nodes are not supported yet';
         }
       } else {
-        const text = this.consume(not(isSmallerSign));
+        // TODO: need to account for interpolations as < have different meaning inside
+        const text = this.consume(not(isAngleBracketOpen));
         nodes.push(new TextNode(text));
       }
     }

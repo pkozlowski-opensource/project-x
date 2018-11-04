@@ -13,8 +13,8 @@
     <div id="helloWorldApp"></div>
     <script>
         `
-        Hello, {=ctx.name}!
-        <input [value]="{=ctx.name}" (input)="ctx.name = $event.target.value">
+        Hello, {{ctx.name}}!
+        <input value="{{ctx.name}}" (input)="ctx.name = $event.target.value">
         <button (click)="ctx.name = 'World'">Reset name</button>
         `;
         function helloWorldApp(rf, ctx, refresh) {

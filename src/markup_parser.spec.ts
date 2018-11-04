@@ -1,6 +1,6 @@
 import {
   NodeType,
-  StaticAttributeNode,
+  AttributeNode,
   ElementStartNode,
   ElementEndNode,
   AttributeParser,
@@ -11,62 +11,76 @@ import {
 } from './markup_parser';
 
 describe('markup parser', () => {
-  describe('attribute', () => {
-    function parseAttribute(markup: string): StaticAttributeNode {
+  describe('attributes', () => {
+    function parseAttribute(markup: string): AttributeNode {
       const map = new AttributeParser(markup);
       return map.parse();
     }
 
-    it('should parse single boolean attribute', () => {
-      const token = parseAttribute('readonly');
+    describe('static attributes', () => {
+      // TODO: attr='val'
+      // TODO: attr="\"""
 
-      expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
-      expect(token.name).toBe('readonly');
-      expect(token.value).toBeNull();
+      it('should parse single boolean attribute', () => {
+        const token = parseAttribute('readonly');
+
+        expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
+        expect(token.name).toBe('readonly');
+        expect(token.value).toBeNull();
+      });
+
+      it('should parse single boolean attribute with mixed casing', () => {
+        const token = parseAttribute('ReadonlY');
+
+        expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
+        expect(token.name).toBe('ReadonlY');
+        expect(token.value).toBeNull();
+      });
+
+      it('should parse an attribute with a quoted string value', () => {
+        const token = parseAttribute('id="foo"');
+
+        expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
+        expect(token.name).toBe('id');
+        expect(token.value).toBe('foo');
+      });
+
+      it('should parse an attribute with a quoted value', () => {
+        const token = parseAttribute('id="something 6"');
+
+        expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
+        expect(token.name).toBe('id');
+        expect(token.value).toBe('something 6');
+      });
+
+      it('should parse an attribute with a quoted value and spaces arround equal sign', () => {
+        const token = parseAttribute('id =  "something 6"');
+
+        expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
+        expect(token.name).toBe('id');
+        expect(token.value).toBe('something 6');
+      });
     });
 
-    it('should parse single boolean attribute with mixed casing', () => {
-      const token = parseAttribute('ReadonlY');
+    describe('bindings', () => {
+      it('should parse an attribute with binding', () => {
+        const token = parseAttribute('value={{expression}}');
 
-      expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
-      expect(token.name).toBe('ReadonlY');
-      expect(token.value).toBeNull();
+        expect(token.type).toBe(NodeType.ATTRIBUTE_BOUND);
+        expect(token.name).toBe('value');
+        expect(token.value).toBe('expression');
+      });
     });
 
-    it('should parse an attribute with a quoted string value', () => {
-      const token = parseAttribute('id="foo"');
+    describe('event handlers', () => {
+      it('should parse an attribute that is an event handler', () => {
+        const token = parseAttribute('(click)="doSth()"');
 
-      expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
-      expect(token.name).toBe('id');
-      expect(token.value).toBe('foo');
+        expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
+        expect(token.name).toBe('(click)');
+        expect(token.value).toBe('doSth()');
+      });
     });
-
-    it('should parse an attribute with a quoted value', () => {
-      const token = parseAttribute('id="something 6"');
-
-      expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
-      expect(token.name).toBe('id');
-      expect(token.value).toBe('something 6');
-    });
-
-    it('should parse an attribute with a quoted value and spaces arround equal sign', () => {
-      const token = parseAttribute('id =  "something 6"');
-
-      expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
-      expect(token.name).toBe('id');
-      expect(token.value).toBe('something 6');
-    });
-
-    it('should parse an attribute with binding', () => {
-      const token = parseAttribute('value={{expression}}');
-
-      expect(token.type).toBe(NodeType.ATTRIBUTE_BOUND);
-      expect(token.name).toBe('value');
-      expect(token.value).toBe('expression');
-    });
-
-    // TODO: attr='val'
-    // TODO: attr="\"""
   });
 
   describe('element start', () => {
@@ -181,7 +195,8 @@ describe('markup parser', () => {
 
     it('should support new lines in text nodes', () => {
       const token = parseMarkup(`
-            <h1>Hello, World!</h1>
+            <h1>Hello, 
+            World!</h1>
         `);
 
       expect(token.children.length).toBe(5);
