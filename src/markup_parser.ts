@@ -1,36 +1,56 @@
 export enum NodeType {
+  STRING,
   MARKUP,
   TEXT,
   ELEMENT_START,
   ELEMENT_END,
-  ATTRIBUTE,
-  ATTRIBUTE_VALUE
+  ATTRIBUTE_STATIC,
+  ATTRIBUTE_BOUND,
+  BINDING
 }
 
 export class Node {
   constructor(public type: NodeType, public value: any) {}
 }
 
-export class TextToken extends Node {
+export class StringNode extends Node {
+  constructor(public value: string) {
+    super(NodeType.STRING, value);
+  }
+}
+
+export class BindignNode extends Node {
+  constructor(public value: string) {
+    super(NodeType.BINDING, value);
+  }
+}
+
+export class TextNode extends Node {
   constructor(value: string) {
     super(NodeType.TEXT, value);
   }
 }
 
-export class AttributeValueNode extends Node {
-  constructor(value: string | null) {
-    super(NodeType.ATTRIBUTE_VALUE, value);
+abstract class AttributeNode extends Node {
+  constructor(type: NodeType, public name: string, value: string | null) {
+    super(type, value);
   }
 }
 
-export class AttributeNode extends Node {
-  constructor(public name: string, value: AttributeValueNode | null) {
-    super(NodeType.ATTRIBUTE, value);
+export class StaticAttributeNode extends AttributeNode {
+  constructor(name: string, value: string | null) {
+    super(NodeType.ATTRIBUTE_STATIC, name, value);
+  }
+}
+
+export class BoundAttributeNode extends AttributeNode {
+  constructor(name: string, value: string | null) {
+    super(NodeType.ATTRIBUTE_BOUND, name, value);
   }
 }
 
 export class ElementStartNode extends Node {
-  constructor(tagName: string, public attributes: AttributeNode[]) {
+  constructor(tagName: string, public attributes: StaticAttributeNode[]) {
     super(NodeType.ELEMENT_START, tagName);
   }
 }
@@ -54,7 +74,7 @@ function isWhitespace(charCode: number): boolean {
   return charCode === 32;
 }
 
-function isStringQuote(charCode: number): boolean {
+function isDoubleQuote(charCode: number): boolean {
   return charCode === 34; // ""
 }
 
@@ -80,6 +100,14 @@ function isLargeLetter(charCode: number): boolean {
 
 function isSmallLetter(charCode: number): boolean {
   return charCode >= 97 && charCode <= 122; // a - z
+}
+
+function isCurlyBracketOpen(charCode: number): boolean {
+  return charCode === 123; // {
+}
+
+function isCurlyBracketClose(charCode: number): boolean {
+  return charCode === 125; // }
 }
 
 function isLetter(charCode: number): boolean {
@@ -108,7 +136,7 @@ abstract class Parser {
     return this.isNotEOF() && conditionFn(this.peekCharCode(offset));
   }
 
-  skeep(conditionFn: CharCodeConditionFn): number {
+  seekUntil(conditionFn: CharCodeConditionFn): number {
     while (this.isNotEOF() && conditionFn(this.peekCharCode())) {
       this.currentIdx++;
     }
@@ -128,15 +156,15 @@ abstract class Parser {
     if (this.peekAndSkip(conditionFn)) {
       return true;
     }
-    throw `Unexpected character code ${this.peekCharCode()}`;
+    throw `Unexpected character '${String.fromCharCode(this.peekCharCode())}' at position ${this.currentIdx}`;
   }
 
   consume(conditionFn: CharCodeConditionFn): string {
-    return this.markup.substring(this.currentIdx, this.skeep(conditionFn));
+    return this.markup.substring(this.currentIdx, this.seekUntil(conditionFn));
   }
 
   skipWhitSpace() {
-    this.skeep(isWhitespace);
+    this.seekUntil(isWhitespace);
   }
 
   delegate<T extends Node>(DelegateParser): T {
@@ -151,14 +179,29 @@ abstract class Parser {
   abstract parse(): Node;
 }
 
-export class AtrtibuteValueParser extends Parser {
-  parse(): AttributeValueNode | null {
-    if (this.peekAndSkip(isStringQuote)) {
-      const attrValue = this.consume(not(isStringQuote));
-      this.requireAndSkip(isStringQuote);
-      return new AttributeValueNode(attrValue);
+export class QuotedStringParser extends Parser {
+  parse(): StringNode {
+    if (this.peekAndSkip(isDoubleQuote)) {
+      const value = this.consume(not(isDoubleQuote));
+      this.requireAndSkip(isDoubleQuote);
+      return new StringNode(value);
+    } else {
+      throw 'Unexpected string start';
     }
-    return null;
+  }
+}
+
+export class BindingParser extends Parser {
+  parse(): BindignNode {
+    this.requireAndSkip(isCurlyBracketOpen);
+    this.requireAndSkip(isCurlyBracketOpen);
+
+    const boundExpr = this.consume(not(isCurlyBracketClose));
+
+    this.requireAndSkip(isCurlyBracketClose);
+    this.requireAndSkip(isCurlyBracketClose);
+
+    return new BindignNode(boundExpr);
   }
 }
 
@@ -168,16 +211,24 @@ export class AttributeParser extends Parser {
     this.skipWhitSpace();
     if (this.peekAndSkip(isEqualSign)) {
       this.skipWhitSpace();
-      return new AttributeNode(attrName, this.delegate(AtrtibuteValueParser));
+      if (this.peek(isDoubleQuote)) {
+        const stringNode = this.delegate(QuotedStringParser);
+        return new StaticAttributeNode(attrName, stringNode.value);
+      } else if (this.peek(isCurlyBracketOpen)) {
+        const bindignNode = this.delegate(BindingParser);
+        return new BoundAttributeNode(attrName, bindignNode.value);
+      } else {
+        throw `Invalid attribute value character: ${String.fromCharCode(this.peekCharCode())}`;
+      }
     } else {
-      return new AttributeNode(attrName, null);
+      return new StaticAttributeNode(attrName, null);
     }
   }
 }
 
 export class ElementStartParser extends Parser {
   parse(): ElementStartNode {
-    const attributes: AttributeNode[] = [];
+    const attributes: StaticAttributeNode[] = [];
 
     this.requireAndSkip(isSmallerSign); // <
 
@@ -234,7 +285,7 @@ export class MarkupParser extends Parser {
         }
       } else {
         const text = this.consume(not(isSmallerSign));
-        nodes.push(new TextToken(text));
+        nodes.push(new TextNode(text));
       }
     }
 

@@ -1,6 +1,6 @@
 import {
   NodeType,
-  AttributeNode,
+  StaticAttributeNode,
   ElementStartNode,
   ElementEndNode,
   AttributeParser,
@@ -12,7 +12,7 @@ import {
 
 describe('markup parser', () => {
   describe('attribute', () => {
-    function parseAttribute(markup: string): AttributeNode {
+    function parseAttribute(markup: string): StaticAttributeNode {
       const map = new AttributeParser(markup);
       return map.parse();
     }
@@ -20,7 +20,7 @@ describe('markup parser', () => {
     it('should parse single boolean attribute', () => {
       const token = parseAttribute('readonly');
 
-      expect(token.type).toBe(NodeType.ATTRIBUTE);
+      expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
       expect(token.name).toBe('readonly');
       expect(token.value).toBeNull();
     });
@@ -28,7 +28,7 @@ describe('markup parser', () => {
     it('should parse single boolean attribute with mixed casing', () => {
       const token = parseAttribute('ReadonlY');
 
-      expect(token.type).toBe(NodeType.ATTRIBUTE);
+      expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
       expect(token.name).toBe('ReadonlY');
       expect(token.value).toBeNull();
     });
@@ -36,34 +36,37 @@ describe('markup parser', () => {
     it('should parse an attribute with a quoted string value', () => {
       const token = parseAttribute('id="foo"');
 
-      expect(token.type).toBe(NodeType.ATTRIBUTE);
+      expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
       expect(token.name).toBe('id');
-      expect(token.value.value).toBe('foo');
+      expect(token.value).toBe('foo');
     });
 
     it('should parse an attribute with a quoted value', () => {
       const token = parseAttribute('id="something 6"');
 
-      expect(token.type).toBe(NodeType.ATTRIBUTE);
+      expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
       expect(token.name).toBe('id');
-      expect(token.value.value).toBe('something 6');
+      expect(token.value).toBe('something 6');
     });
 
     it('should parse an attribute with a quoted value and spaces arround equal sign', () => {
       const token = parseAttribute('id =  "something 6"');
 
-      expect(token.type).toBe(NodeType.ATTRIBUTE);
+      expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
       expect(token.name).toBe('id');
-      expect(token.value.value).toBe('something 6');
+      expect(token.value).toBe('something 6');
     });
 
-    // TODO: attr={{expr}}
+    it('should parse an attribute with binding', () => {
+      const token = parseAttribute('value={{expression}}');
+
+      expect(token.type).toBe(NodeType.ATTRIBUTE_BOUND);
+      expect(token.name).toBe('value');
+      expect(token.value).toBe('expression');
+    });
+
     // TODO: attr='val'
     // TODO: attr="\"""
-    // TODO: attr=true / attr=false
-    // TODO: attr=5
-    // TODO: attr=
-    // TODO: attr="
   });
 
   describe('element start', () => {
