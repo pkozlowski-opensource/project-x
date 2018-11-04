@@ -81,6 +81,24 @@ describe('markup parser', () => {
         expect(token.value).toBe('doSth()');
       });
     });
+
+    describe('properties', () => {
+      it('should parse static properties', () => {
+        const token = parseAttribute('[value]="initial"');
+
+        expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
+        expect(token.name).toBe('[value]');
+        expect(token.value).toBe('initial');
+      });
+
+      it('should parse bound properties', () => {
+        const token = parseAttribute('[value]={{expr}}');
+
+        expect(token.type).toBe(NodeType.ATTRIBUTE_BOUND);
+        expect(token.name).toBe('[value]');
+        expect(token.value).toBe('expr');
+      });
+    });
   });
 
   describe('element start', () => {

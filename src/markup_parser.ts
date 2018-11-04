@@ -106,6 +106,14 @@ function isLargeLetter(charCode: number): boolean {
   return charCode >= 65 && charCode <= 90; // A - Z
 }
 
+function isSquareBracketOpen(charCode: number): boolean {
+  return charCode === 91; // [
+}
+
+function isSquareBracketClose(charCode: number): boolean {
+  return charCode === 93; // ]
+}
+
 function isSmallLetter(charCode: number): boolean {
   return charCode >= 97 && charCode <= 122; // a - z
 }
@@ -123,11 +131,17 @@ function isLetter(charCode: number): boolean {
 }
 
 function isAttributeNameStart(charCode: number): boolean {
-  return isLetter(charCode) || isBracketOpen(charCode);
+  return isLetter(charCode) || isBracketOpen(charCode) || isSquareBracketOpen(charCode);
 }
 
 function isAttributeNamePart(charCode: number): boolean {
-  return isLetter(charCode) || isBracketOpen(charCode) || isBracketClose(charCode);
+  return (
+    isLetter(charCode) ||
+    isBracketOpen(charCode) ||
+    isBracketClose(charCode) ||
+    isSquareBracketOpen(charCode) ||
+    isSquareBracketClose(charCode)
+  );
 }
 
 function not(conditionFn: CharCodeConditionFn): CharCodeConditionFn {
@@ -172,7 +186,9 @@ abstract class Parser {
     if (this.peekAndSkip(conditionFn)) {
       return true;
     }
-    throw `Unexpected character '${String.fromCharCode(this.peekCharCode())}' at position ${this.currentIdx}`;
+    throw new Error(
+      `Unexpected character '${String.fromCharCode(this.peekCharCode())}' at position ${this.currentIdx}`
+    );
   }
 
   consume(conditionFn: CharCodeConditionFn): string {
