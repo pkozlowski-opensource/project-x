@@ -26,8 +26,8 @@ export class BindignNode extends Node {
 }
 
 export class TextNode extends Node {
-  constructor(value: string) {
-    super(NodeType.TEXT, value);
+  constructor(public parts: (StringNode | BindignNode)[]) {
+    super(NodeType.TEXT, null);
   }
 }
 
@@ -303,6 +303,27 @@ export class ElementEndParser extends Parser {
   }
 }
 
+export class InterpolatedTextParser extends Parser {
+  parse(): TextNode {
+    const parts: any[] = [];
+
+    function isTextStop(charCode: number): boolean {
+      // TODO: this should be {{ <a </ to support single { and < in thext nodes
+      return isCurlyBracketOpen(charCode) || isAngleBracketOpen(charCode);
+    }
+
+    while (this.isNotEOF() && !this.peek(isAngleBracketOpen)) {
+      if (this.peek(isCurlyBracketOpen)) {
+        parts.push(this.delegate(BindingParser));
+      } else {
+        parts.push(new StringNode(this.consume(not(isTextStop))));
+      }
+    }
+
+    return new TextNode(parts);
+  }
+}
+
 export class MarkupParser extends Parser {
   parse(): MarkupNode {
     const nodes: Node[] = [];
@@ -314,12 +335,10 @@ export class MarkupParser extends Parser {
         } else if (this.peek(isSlash, 1)) {
           nodes.push(this.delegate(ElementEndParser));
         } else {
-          throw '< in text nodes are not supported yet';
+          throw new Error('Unexpected character found after <');
         }
       } else {
-        // TODO: need to account for interpolations as < have different meaning inside
-        const text = this.consume(not(isAngleBracketOpen));
-        nodes.push(new TextNode(text));
+        nodes.push(this.delegate(InterpolatedTextParser));
       }
     }
 

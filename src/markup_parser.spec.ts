@@ -3,10 +3,12 @@ import {
   AttributeNode,
   ElementStartNode,
   ElementEndNode,
+  TextNode,
+  MarkupNode,
   AttributeParser,
   ElementStartParser,
   ElementEndParser,
-  MarkupNode,
+  InterpolatedTextParser,
   MarkupParser
 } from './markup_parser';
 
@@ -170,6 +172,33 @@ describe('markup parser', () => {
 
       expect(token.type).toBe(NodeType.ELEMENT_END);
       expect(token.value).toBe('div');
+    });
+  });
+
+  describe('interpolated text', () => {
+    function parseInterpolation(markup: string): TextNode {
+      return new InterpolatedTextParser(markup).parse();
+    }
+
+    it('should parse static text', () => {
+      const token = parseInterpolation('static');
+
+      expect(token.type).toBe(NodeType.TEXT);
+      expect(token.parts.length).toBe(1);
+    });
+
+    it('should parse interpolatd text', () => {
+      const token = parseInterpolation('{{expr}}');
+
+      expect(token.type).toBe(NodeType.TEXT);
+      expect(token.parts.length).toBe(1);
+    });
+
+    it('should parse mixture and interpolatd text', () => {
+      const token = parseInterpolation('before {{expr}} after');
+
+      expect(token.type).toBe(NodeType.TEXT);
+      expect(token.parts.length).toBe(3);
     });
   });
 
