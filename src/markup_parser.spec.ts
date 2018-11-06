@@ -1,4 +1,5 @@
 import {
+  Node,
   NodeType,
   AttributeNode,
   ElementStartNode,
@@ -6,6 +7,7 @@ import {
   TextNode,
   MarkupNode,
   AttributeParser,
+  BindingParser,
   ElementStartParser,
   ElementEndParser,
   InterpolatedTextParser,
@@ -13,6 +15,37 @@ import {
 } from './markup_parser';
 
 describe('markup parser', () => {
+  describe('bindings', () => {
+    function parseBinding(markup: string): string {
+      const node = new BindingParser(markup).parse();
+      expect(node.type).toBe(NodeType.BINDING);
+      return node.value;
+    }
+
+    it('should parse literals', () => {
+      expect(parseBinding('{{"hi!"}}')).toBe('"hi!"');
+      expect(parseBinding('{{false}}')).toBe('false');
+      expect(parseBinding('{{0}}')).toBe('0');
+    });
+
+    it('should parse expressions with no curly', () => {
+      expect(parseBinding('{{myVar.fn(arg1, arg2: type)}}')).toBe('myVar.fn(arg1, arg2: type)');
+    });
+
+    it('should parse expressions with <', () => {
+      expect(parseBinding('{{this.a < 5}}')).toBe('this.a < 5');
+    });
+
+    it('should parse expressions with object literals', () => {
+      expect(parseBinding('{{{a: 5}}}')).toBe('{a: 5}');
+      expect(parseBinding('{{ fn({a: {b: 5}}) }}')).toBe(' fn({a: {b: 5}}) ');
+    });
+
+    it('should parse expressions with comments', () => {
+      expect(parseBinding('{{ a /* comment */ + b }}')).toBe(' a /* comment */ + b ');
+    });
+  });
+
   describe('attributes', () => {
     function parseAttribute(markup: string): AttributeNode {
       const map = new AttributeParser(markup);
@@ -253,6 +286,20 @@ describe('markup parser', () => {
       expect(token.children[2].type).toBe(NodeType.TEXT);
       expect(token.children[3].type).toBe(NodeType.ELEMENT_END);
       expect(token.children[4].type).toBe(NodeType.TEXT);
+    });
+
+    it('should parse a hello world example', () => {
+      const token = parseMarkup(`
+        Hello, {{ctx.name}}!
+        <input value={{ctx.name}} (input)="ctx.name = $event.target.value">
+        <button (click)="ctx.name = 'World'">Reset name</button>
+      `);
+
+      const elStartNode = token.children.filter((node: Node) => {
+        return node.type === NodeType.ELEMENT_START;
+      });
+
+      expect(elStartNode.length).toBe(2);
     });
   });
 });

@@ -157,6 +157,12 @@ abstract class Parser {
     return this.currentIdx < this.markup.length;
   }
 
+  advance() {
+    if (this.isNotEOF) {
+      this.currentIdx++;
+    }
+  }
+
   peekCharCode(offset: number = 0): number | null {
     const idx = this.currentIdx + offset;
     return idx < this.markup.length ? this.markup.charCodeAt(idx) : null;
@@ -228,13 +234,25 @@ export class BindingParser extends Parser {
     this.requireAndSkip(isCurlyBracketOpen);
     this.requireAndSkip(isCurlyBracketOpen);
 
-    // TODO: this would fail for {{ {a: {b: 5}} }} - i need to count opening / closing brackets!
-    const boundExpr = this.consume(not(isCurlyBracketClose));
+    const exprStartIdx = this.currentIdx;
+    let openBrackets = 0;
+
+    while (this.isNotEOF()) {
+      if (this.peek(isCurlyBracketOpen)) {
+        openBrackets++;
+        this.advance();
+      }
+      if (this.peek(isCurlyBracketClose) && --openBrackets === -1) {
+        break;
+      } else {
+        this.advance();
+      }
+    }
 
     this.requireAndSkip(isCurlyBracketClose);
     this.requireAndSkip(isCurlyBracketClose);
 
-    return new BindignNode(boundExpr);
+    return new BindignNode(this.markup.substring(exprStartIdx, this.currentIdx - 2));
   }
 }
 
