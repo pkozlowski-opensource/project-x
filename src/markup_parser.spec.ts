@@ -6,6 +6,7 @@ import {
   ElementEndNode,
   TextNode,
   MarkupNode,
+  QuotedStringParser,
   AttributeParser,
   BindingParser,
   ElementStartParser,
@@ -15,6 +16,30 @@ import {
 } from './markup_parser';
 
 describe('markup parser', () => {
+  describe('strings', () => {
+    function parseString(markup: string): string {
+      const node = new QuotedStringParser(markup).parse();
+      expect(node.type).toBe(NodeType.STRING);
+      return node.value;
+    }
+
+    it('should parse double-quoted string', () => {
+      expect(parseString(`"hi!"    `)).toBe('hi!');
+    });
+
+    it('should parse escaped double-quoted string', () => {
+      expect(parseString(`"Hello, \\"World\\""`)).toBe('Hello, "World"');
+    });
+
+    it('should parse single-quoted string', () => {
+      expect(parseString(`'hi!'  `)).toBe('hi!');
+    });
+
+    it('should parse escaped single-quoted string', () => {
+      expect(parseString(`'Hello, \\'World\\''  `)).toBe(`Hello, 'World'`);
+    });
+  });
+
   describe('bindings', () => {
     function parseBinding(markup: string): string {
       const node = new BindingParser(markup).parse();

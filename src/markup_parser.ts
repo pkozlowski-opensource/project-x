@@ -78,6 +78,10 @@ function isDoubleQuote(charCode: number): boolean {
   return charCode === 34; // ""
 }
 
+function isSingleQuote(charCode: number): boolean {
+  return charCode === 39; // '
+}
+
 function isBracketOpen(charCode: number): boolean {
   return charCode === 40; // (
 }
@@ -108,6 +112,10 @@ function isLargeLetter(charCode: number): boolean {
 
 function isSquareBracketOpen(charCode: number): boolean {
   return charCode === 91; // [
+}
+
+function isBackSlash(charCode: number): boolean {
+  return charCode === 92; // \
 }
 
 function isSquareBracketClose(charCode: number): boolean {
@@ -157,10 +165,8 @@ abstract class Parser {
     return this.currentIdx < this.markup.length;
   }
 
-  advance() {
-    if (this.isNotEOF) {
-      this.currentIdx++;
-    }
+  advance(offset: number = 1): number {
+    return (this.currentIdx = Math.min(this.currentIdx + offset, this.markup.length));
   }
 
   peekCharCode(offset: number = 0): number | null {
@@ -218,13 +224,36 @@ abstract class Parser {
 }
 
 export class QuotedStringParser extends Parser {
+  private parseToTheEndOfAString(joinChar: string, quoteConditionFn: CharCodeConditionFn): StringNode {
+    const valueParts: string[] = [];
+    let startIdx = this.currentIdx + 1;
+
+    this.requireAndSkip(quoteConditionFn);
+
+    while (this.isNotEOF()) {
+      if (this.peek(isBackSlash) && this.peek(quoteConditionFn, 1)) {
+        valueParts.push(this.markup.substring(startIdx, this.currentIdx));
+        startIdx = this.advance(2);
+      } else if (this.peek(quoteConditionFn)) {
+        valueParts.push(this.markup.substring(startIdx, this.currentIdx));
+        break;
+      } else {
+        this.advance();
+      }
+    }
+
+    this.requireAndSkip(quoteConditionFn);
+
+    return new StringNode(valueParts.join(joinChar));
+  }
+
   parse(): StringNode {
-    if (this.peekAndSkip(isDoubleQuote)) {
-      const value = this.consume(not(isDoubleQuote));
-      this.requireAndSkip(isDoubleQuote);
-      return new StringNode(value);
+    if (this.peek(isDoubleQuote)) {
+      return this.parseToTheEndOfAString('"', isDoubleQuote);
+    } else if (this.peek(isSingleQuote)) {
+      return this.parseToTheEndOfAString("'", isSingleQuote);
     } else {
-      throw 'Unexpected string start';
+      throw new Error(`Unexpected string start: ${String.fromCharCode(this.peekCharCode())}`);
     }
   }
 }
@@ -241,8 +270,7 @@ export class BindingParser extends Parser {
       if (this.peek(isCurlyBracketOpen)) {
         openBrackets++;
         this.advance();
-      }
-      if (this.peek(isCurlyBracketClose) && --openBrackets === -1) {
+      } else if (this.peek(isCurlyBracketClose) && --openBrackets === -1) {
         break;
       } else {
         this.advance();
