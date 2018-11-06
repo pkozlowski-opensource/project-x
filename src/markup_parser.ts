@@ -67,71 +67,34 @@ export class MarkupNode extends Node {
   }
 }
 
+const SPACE = 32;
+const DOUBLE_QUOTE = 34; // ""
+const SINGLE_QUOTE = 39; // '
+const BRACKET_OPEN = 40; // (
+const BRACKET_CLOSE = 41; // )
+const SLASH = 47; // /
+const ANGLE_OPEN = 60; // <
+const EQUAL = 61;
+const ANGLE_CLOSE = 62; // >
+const SQUARE_BRACKET_OPEN = 91; // [
+const BACK_SLASH = 92; // \
+const SQUARE_BRACKET_CLOSE = 93; // ]
+const CURLY_BRACKET_OPEN = 123; // {
+const CURLY_BRACKET_CLOSE = 125; // }
+
 type CharCodeConditionFn = (charCode: number) => boolean;
 
 function isWhitespace(charCode: number): boolean {
   // TODO: take other whitespaces into account
-  return charCode === 32;
-}
-
-function isDoubleQuote(charCode: number): boolean {
-  return charCode === 34; // ""
-}
-
-function isSingleQuote(charCode: number): boolean {
-  return charCode === 39; // '
-}
-
-function isBracketOpen(charCode: number): boolean {
-  return charCode === 40; // (
-}
-
-function isBracketClose(charCode: number): boolean {
-  return charCode === 41; // )
-}
-
-function isSlash(charCode: number): boolean {
-  return charCode === 47; // /
-}
-
-function isAngleBracketOpen(charCode: number): boolean {
-  return charCode === 60; // <
-}
-
-function isEqualSign(charCode: number): boolean {
-  return charCode === 61; // =
-}
-
-function isAngleBracketClose(charCode: number): boolean {
-  return charCode === 62; // >
+  return charCode === SPACE;
 }
 
 function isLargeLetter(charCode: number): boolean {
   return charCode >= 65 && charCode <= 90; // A - Z
 }
 
-function isSquareBracketOpen(charCode: number): boolean {
-  return charCode === 91; // [
-}
-
-function isBackSlash(charCode: number): boolean {
-  return charCode === 92; // \
-}
-
-function isSquareBracketClose(charCode: number): boolean {
-  return charCode === 93; // ]
-}
-
 function isSmallLetter(charCode: number): boolean {
   return charCode >= 97 && charCode <= 122; // a - z
-}
-
-function isCurlyBracketOpen(charCode: number): boolean {
-  return charCode === 123; // {
-}
-
-function isCurlyBracketClose(charCode: number): boolean {
-  return charCode === 125; // }
 }
 
 function isLetter(charCode: number): boolean {
@@ -139,27 +102,28 @@ function isLetter(charCode: number): boolean {
 }
 
 function isAttributeNameStart(charCode: number): boolean {
-  return isLetter(charCode) || isBracketOpen(charCode) || isSquareBracketOpen(charCode);
+  return isLetter(charCode) || charCode === BRACKET_OPEN || charCode === SQUARE_BRACKET_OPEN;
 }
 
 function isAttributeNamePart(charCode: number): boolean {
   return (
     isLetter(charCode) ||
-    isBracketOpen(charCode) ||
-    isBracketClose(charCode) ||
-    isSquareBracketOpen(charCode) ||
-    isSquareBracketClose(charCode)
+    charCode === BRACKET_OPEN ||
+    charCode === BRACKET_CLOSE ||
+    charCode === SQUARE_BRACKET_OPEN ||
+    charCode === SQUARE_BRACKET_CLOSE
   );
-}
-
-function not(conditionFn: CharCodeConditionFn): CharCodeConditionFn {
-  return (charCode: number): boolean => {
-    return !conditionFn(charCode);
-  };
 }
 
 abstract class Parser {
   constructor(public markup: string, public currentIdx: number = 0) {}
+
+  private seekUntil(conditionFn: CharCodeConditionFn): number {
+    while (this.isNotEOF() && conditionFn(this.peekCharCode())) {
+      this.currentIdx++;
+    }
+    return this.currentIdx;
+  }
 
   isNotEOF() {
     return this.currentIdx < this.markup.length;
@@ -178,29 +142,28 @@ abstract class Parser {
     return this.isNotEOF() && conditionFn(this.peekCharCode(offset));
   }
 
-  seekUntil(conditionFn: CharCodeConditionFn): number {
-    while (this.isNotEOF() && conditionFn(this.peekCharCode())) {
-      this.currentIdx++;
+  nextIs(charCode: number, offset: number = 0): boolean {
+    if (this.currentIdx + offset < this.markup.length) {
+      return this.peekCharCode(offset) === charCode;
     }
-    return this.currentIdx;
+    return false;
   }
 
-  peekAndSkip(conditionFn: CharCodeConditionFn): boolean {
-    const result = this.peek(conditionFn);
+  peekAndSkip(charCode: number): boolean {
+    const result = this.nextIs(charCode);
     if (result) {
-      this.currentIdx++;
+      this.advance();
       return true;
     }
     return false;
   }
 
-  requireAndSkip(conditionFn: CharCodeConditionFn): boolean {
-    if (this.peekAndSkip(conditionFn)) {
-      return true;
+  requireAndSkip(charCode: number): void {
+    if (!this.peekAndSkip(charCode)) {
+      throw new Error(
+        `Unexpected character '${String.fromCharCode(this.peekCharCode())}' at position ${this.currentIdx}`
+      );
     }
-    throw new Error(
-      `Unexpected character '${String.fromCharCode(this.peekCharCode())}' at position ${this.currentIdx}`
-    );
   }
 
   consume(conditionFn: CharCodeConditionFn): string {
@@ -224,61 +187,57 @@ abstract class Parser {
 }
 
 export class QuotedStringParser extends Parser {
-  private parseToTheEndOfAString(joinChar: string, quoteConditionFn: CharCodeConditionFn): StringNode {
-    const valueParts: string[] = [];
-    let startIdx = this.currentIdx + 1;
-
-    this.requireAndSkip(quoteConditionFn);
-
-    while (this.isNotEOF()) {
-      if (this.peek(isBackSlash) && this.peek(quoteConditionFn, 1)) {
-        valueParts.push(this.markup.substring(startIdx, this.currentIdx));
-        startIdx = this.advance(2);
-      } else if (this.peek(quoteConditionFn)) {
-        valueParts.push(this.markup.substring(startIdx, this.currentIdx));
-        break;
-      } else {
-        this.advance();
-      }
-    }
-
-    this.requireAndSkip(quoteConditionFn);
-
-    return new StringNode(valueParts.join(joinChar));
-  }
-
   parse(): StringNode {
-    if (this.peek(isDoubleQuote)) {
-      return this.parseToTheEndOfAString('"', isDoubleQuote);
-    } else if (this.peek(isSingleQuote)) {
-      return this.parseToTheEndOfAString("'", isSingleQuote);
+    const quoteChar = this.peekCharCode();
+    if (quoteChar === DOUBLE_QUOTE || quoteChar === SINGLE_QUOTE) {
+      const valueParts: string[] = [];
+      let startIdx = this.currentIdx + 1;
+
+      this.requireAndSkip(quoteChar);
+
+      while (this.isNotEOF()) {
+        if (this.nextIs(BACK_SLASH) && this.nextIs(quoteChar, 1)) {
+          valueParts.push(this.markup.substring(startIdx, this.currentIdx));
+          // skip \" or \'
+          startIdx = this.advance(2);
+        } else if (this.nextIs(quoteChar)) {
+          valueParts.push(this.markup.substring(startIdx, this.currentIdx));
+          break;
+        } else {
+          this.advance();
+        }
+      }
+
+      this.requireAndSkip(quoteChar);
+
+      return new StringNode(valueParts.join(String.fromCharCode(quoteChar)));
     } else {
-      throw new Error(`Unexpected string start: ${String.fromCharCode(this.peekCharCode())}`);
+      throw new Error(`Unexpected string start: ${String.fromCharCode(quoteChar)}`);
     }
   }
 }
 
 export class BindingParser extends Parser {
   parse(): BindignNode {
-    this.requireAndSkip(isCurlyBracketOpen);
-    this.requireAndSkip(isCurlyBracketOpen);
+    this.requireAndSkip(CURLY_BRACKET_OPEN);
+    this.requireAndSkip(CURLY_BRACKET_OPEN);
 
     const exprStartIdx = this.currentIdx;
     let openBrackets = 0;
 
     while (this.isNotEOF()) {
-      if (this.peek(isCurlyBracketOpen)) {
+      if (this.nextIs(CURLY_BRACKET_OPEN)) {
         openBrackets++;
         this.advance();
-      } else if (this.peek(isCurlyBracketClose) && --openBrackets === -1) {
+      } else if (this.nextIs(CURLY_BRACKET_CLOSE) && --openBrackets === -1) {
         break;
       } else {
         this.advance();
       }
     }
 
-    this.requireAndSkip(isCurlyBracketClose);
-    this.requireAndSkip(isCurlyBracketClose);
+    this.requireAndSkip(CURLY_BRACKET_CLOSE);
+    this.requireAndSkip(CURLY_BRACKET_CLOSE);
 
     return new BindignNode(this.markup.substring(exprStartIdx, this.currentIdx - 2));
   }
@@ -288,12 +247,12 @@ export class AttributeParser extends Parser {
   parse(): AttributeNode {
     const attrName = this.consume(isAttributeNamePart);
     this.skipWhitSpace();
-    if (this.peekAndSkip(isEqualSign)) {
+    if (this.peekAndSkip(EQUAL)) {
       this.skipWhitSpace();
-      if (this.peek(isDoubleQuote)) {
+      if (this.nextIs(DOUBLE_QUOTE)) {
         const stringNode = this.delegate(QuotedStringParser);
         return new StaticAttributeNode(attrName, stringNode.value);
-      } else if (this.peek(isCurlyBracketOpen)) {
+      } else if (this.nextIs(CURLY_BRACKET_OPEN)) {
         const bindignNode = this.delegate(BindingParser);
         return new BoundAttributeNode(attrName, bindignNode.value);
       } else {
@@ -309,15 +268,15 @@ export class ElementStartParser extends Parser {
   parse(): ElementStartNode {
     const attributes: StaticAttributeNode[] = [];
 
-    this.requireAndSkip(isAngleBracketOpen); // <
+    this.requireAndSkip(ANGLE_OPEN); // <
 
     const tagName = this.consume((charCode: number) => {
-      return !isWhitespace(charCode) && !isAngleBracketClose(charCode);
+      return !isWhitespace(charCode) && charCode !== ANGLE_CLOSE;
     });
 
     this.skipWhitSpace();
 
-    while (this.isNotEOF() && !this.peek(isAngleBracketClose)) {
+    while (this.isNotEOF() && !this.nextIs(ANGLE_CLOSE)) {
       if (this.peek(isAttributeNameStart)) {
         attributes.push(this.delegate(AttributeParser));
       } else {
@@ -326,7 +285,7 @@ export class ElementStartParser extends Parser {
       this.skipWhitSpace();
     }
 
-    this.requireAndSkip(isAngleBracketClose); // >
+    this.requireAndSkip(ANGLE_CLOSE); // >
 
     return new ElementStartNode(tagName, attributes);
   }
@@ -334,16 +293,15 @@ export class ElementStartParser extends Parser {
 
 export class ElementEndParser extends Parser {
   parse(): ElementEndNode {
-    this.requireAndSkip(isAngleBracketOpen); // <
-    this.requireAndSkip(isSlash); // /
+    this.requireAndSkip(ANGLE_OPEN); // <
+    this.requireAndSkip(SLASH); // /
 
     const tagName = this.consume((charCode: number) => {
-      return !isWhitespace(charCode) && !isAngleBracketClose(charCode);
+      return !isWhitespace(charCode) && charCode !== ANGLE_CLOSE;
     });
 
     this.skipWhitSpace();
-
-    this.requireAndSkip(isAngleBracketClose); // >
+    this.requireAndSkip(ANGLE_CLOSE); // >
 
     return new ElementEndNode(tagName);
   }
@@ -355,14 +313,20 @@ export class InterpolatedTextParser extends Parser {
 
     function isTextStop(charCode: number): boolean {
       // TODO: this should be {{ <a </ to support single { and < in thext nodes
-      return isCurlyBracketOpen(charCode) || isAngleBracketOpen(charCode);
+      return charCode === CURLY_BRACKET_OPEN || charCode === ANGLE_OPEN;
     }
 
-    while (this.isNotEOF() && !this.peek(isAngleBracketOpen)) {
-      if (this.peek(isCurlyBracketOpen)) {
+    while (this.isNotEOF() && !this.nextIs(ANGLE_OPEN)) {
+      if (this.nextIs(CURLY_BRACKET_OPEN)) {
         parts.push(this.delegate(BindingParser));
       } else {
-        parts.push(new StringNode(this.consume(not(isTextStop))));
+        parts.push(
+          new StringNode(
+            this.consume(charCode => {
+              return !isTextStop(charCode);
+            })
+          )
+        );
       }
     }
 
@@ -375,10 +339,10 @@ export class MarkupParser extends Parser {
     const nodes: Node[] = [];
 
     while (this.isNotEOF()) {
-      if (this.peek(isAngleBracketOpen)) {
+      if (this.nextIs(ANGLE_OPEN)) {
         if (this.peek(isSmallLetter, 1)) {
           nodes.push(this.delegate(ElementStartParser));
-        } else if (this.peek(isSlash, 1)) {
+        } else if (this.nextIs(SLASH, 1)) {
           nodes.push(this.delegate(ElementEndParser));
         } else {
           throw new Error('Unexpected character found after <');
