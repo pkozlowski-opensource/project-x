@@ -101,6 +101,10 @@ function isLetter(charCode: number): boolean {
   return isSmallLetter(charCode) || isLargeLetter(charCode);
 }
 
+function isStringQuote(charCode: number): boolean {
+  return charCode === SINGLE_QUOTE || charCode === DOUBLE_QUOTE;
+}
+
 function isAttributeNameStart(charCode: number): boolean {
   return isLetter(charCode) || charCode === BRACKET_OPEN || charCode === SQUARE_BRACKET_OPEN;
 }
@@ -189,7 +193,7 @@ abstract class Parser {
 export class QuotedStringParser extends Parser {
   parse(): StringNode {
     const quoteChar = this.peekCharCode();
-    if (quoteChar === DOUBLE_QUOTE || quoteChar === SINGLE_QUOTE) {
+    if (isStringQuote) {
       const valueParts: string[] = [];
       let startIdx = this.currentIdx + 1;
 
@@ -249,7 +253,7 @@ export class AttributeParser extends Parser {
     this.skipWhitSpace();
     if (this.peekAndSkip(EQUAL)) {
       this.skipWhitSpace();
-      if (this.nextIs(DOUBLE_QUOTE)) {
+      if (this.peek(isStringQuote)) {
         const stringNode = this.delegate(QuotedStringParser);
         return new StaticAttributeNode(attrName, stringNode.value);
       } else if (this.nextIs(CURLY_BRACKET_OPEN)) {

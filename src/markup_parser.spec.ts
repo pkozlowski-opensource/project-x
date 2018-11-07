@@ -78,9 +78,6 @@ describe('markup parser', () => {
     }
 
     describe('static attributes', () => {
-      // TODO: attr='val'
-      // TODO: attr="\"""
-
       it('should parse single boolean attribute', () => {
         const token = parseAttribute('readonly');
 
@@ -97,12 +94,12 @@ describe('markup parser', () => {
         expect(token.value).toBeNull();
       });
 
-      it('should parse an attribute with a quoted string value', () => {
-        const token = parseAttribute('id="foo"');
+      it('should parse an attribute with a single-quoted value', () => {
+        const token = parseAttribute(`id='foo bar'`);
 
         expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
         expect(token.name).toBe('id');
-        expect(token.value).toBe('foo');
+        expect(token.value).toBe('foo bar');
       });
 
       it('should parse an attribute with a quoted value', () => {
@@ -113,7 +110,7 @@ describe('markup parser', () => {
         expect(token.value).toBe('something 6');
       });
 
-      it('should parse an attribute with a quoted value and spaces arround equal sign', () => {
+      it('should parse an attribute with a quoted value and spaces around equal sign', () => {
         const token = parseAttribute('id =  "something 6"');
 
         expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
