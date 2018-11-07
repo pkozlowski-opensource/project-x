@@ -117,6 +117,15 @@ describe('markup parser', () => {
         expect(token.name).toBe('id');
         expect(token.value).toBe('something 6');
       });
+
+      it('should parse string attributes with new lines', () => {
+        const token = parseAttribute(`id =  "something
+        else"`);
+        expect(token.type).toBe(NodeType.ATTRIBUTE_STATIC);
+        expect(token.name).toBe('id');
+        expect(token.value).toBe(`something
+        else`);
+      });
     });
 
     describe('bindings', () => {
@@ -171,8 +180,16 @@ describe('markup parser', () => {
       expect(token.value).toBe('div');
     });
 
-    it('should parse element without attributes and whitespaces before closing bracket', () => {
+    it('should parse element without attributes and spaces before closing bracket', () => {
       const token = parseElementStart('<div  >');
+
+      expect(token.type).toBe(NodeType.ELEMENT_START);
+      expect(token.value).toBe('div');
+    });
+
+    it('should parse element without attributes and new lines before closing bracket', () => {
+      const token = parseElementStart(`<div
+      >`);
 
       expect(token.type).toBe(NodeType.ELEMENT_START);
       expect(token.value).toBe('div');
@@ -192,6 +209,16 @@ describe('markup parser', () => {
       expect(token.type).toBe(NodeType.ELEMENT_START);
       expect(token.value).toBe('input');
       expect(token.attributes.length).toBe(1);
+    });
+
+    it('should parse element with line feed between attributes', () => {
+      const token = parseElementStart(`<input 
+      type="checkbox"
+      readonly>`);
+
+      expect(token.type).toBe(NodeType.ELEMENT_START);
+      expect(token.value).toBe('input');
+      expect(token.attributes.length).toBe(2);
     });
 
     it('should parse element with string-quoted attributes where name has mixed case', () => {

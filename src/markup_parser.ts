@@ -67,6 +67,9 @@ export class MarkupNode extends Node {
   }
 }
 
+const TAB = 9;
+const LINE_FEED = 10;
+const CARRIAGE_RETURN = 13;
 const SPACE = 32;
 const DOUBLE_QUOTE = 34; // ""
 const SINGLE_QUOTE = 39; // '
@@ -85,8 +88,7 @@ const CURLY_BRACKET_CLOSE = 125; // }
 type CharCodeConditionFn = (charCode: number) => boolean;
 
 function isWhitespace(charCode: number): boolean {
-  // TODO: take other whitespaces into account
-  return charCode === SPACE;
+  return charCode === TAB || charCode === LINE_FEED || charCode === CARRIAGE_RETURN || charCode === SPACE;
 }
 
 function isLargeLetter(charCode: number): boolean {
